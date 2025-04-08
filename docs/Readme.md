@@ -232,3 +232,15 @@ bailoteca-backend/
 ├── .gitignore
 ├── pom.xml
 ```
+
+## Variables de entorno (.env)
+
+Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
+
+```env
+POSTGRES_DB=bailoteca_db
+POSTGRES_USER=bailo_admin
+POSTGRES_PASSWORD=superseguro123
+PGADMIN_DEFAULT_EMAIL=admin@bailoteca.com
+PGADMIN_DEFAULT_PASSWORD=admin123
+```
