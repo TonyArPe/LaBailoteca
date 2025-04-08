@@ -206,7 +206,7 @@ Esta sección detalla los modelos de datos principales y la propuesta inicial de
 
 ---
 
-## 🧭 Estructura del repositorio (ramas Git)
+## Estructura del repositorio
 
 - `master` → rama principal de producción
 - `dev` → rama de desarrollo general
@@ -216,7 +216,7 @@ Esta sección detalla los modelos de datos principales y la propuesta inicial de
 
 ---
 
-## 📁 Estructura base del proyecto Spring Boot
+## Estructura base del proyecto Spring Boot
 
 ```
 bailoteca-backend/
