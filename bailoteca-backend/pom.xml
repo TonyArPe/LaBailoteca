@@ -70,6 +70,16 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
+		<!-- Spring Validation (Usar anotaciones en modelos)-->
+		<dependency>
+			<groupId>jakarta.validation</groupId>
+			<artifactId>jakarta.validation-api</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+		<dependency>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-validation</artifactId>
+		</dependency>
 	</dependencies>
 
 	<build>
