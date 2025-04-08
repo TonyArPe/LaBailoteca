@@ -233,9 +233,16 @@ bailoteca-backend/
 ├── pom.xml
 ```
 
-## Variables de entorno (.env)
+## Configuración del entorno de desarrollo
 
-Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
+### Contenedores Docker
+
+Se utiliza Docker para gestionar PostgreSQL y pgAdmin:
+
+- **PostgreSQL**: Base de datos principal.
+- **pgAdmin**: Interfaz web para administrar la base de datos.
+
+#### Variables del entorno (.env)
 
 ```env
 POSTGRES_DB=bailoteca_db
@@ -244,3 +251,22 @@ POSTGRES_PASSWORD=superseguro123
 PGADMIN_DEFAULT_EMAIL=admin@bailoteca.com
 PGADMIN_DEFAULT_PASSWORD=admin123
 ```
+### 🔌 Puertos utilizados
+
+| Servicio   | URL de acceso                  | Puerto |
+|------------|--------------------------------|--------|
+| Backend    | [http://localhost:8080](http://localhost:8080) | 8080   |
+| API REST   | [http://localhost:8080/api/usuarios](http://localhost:8080/api/usuarios) | -      |
+| pgAdmin    | [http://localhost:5050](http://localhost:5050) | 5050   |
+
+### 🐘 Acceso a pgAdmin
+
+1. Abre [http://localhost:5050](http://localhost:5050).
+2. Inicia sesión con las siguientes credenciales:
+  - **Correo:** `admin@bailoteca.com`
+  - **Contraseña:** `admin123`
+3. Añade un nuevo servidor con la siguiente configuración:
+  - **Nombre:** `PostgreSQL Bailoteca`
+  - **Host:** `db`
+  - **Usuario:** `bailo_admin`
+  - **Contraseña:** `superseguro123`
