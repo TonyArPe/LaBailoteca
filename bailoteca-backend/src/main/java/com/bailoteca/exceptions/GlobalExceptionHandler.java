@@ -1,54 +1,83 @@
 package com.bailoteca.exceptions;
 
-import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.WebRequest;
 
+import jakarta.validation.ConstraintViolationException;
 import jakarta.persistence.EntityNotFoundException;
 
+import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Manejador global de excepciones para la aplicación.
- * Se encarga de manejar las excepciones que no son capturadas por los controladores específicos.
- * Puede incluir métodos para manejar excepciones específicas
+ * Controlador global de manejo de excepciones.
  */
 @ControllerAdvice
+@RestController
 public class GlobalExceptionHandler {
 
-    /**
-     * Maneja excepciones de tipo entidad no encontrada
-     * @param ex Excepción lanzada
-     * @return Mensaje de error personalizado
-     */
     @ExceptionHandler(EntityNotFoundException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<String> handleEntityNotFoundException(EntityNotFoundException ex) {
-        return new ResponseEntity<>("Entidad no encontrada: " + ex.getMessage(), HttpStatus.NOT_FOUND);
+    public ErrorResponse handleEntityNotFoundException(EntityNotFoundException ex) {
+        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), "Entidad no encontrada", ex.getMessage());
     }
 
-    /**
-     * Manejador de excepciones de datos vacios
-     * @param ex Excepción lanzada
-     * @return Mensaje de error personalizado
-     */
     @ExceptionHandler(EmptyResultDataAccessException.class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ResponseEntity<String> handleEmptyResultDataAccessException(EmptyResultDataAccessException ex){
-            return new ResponseEntity<>("No se encontró el evento: " + ex.getMessage(), HttpStatus.NOT_FOUND);
+    public ErrorResponse handleEmptyResultDataAccessException(EmptyResultDataAccessException ex) {
+        return new ErrorResponse(HttpStatus.NOT_FOUND.value(), "No se encontró el elemento solicitado", ex.getMessage());
     }
 
-    /**
-     * Manejador de excepciones generales
-     * @param ex Excepción lanzada
-     * @return Mensaje de error personalizado
-     */
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleException(Exception ex) {
-        return new ResponseEntity<>("Error interno del servidor: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ErrorResponse handleConstraintViolationException(ConstraintViolationException ex) {
+        return new ErrorResponse(HttpStatus.BAD_REQUEST.value(), "Error de validación", ex.getMessage());
     }
+
+    // IMPLEMENTAR UNA VEZ CONFIGURADO SPRING SECURITY
+    /*
+     * @ExceptionHandler(AccessDeniedException.class)
+        @ResponseStatus(HttpStatus.FORBIDDEN)
+        public ErrorResponse handleAccessDeniedException(AccessDeniedException ex) {
+        return new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Acceso denegado", ex.getMessage());
+    }
+     */
     
+
+    @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public ErrorResponse handleGeneralException(Exception ex) {
+        return new ErrorResponse(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Error interno del servidor", ex.getMessage());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex) {
+        BindingResult result = ex.getBindingResult();
+        Map<String, String> fieldErrors = new HashMap<>();
+
+        for (FieldError error : result.getFieldErrors()) {
+            fieldErrors.put(error.getField(), error.getDefaultMessage());
+        }
+
+        ErrorResponse response = new ErrorResponse(
+            HttpStatus.BAD_REQUEST.value(),
+            "Errores de validación",
+            fieldErrors.toString()
+        );
+
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
 }
