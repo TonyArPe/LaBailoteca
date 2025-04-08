@@ -11,8 +11,8 @@
 	<groupId>com.bailoteca</groupId>
 	<artifactId>bailoteca-backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>bailoteca-backend</name>
-	<description>Demo project for Spring Boot</description>
+	<name>La Bailoteca - Backend</name>
+	<description>Backend del proyecto de gestion de una academia de baile.</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -30,31 +30,36 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+		<!-- Spring JPA -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
+		<!-- Spring Boot -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
-
+		<!-- Spring DevTools para recarga automatica -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
 			<optional>true</optional>
 		</dependency>
+		<!-- PostgreSQL -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- LomBok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
+		<!-- Spring Starter -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
@@ -76,6 +81,7 @@
 					</annotationProcessorPaths>
 				</configuration>
 			</plugin>
+			<!-- Plugin de compilacion para Spring Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
