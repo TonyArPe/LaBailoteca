@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 
-
-
 /**
  * Controlador REST para gestionar Usuarios
  */
@@ -25,26 +23,50 @@ import org.springframework.web.bind.annotation.PostMapping;
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
 public class UsuarioController {
+    /**
+     * Repositorio de usuarios para realizar operaciones CRUD
+     */
     private final UsuarioRepo usuarioRepo;
 
+    /**
+     * Obtiene todos los usuarios del sistema
+     * 
+     * @return Lista de usuarios
+     */
     @GetMapping
     public List<Usuario> getUsuarios(@RequestBody Usuario usuario) {
         return usuarioRepo.findAll();
     }
 
+    /**
+     * Crea un nuevo usuario en el sistema
+     * 
+     * @param usuario Usuario a crear
+     * @return Usuario creado
+     */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
         return usuarioRepo.save(usuario);
     }
-    
-    @GetMapping("/{id}")
-        public Usuario getUsuario(@PathVariable Long id){
-            return usuarioRepo.findById(id).orElse(null);
-        }
 
+    /**
+     * Obtiene un usuario por su ID
+     * 
+     * @param id ID del usuario a obtener
+     * @return Usuario encontrado o null si no existe
+     */
+    @GetMapping("/{id}")
+    public Usuario getUsuario(@PathVariable Long id) {
+        return usuarioRepo.findById(id).orElse(null);
+    }
+
+    /**
+     * Borra un usuario por su ID
+     * 
+     * @param id del Usuario a borrar
+     */
     @DeleteMapping("/{id}")
     public void deleteUsuario(@PathVariable Long id) {
         usuarioRepo.deleteById(id);
     }
-    
 }
