@@ -167,3 +167,68 @@ Esta sección detalla los modelos de datos principales y la propuesta inicial de
 |--------|----------------------------|---------------------------------------------------------------------|
 | GET    | `/api/chat`                | Obtener las conversaciones de chat (por usuario o clase)             |
 | POST   | `/api/chat`                | Enviar un mensaje en el chat                                         |
+
+## CREACION DEL PROYECTO(BACKEND)
+
+### Usar la extensión de Spring Boot en VSCode
+
+  Abre VSCode
+
+  Instala la extensión **Spring Initializr Java Support**
+
+  Pulsa `Ctrl + Shift + P` y escribimos:
+
+`Spring Initializr: Generate a Maven Project`
+
+  Group: `com.bailoteca`
+
+  Artifact: `bailoteca-backend`
+
+  Lenguaje: `Java`
+
+  Java version: `17`
+
+  Dependencias: `Spring Web, Spring Data JPA, PostgreSQL Driver, Lombok`
+
+## Tecnologías utilizadas
+
+- **Lenguaje**: Java 17
+- **Framework**: Spring Boot
+- **Build Tool**: Maven
+- **Base de datos**: PostgreSQL
+- **ORM**: Spring Data JPA
+- **Dependencias principales**:
+  - `spring-boot-starter-web`
+  - `spring-boot-starter-data-jpa`
+  - `postgresql`
+  - `lombok`
+  - `spring-boot-devtools`
+
+---
+
+## 🧭 Estructura del repositorio (ramas Git)
+
+- `master` → rama principal de producción
+- `dev` → rama de desarrollo general
+- `backend` → desarrollo del backend Spring Boot
+- `frontend` → desarrollo web con React
+- `app` → desarrollo de la app móvil en Kotlin
+
+---
+
+## 📁 Estructura base del proyecto Spring Boot
+
+```
+bailoteca-backend/
+├── src/
+│   └── main/
+│       ├── java/
+│       │   └── com/
+│       │       └── bailoteca/
+│       │           └── BailotecaApplication.java
+│       └── resources/
+│           ├── application.properties
+│           └── static/
+├── .gitignore
+├── pom.xml
+```
