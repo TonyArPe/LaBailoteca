@@ -251,7 +251,7 @@ POSTGRES_PASSWORD=superseguro123
 PGADMIN_DEFAULT_EMAIL=admin@bailoteca.com
 PGADMIN_DEFAULT_PASSWORD=admin123
 ```
-### 🔌 Puertos utilizados
+### Puertos utilizados
 
 | Servicio   | URL de acceso                  | Puerto |
 |------------|--------------------------------|--------|
@@ -259,7 +259,7 @@ PGADMIN_DEFAULT_PASSWORD=admin123
 | API REST   | [http://localhost:8080/api/usuarios](http://localhost:8080/api/usuarios) | -      |
 | pgAdmin    | [http://localhost:5050](http://localhost:5050) | 5050   |
 
-### 🐘 Acceso a pgAdmin
+### Acceso a pgAdmin
 
 1. Abre [http://localhost:5050](http://localhost:5050).
 2. Inicia sesión con las siguientes credenciales:
