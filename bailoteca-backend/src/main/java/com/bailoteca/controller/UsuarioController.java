@@ -34,7 +34,7 @@ public class UsuarioController {
      * @return Lista de usuarios
      */
     @GetMapping
-    public List<Usuario> getUsuarios(@RequestBody Usuario usuario) {
+    public List<Usuario> getUsuarios() {
         return usuarioRepo.findAll();
     }
 
