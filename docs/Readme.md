@@ -270,3 +270,64 @@ PGADMIN_DEFAULT_PASSWORD=admin123
   - **Host:** `db`
   - **Usuario:** `bailo_admin`
   - **Contraseña:** `superseguro123`
+
+
+# Documentación de Pagos en La Bailoteca
+
+## Objetivo
+
+Registrar y consultar los pagos realizados por los usuarios de forma informativa, ya que los pagos se efectúan en efectivo y en persona. Este sistema permite a profesores y administradores llevar un control claro de:
+
+- Participación en eventos.
+- Pagos mensuales de clases.
+- Usuarios que han abonado y cuándo lo hicieron.
+
+## Estructura de Entidades
+
+### PagoEvento
+
+Pagos asociados a un evento.
+
+| Campo      | Tipo     | Descripción                          |
+|------------|----------|--------------------------------------|
+| `id`       | `Long`   | Identificador único del pago         |
+| `usuario`  | `Usuario`| Usuario que realizó el pago          |
+| `evento`   | `Evento` | Evento al que corresponde el pago    |
+| `fechaPago`| `Date`   | Fecha en la que se realizó el pago   |
+| `cantidad` | `double` | Cantidad abonada en efectivo         |
+| `pagado`   | `boolean`| Indica si el pago fue efectuado correctamente |
+
+### PagoMensualidad
+
+Pagos correspondientes a la mensualidad de clases.
+
+| Campo      | Tipo     | Descripción                          |
+|------------|----------|--------------------------------------|
+| `id`       | `Long`   | Identificador único del pago         |
+| `usuario`  | `Usuario`| Usuario que realizó el pago          |
+| `mes`      | `String` | Mes de la mensualidad pagada         |
+| `fechaPago`| `Date`   | Fecha en la que se realizó el pago   |
+| `cantidad` | `double` | Cantidad abonada                     |
+| `pagado`   | `boolean`| Estado del pago                      |
+
+## Endpoints Disponibles
+
+### `/api/pagos-evento`
+
+| Método | Ruta                                | Descripción                          |
+|--------|-------------------------------------|--------------------------------------|
+| `GET`  | `/api/pagos-evento`                | Lista todos los pagos de eventos     |
+| `GET`  | `/api/pagos-evento/usuario/{usuarioId}` | Lista pagos de un usuario            |
+| `GET`  | `/api/pagos-evento/evento/{eventoId}` | Lista pagos por evento               |
+| `POST` | `/api/pagos-evento`                | Crear nuevo registro de pago         |
+| `DELETE`| `/api/pagos-evento/{id}`          | Eliminar un pago por su ID           |
+
+### `/api/pagos-mensualidad`
+
+| Método | Ruta                                | Descripción                          |
+|--------|-------------------------------------|--------------------------------------|
+| `GET`  | `/api/pagos-mensualidad`           | Lista todos los pagos mensuales      |
+| `GET`  | `/api/pagos-mensualidad/usuario/{usuarioId}` | Lista pagos por usuario              |
+| `GET`  | `/api/pagos-mensualidad/mes/{mes}` | Lista pagos por mes |
+| `POST` | `/api/pagos-mensualidad`           | Crear nuevo pago mensual             |
+| `DELETE`| `/api/pagos-mensualidad/{id}`     | Eliminar pago mensual por ID         |
