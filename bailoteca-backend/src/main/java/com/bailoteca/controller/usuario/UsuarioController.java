@@ -1,10 +1,10 @@
-package com.bailoteca.controller;
+package com.bailoteca.controller.usuario;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bailoteca.models.Usuario;
-import com.bailoteca.repository.UsuarioRepo;
+import com.bailoteca.models.usuario.Usuario;
+import com.bailoteca.repository.usuario.UsuarioRepo;
 
 import lombok.RequiredArgsConstructor;
 

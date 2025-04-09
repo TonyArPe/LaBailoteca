@@ -1,9 +1,9 @@
-package com.bailoteca.repository;
+package com.bailoteca.repository.usuario;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.bailoteca.models.Usuario;
+import com.bailoteca.models.usuario.Usuario;
 
 /**
  * Repositorio para la entidad Usuario.

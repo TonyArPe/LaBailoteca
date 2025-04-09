@@ -1,4 +1,4 @@
-package com.bailoteca.models;
+package com.bailoteca.models.usuario;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -13,25 +13,30 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 
+import com.bailoteca.models.evento.Evento;
+
 /**
- * Representa el pago realizado por un usuario por la inscripción en un evento.
+ * Representa la inscripción de un usuario a un evento.
  */
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Pago {
+public class Inscripcion {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "inscripcion_id", nullable = false)
-    private Inscripcion inscripcion;
+    @JoinColumn(name = "evento_id", nullable = false)
+    private Evento evento;
 
-    private LocalDate fechaPago;
-    private double monto;
-    private String metodoPago;
-    private boolean realizado;
+    @ManyToOne
+    @JoinColumn(name = "usuario_id", nullable = false)
+    private Usuario usuario;
+
+    private LocalDate fechaInscripcion;
+
+    private boolean confirmado;
 }

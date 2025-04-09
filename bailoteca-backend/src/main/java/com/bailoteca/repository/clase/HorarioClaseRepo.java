@@ -1,8 +1,9 @@
-package com.bailoteca.repository;
+package com.bailoteca.repository.clase;
 
-import com.bailoteca.models.HorarioClase;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.bailoteca.models.clase.HorarioClase;
 
 import java.util.List;
 

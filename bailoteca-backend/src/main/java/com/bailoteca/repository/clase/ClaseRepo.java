@@ -1,8 +1,9 @@
-package com.bailoteca.repository;
+package com.bailoteca.repository.clase;
 
-import com.bailoteca.models.Clase;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+
+import com.bailoteca.models.clase.Clase;
 
 import java.util.List;
 

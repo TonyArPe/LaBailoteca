@@ -1,4 +1,4 @@
-package com.bailoteca.models;
+package com.bailoteca.models.enums;
 
 /**
  * Enum que representa los diferentes roles de usuario en el sistema.

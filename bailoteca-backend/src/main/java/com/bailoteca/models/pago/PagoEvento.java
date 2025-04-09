@@ -1,9 +1,12 @@
-package com.bailoteca.models;
+package com.bailoteca.models.pago;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+
+import com.bailoteca.models.evento.Evento;
+import com.bailoteca.models.usuario.Usuario;
 
 /**
  * Representa un pago realizado por un usuario para un evento específico.

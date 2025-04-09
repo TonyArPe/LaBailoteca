@@ -1,4 +1,4 @@
-package com.bailoteca.models;
+package com.bailoteca.models.evento;
 
 import java.time.LocalDateTime;
 

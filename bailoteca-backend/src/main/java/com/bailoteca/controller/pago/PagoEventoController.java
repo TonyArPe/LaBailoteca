@@ -1,11 +1,9 @@
-package com.bailoteca.controller;
+package com.bailoteca.controller.pago;
 
-import com.bailoteca.repository.PagoEventoRepo;
+import com.bailoteca.models.pago.PagoEvento;
+import com.bailoteca.repository.pago.PagoEventoRepo;
 
 import lombok.RequiredArgsConstructor;
-
-import com.bailoteca.models.PagoEvento;
-import com.bailoteca.repository.PagoEventoRepo;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;

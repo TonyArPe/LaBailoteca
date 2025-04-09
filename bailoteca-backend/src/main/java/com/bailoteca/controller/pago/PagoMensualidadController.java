@@ -1,7 +1,8 @@
-package com.bailoteca.controller;
+package com.bailoteca.controller.pago;
 
-import com.bailoteca.models.PagoMensualidad;
-import com.bailoteca.repository.PagoMensualidadRepo;
+import com.bailoteca.models.pago.PagoMensualidad;
+import com.bailoteca.repository.pago.PagoMensualidadRepo;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

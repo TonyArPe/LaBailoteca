@@ -1,7 +1,8 @@
-package com.bailoteca.controller;
+package com.bailoteca.controller.horario;
 
-import com.bailoteca.models.HorarioClase;
-import com.bailoteca.repository.HorarioClaseRepo;
+import com.bailoteca.models.clase.HorarioClase;
+import com.bailoteca.repository.clase.HorarioClaseRepo;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

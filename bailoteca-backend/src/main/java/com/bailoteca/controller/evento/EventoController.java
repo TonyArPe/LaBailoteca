@@ -1,10 +1,10 @@
-package com.bailoteca.controller;
+package com.bailoteca.controller.evento;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.bailoteca.models.Evento;
-import com.bailoteca.repository.EventoRepo;
+import com.bailoteca.models.evento.Evento;
+import com.bailoteca.repository.evento.EventoRepo;
 
 import lombok.RequiredArgsConstructor;
 

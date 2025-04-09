@@ -1,6 +1,8 @@
-package com.bailoteca.models;
+package com.bailoteca.models.usuario;
 
 import java.time.LocalDate;
+
+import com.bailoteca.models.enums.Rol;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

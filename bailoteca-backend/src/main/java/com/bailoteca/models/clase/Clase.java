@@ -1,6 +1,8 @@
-package com.bailoteca.models;
+package com.bailoteca.models.clase;
 
 import java.util.List;
+
+import com.bailoteca.models.usuario.Usuario;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

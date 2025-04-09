@@ -1,7 +1,8 @@
-package com.bailoteca.controller;
+package com.bailoteca.controller.clase;
 
-import com.bailoteca.models.Clase;
-import com.bailoteca.repository.ClaseRepo;
+import com.bailoteca.models.clase.Clase;
+import com.bailoteca.repository.clase.ClaseRepo;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 

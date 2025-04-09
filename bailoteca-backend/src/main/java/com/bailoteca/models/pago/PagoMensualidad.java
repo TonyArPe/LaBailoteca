@@ -1,9 +1,11 @@
-package com.bailoteca.models;
+package com.bailoteca.models.pago;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+
+import com.bailoteca.models.usuario.Usuario;
 
 /**
  * Representa el pago mensual que un usuario hace por sus clases regulares.
