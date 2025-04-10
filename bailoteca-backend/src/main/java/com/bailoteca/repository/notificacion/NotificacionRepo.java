@@ -13,4 +13,13 @@ public interface NotificacionRepo extends JpaRepository<Notificacion, Long> {
      * Obtener todas las notificaciones de un usuario específico.
      */
     List<Notificacion> findByReceptorIdOrderByFechaEnvioDesc(Long receptorId);
+    /**
+     * Obtener todas las notificaciones de un usuario específico que no han sido leídas.
+     */
+    List<Notificacion> findByReceptorIdAndLeidaFalseOrderByFechaEnvioDesc(Long receptorId);
+    /**
+     * Contar las notificaciones no leídas de un usuario específico.
+     */
+    int countByReceptorIdAndLeidaFalse(Long receptorId);
+
 }
