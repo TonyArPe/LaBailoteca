@@ -8,6 +8,7 @@ import com.bailoteca.repository.usuario.UsuarioRepo;
 
 import lombok.RequiredArgsConstructor;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,6 +47,7 @@ public class UsuarioController {
      */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
+        usuario.setFechaRegistro(LocalDate.now());
         return usuarioRepo.save(usuario);
     }
 

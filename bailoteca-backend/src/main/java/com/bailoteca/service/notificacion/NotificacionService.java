@@ -1,7 +1,11 @@
 package com.bailoteca.service.notificacion;
 
+import com.bailoteca.exceptions.RecursoNoEncontradoException;
 import com.bailoteca.models.notificacion.Notificacion;
+import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.notificacion.NotificacionRepo;
+import com.bailoteca.repository.usuario.UsuarioRepo;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,9 +21,11 @@ import java.util.List;
 public class NotificacionService {
 
     private final NotificacionRepo notificacionRepo;
+    private final UsuarioRepo usuarioRepo;
 
     /**
-     * Obtiene todas las notificaciones de un usuario receptor, ordenadas por fecha de envío descendente.
+     * Obtiene todas las notificaciones de un usuario receptor, ordenadas por fecha
+     * de envío descendente.
      *
      * @param usuarioId ID del usuario receptor.
      * @return Lista de notificaciones del usuario.
@@ -30,15 +36,27 @@ public class NotificacionService {
 
     /**
      * Crea y guarda una nueva notificación en la base de datos.
-     * Establece la fecha de envío al momento actual y marca la notificación como no leída por defecto.
+     * Establece la fecha de envío al momento actual y marca la notificación como no
+     * leída por defecto.
      *
      * @param notificacion Objeto Notificacion a crear.
      * @return La notificación creada y guardada.
      */
     public Notificacion crear(Notificacion notificacion) {
+        // Buscar el receptor real con sus datos
+        Usuario receptor = usuarioRepo.findById(notificacion.getReceptor().getId())
+                .orElseThrow(() -> new RecursoNoEncontradoException("Receptor no encontrado"));
+
+        notificacion.setReceptor(receptor);
         notificacion.setFechaEnvio(LocalDateTime.now());
         notificacion.setLeida(false);
-        return notificacionRepo.save(notificacion);
+
+        Notificacion guardada = notificacionRepo.save(notificacion);
+
+        // Enviar por WebSocket a todos los suscritos
+        messagingTemplate.convertAndSend("/topic/notificaciones", guardada);
+
+        return guardada;
     }
 
     /**
@@ -76,7 +94,8 @@ public class NotificacionService {
     }
 
     /**
-     * Obtiene todas las notificaciones no leídas de un usuario receptor, ordenadas por fecha de envío descendente.
+     * Obtiene todas las notificaciones no leídas de un usuario receptor, ordenadas
+     * por fecha de envío descendente.
      *
      * @param usuarioId ID del usuario receptor.
      * @return Lista de notificaciones no leídas.

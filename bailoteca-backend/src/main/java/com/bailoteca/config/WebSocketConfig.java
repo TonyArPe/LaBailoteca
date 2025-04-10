@@ -1,7 +1,5 @@
 package com.bailoteca.config;
 
-import java.net.http.WebSocket;
-
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker;
@@ -27,7 +25,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry){
-        registry.addEndpoint("/ws-notificaciones").withSockJS();
+        registry.addEndpoint("/ws").setAllowedOriginPatterns("*").withSockJS();
     }
 
     /**
@@ -38,9 +36,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
      */
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
-        //Prefijo para los destinos a los que el cliente enviara mensajes
-        registry.setApplicationDestinationPrefixes("app");
-        //Habilita un broker simple en memoria para los destinos con prefijo "/topic"
-        registry.enableSimpleBroker("/topic");
+        registry.enableSimpleBroker("/topic"); // Para enviar desde el servidor
+        registry.setApplicationDestinationPrefixes("/app"); // Para recibir desde cliente
 }
 }

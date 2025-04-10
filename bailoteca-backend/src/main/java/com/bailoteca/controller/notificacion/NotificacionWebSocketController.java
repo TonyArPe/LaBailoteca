@@ -2,15 +2,20 @@ package com.bailoteca.controller.notificacion;
 
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.bailoteca.models.notificacion.Notificacion;
 import com.bailoteca.service.notificacion.NotificacionService;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Controlador que maneja las notificaciones enviadas por WebSocket
  * Recibe mensajes de los clientes y los envía a los suscriptores
  * conectados
  */
+@RestController
+@RequiredArgsConstructor
 public class NotificacionWebSocketController {
 
     private final NotificacionService notificacionService;
