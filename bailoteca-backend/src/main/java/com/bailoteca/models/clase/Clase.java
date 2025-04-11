@@ -40,11 +40,8 @@ public class Clase {
     private Usuario profesor;
     private String videoPresentacion;
 
-    
-    @Lob // Guarda un JSON visual del calendario desde frontend.
-    private String calendario;
-
-    @OneToMany(mappedBy="clase", cascade = CascadeType.ALL)
+    @OneToMany
+    (mappedBy="clase", cascade = CascadeType.ALL)
     private List<HorarioClase> horarioClases;
 
 }

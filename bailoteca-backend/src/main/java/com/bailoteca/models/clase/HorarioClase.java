@@ -19,7 +19,6 @@ public class HorarioClase {
     private String diaSemana;
     private LocalTime horaInicio;
     private LocalTime horaFin;
-    private String descripcion;
 
     @ManyToOne
     @JoinColumn(name = "clase_id")
