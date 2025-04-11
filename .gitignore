@@ -1,0 +1,60 @@
+# ========== BACKEND (Spring Boot Java) ==========
+/bailoteca-backend/target/
+/bailoteca-backend/.idea/
+/bailoteca-backend/.classpath
+/bailoteca-backend/.project
+/bailoteca-backend/.settings/
+/bailoteca-backend/.vscode/
+/bailoteca-backend/*.iml
+/bailoteca-backend/.DS_Store
+/bailoteca-backend/.env
+
+# Maven
+/bailoteca-backend/mvnw
+/bailoteca-backend/mvnw.cmd
+/bailoteca-backend/.mvn/
+
+# Logs
+*.log
+
+# ========== FRONTEND (Android Studio - Kotlin) ==========
+/bailoteca-frontend/.gradle/
+/bailoteca-frontend/.idea/
+/bailoteca-frontend/local.properties
+/bailoteca-frontend/.DS_Store
+/bailoteca-frontend/.vscode/
+/bailoteca-frontend/*.iml
+/bailoteca-frontend/.cxx/
+/bailoteca-frontend/captures/
+/bailoteca-frontend/build/
+/bailoteca-frontend/.externalNativeBuild/
+
+# Android keystores (¡NO subirlos!)
+/bailoteca-frontend/debug.keystore
+/bailoteca-frontend/debug.keystore.lock
+
+# Generated files
+/bailoteca-frontend/*.apk
+/bailoteca-frontend/*.ap_
+
+# Firebase / Google services (si lo usas)
+/bailoteca-frontend/google-services.json
+
+# ========== GENERAL ==========
+*.class
+*.swp
+*.swo
+*.tmp
+*.bak
+*.orig
+*.log
+*.pid
+.DS_Store
+Thumbs.db
+
+# VSCode settings (opcional)
+/.vscode/
+
+# ========== DOCS ==========
+/docs/*.pdf
+/docs/*.docx
