@@ -57,7 +57,6 @@ public class ClaseController {
             clase.setDescripcion(claseData.getDescripcion());
             clase.setProfesor(claseData.getProfesor());
             clase.setVideoPresentacion(claseData.getVideoPresentacion());
-            clase.setCalendario(claseData.getCalendario());
             return claseRepo.save(clase);
         }).orElse(null);
     }

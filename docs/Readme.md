@@ -6,19 +6,19 @@
 *Gestión de Academia de Baile*
 
 ### **1.- Descripción del Proyecto.**
-La Bailoteca es una aplicación diseñada para gestionar una academia de baile. La app facilitará todas las funciones necesarias para la administración de la academia, incluyendo el registro y autenticación de usuarios, la gestión de cursos, la administración de profesores, la inscripción de alumnos y el seguimiento de su progreso. La aplicación ofrecerá funcionalidades CRUD (Crear, Leer, Actualizar, Borrar) en todas sus secciones, proporcionando dos interfaces de usuario: una web y otra móvil, ambas conectadas a un backend.
+La Bailoteca es una aplicación diseñada para gestionar una academia de baile. Facilitará funciones como registro y autenticación de usuarios, gestión de cursos, administración de profesores, inscripción de alumnos y seguimiento de su progreso. Ofrecerá funcionalidades CRUD (Crear, Leer, Actualizar, Borrar) en todas sus secciones, con dos interfaces de usuario: una web y otra móvil, ambas conectadas a un backend.
 
 ### **2.- Estructura del Proyecto.**
 - **Backend:**  
-  Desarrollado en Java Spring Boot, este módulo se encargará de la lógica del negocio, la comunicación con la base de datos, la seguridad (integrando autenticación mediante Firebase) y la exposición de una API RESTful para el uso por los frontends.
+  Desarrollado en Java Spring Boot, gestionará la lógica del negocio, la comunicación con la base de datos, la seguridad (autenticación mediante Firebase) y expondrá una API RESTful para los frontends.
 - **Frontend Web:**  
-  Implementado en React con Vite, proporcionará la interfaz de usuario para la administración y gestión de la academia.
+  Implementado en React con Vite, será la interfaz de usuario para la administración de la academia.
 - **Aplicación Móvil:**  
-  Desarrollada en Android utilizando Kotlin, para dispositivos móviles, permitiendo a los usuarios interactuar con la plataforma a través de un app nativa.
+  Desarrollada en Android con Kotlin, permitirá a los usuarios interactuar con la plataforma desde dispositivos móviles.
 - **Base de Datos:**  
-  Realizada con PostgreSQL almacén de datos que se utilizará para guardar la información de usuarios, cursos, profesores, horarios, etc.
+  PostgreSQL será el almacén de datos para usuarios, cursos, profesores, horarios, etc.
 - **Sistema de Autenticación:**  
-  Se integrará Firebase para gestionar la autenticación de usuarios de forma segura y escalable.
+  Firebase gestionará la autenticación de usuarios de forma segura y escalable.
 
 ### **3.- Tecnologías Utilizadas.**
 - **Backend:** Java Spring Boot
@@ -26,20 +26,20 @@ La Bailoteca es una aplicación diseñada para gestionar una academia de baile. 
 - **Aplicación Móvil:** Android (Kotlin)
 - **Autenticación:** Firebase
 - **Comunicación:** API RESTful
-- **Otras:**  
-  Se utilizará Docker y docker-compose para la dockerización y despliegue del entorno de la aplicación.
+- **Otras:** Docker y docker-compose para la dockerización y despliegue del entorno.
 
 ### **4.- Base de Datos.**
 - **Tipo:** Relacional.
 - **SGBD Seleccionado:** PostgreSQL.
 - **Ventajas para el Proyecto:**
-  - **Integridad de datos:** Permite definir relaciones (por ejemplo, entre usuarios, clases y profesores) que garantizan la consistencia en la gestión de información.
-  - **Compatibilidad y herramientas:** Amplia compatibilidad con frameworks de Java (como Spring Boot) y disponibilidad de herramientas para administración y monitoreo.
+  - **Integridad de datos:** Garantiza consistencia en la gestión de información mediante relaciones entre entidades.
+  - **Compatibilidad y herramientas:** Compatible con frameworks de Java como Spring Boot y ofrece herramientas para administración y monitoreo.
 
 ### **5.- Casos de Uso, Descripción, Roles.**
 ![Diagrama de Casos de Uso Bailoteca](docs\DiagramaCasosDeUsoBailoteca.PNG)
 
 ### **6.- Despliegue y Control de Versiones.**
+- **Despliegue:**  
 - **Despliegue:**  
   La aplicación se dockerizará utilizando un archivo `docker-compose.yml`, lo que permitirá levantar todos los servicios necesarios (backend, base de datos, etc.) de forma sencilla.
 - **Control de Versiones:**  
@@ -331,3 +331,45 @@ Pagos correspondientes a la mensualidad de clases.
 | `GET`  | `/api/pagos-mensualidad/mes/{mes}` | Lista pagos por mes |
 | `POST` | `/api/pagos-mensualidad`           | Crear nuevo pago mensual             |
 | `DELETE`| `/api/pagos-mensualidad/{id}`     | Eliminar pago mensual por ID         |
+
+## Notificaciones en Tiempo Real
+
+Hemos implementado un sistema de notificaciones en tiempo real usando WebSockets + STOMP, pensado para informar a los usuarios registrados sobre eventos relevantes (por ejemplo, la creación de un nuevo evento).
+### Funcionalidades disponibles
+
+  - **Crear una notificación:** `(POST /api/notificaciones)`
+
+  - **Obtener notificaciones de un usuario:** `(GET /api/notificaciones/usuario/{id})`
+
+  - **Obtener notificaciones no leídas:** `(GET /api/notificaciones/usuario/{id}/noleidas)`
+
+  - **Contar las notificaciones no leídas:** `(GET /api/notificaciones/usuario/{id}/contador-noleidas)`
+
+  - **Marcar una notificación como leída:** `(PUT /api/notificaciones/{id}/leida)`
+
+  - **Marcar todas como leídas:** `(PUT /api/notificaciones/usuario/{id}/marcar-todas-leidas)`
+
+  - **Eliminar una notificación:** `(DELETE /api/notificaciones/{id})`
+
+### Visualización en Tiempo Real
+
+Creamos un HTML de prueba para visualizar las notificaciones entrantes:
+
+  - Coloca el archivo notificaciones.html en src/main/resources/static/.
+
+  - Accede a `http://localhost:8080/notificaciones.html`
+
+  - Las notificaciones llegarán en tiempo real mediante WebSocket.
+
+### Tecnología usada
+
+  - WebSocket (STOMP)
+
+  - Spring WebSocket
+
+  - SockJS + StompJS en el frontend
+
+## Inserción Automática de Datos Iniciales
+
+Mediante la clase DataInitializer.java, se insertan automáticamente los datos
+que se quieran insertar automaticamente.

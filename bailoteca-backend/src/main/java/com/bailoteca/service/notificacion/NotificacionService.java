@@ -7,6 +7,8 @@ import com.bailoteca.repository.notificacion.NotificacionRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -22,6 +24,7 @@ public class NotificacionService {
 
     private final NotificacionRepo notificacionRepo;
     private final UsuarioRepo usuarioRepo;
+    private final SimpMessagingTemplate messagingTemplate;
 
     /**
      * Obtiene todas las notificaciones de un usuario receptor, ordenadas por fecha
