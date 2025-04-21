@@ -11,15 +11,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
+import com.example.bailotecaapp.navigation.Screens
 
 @Composable
-fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewModel()) {
-
-    // Estos son los estados
+fun RegisterScreen(navController: NavController, viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
+    var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -34,16 +32,25 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Título de la app
             Text(
-                text = "La Bailoteca",
+                text = "Crear cuenta",
                 style = MaterialTheme.typography.headlineLarge,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Campo de email
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nombre completo") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions.Default,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -58,7 +65,6 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo de contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -74,35 +80,28 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón de login
             Button(
                 onClick = {
                     isLoading = true
                     errorMessage = null
-
-                    viewModel.login(
-                        email,
-                        password,
-                        onSuccess = { token ->
+                    viewModel.register(
+                        email, password,
+                        onSuccess = {
                             isLoading = false
                             navController.navigate(Screens.Home.route)
                         },
-                        onError = { error ->
+                        onError = {
                             isLoading = false
-                            errorMessage = error
+                            errorMessage = it
                         }
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading
             ) {
-                Text(
-                    text = if (isLoading) "Cargando..." else "Iniciar sesión",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Text(text = if (isLoading) "Creando..." else "Crear cuenta")
             }
 
-            // Mostrar mensaje de error si existe
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
@@ -110,14 +109,6 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
                     color = Color.Red,
                     style = MaterialTheme.typography.bodyMedium
                 )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            TextButton(onClick = {
-                navController.navigate("register") // o Screens.Register.route si lo tienes así
-            }) {
-                Text("¿No tienes cuenta? Regístrate aquí")
             }
         }
     }
