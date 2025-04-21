@@ -73,6 +73,16 @@ dependencies {
 
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation("com.google.firebase:firebase-auth-ktx")
+
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+
+    // Conversor Gson para parsear JSON automáticamente
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+
+    // OkHttp para logging (opcional pero muy útil para depurar)
+    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+
 }
 
 apply(plugin = "com.google.gms.google-services")

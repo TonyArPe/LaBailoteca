@@ -7,11 +7,14 @@ import androidx.navigation.compose.composable
 import com.example.bailotecaapp.ui.screens.HomeScreen
 import com.example.bailotecaapp.ui.screens.LoginScreen
 import com.example.bailotecaapp.ui.screens.RegisterScreen
+import com.example.bailotecaapp.ui.screens.UserListScreen
 
 // Definimos las rutas
 sealed class Screens(val route: String) {
     object Login : Screens("login")
     object Home : Screens("home")
+    object Register : Screens("register")
+    object Usuarios : Screens("usuarios")
 }
 
 @Composable
@@ -21,10 +24,13 @@ fun AppNavigation(navController: NavHostController) {
             LoginScreen(navController)
         }
         composable(Screens.Home.route) {
-            HomeScreen()
+            HomeScreen(navController)
         }
         composable("register") {
             RegisterScreen(navController)
+        }
+        composable("usuarios") {
+            UserListScreen()
         }
     }
 }
