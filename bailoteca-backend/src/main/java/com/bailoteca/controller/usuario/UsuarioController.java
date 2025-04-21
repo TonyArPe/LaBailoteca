@@ -1,7 +1,7 @@
 package com.bailoteca.controller.usuario;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
 
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
@@ -11,26 +11,26 @@ import lombok.RequiredArgsConstructor;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.PostMapping;
-
 /**
- * Controlador REST para gestionar Usuarios
+ * Controlador REST para gestionar Usuarios.
  */
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
 public class UsuarioController {
+
     /**
-     * Repositorio de usuarios para realizar operaciones CRUD
+     * Repositorio de usuarios para operaciones CRUD.
      */
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Obtiene todos los usuarios del sistema
+     * Codificador de contraseñas (BCrypt).
+     */
+    private final PasswordEncoder passwordEncoder;
+
+    /**
+     * Obtiene todos los usuarios del sistema.
      * 
      * @return Lista de usuarios
      */
@@ -40,7 +40,7 @@ public class UsuarioController {
     }
 
     /**
-     * Crea un nuevo usuario en el sistema
+     * Crea un nuevo usuario en el sistema. La contraseña se codifica automáticamente.
      * 
      * @param usuario Usuario a crear
      * @return Usuario creado
@@ -48,11 +48,12 @@ public class UsuarioController {
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
         usuario.setFechaRegistro(LocalDate.now());
+        usuario.setContrasenna(passwordEncoder.encode(usuario.getContrasenna())); // 🔐 Encriptar antes de guardar
         return usuarioRepo.save(usuario);
     }
 
     /**
-     * Obtiene un usuario por su ID
+     * Obtiene un usuario por su ID.
      * 
      * @param id ID del usuario a obtener
      * @return Usuario encontrado o null si no existe
@@ -63,7 +64,7 @@ public class UsuarioController {
     }
 
     /**
-     * Borra un usuario por su ID
+     * Elimina un usuario por su ID.
      * 
      * @param id del Usuario a borrar
      */
