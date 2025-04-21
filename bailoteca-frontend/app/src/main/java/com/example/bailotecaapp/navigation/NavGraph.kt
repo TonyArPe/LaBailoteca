@@ -8,6 +8,7 @@ import com.example.bailotecaapp.ui.screens.HomeScreen
 import com.example.bailotecaapp.ui.screens.LoginScreen
 import com.example.bailotecaapp.ui.screens.RegisterScreen
 import com.example.bailotecaapp.ui.screens.UserListScreen
+import com.example.bailotecaapp.ui.screens.ClaseListScreen
 
 // Definimos las rutas
 sealed class Screens(val route: String) {
@@ -15,6 +16,8 @@ sealed class Screens(val route: String) {
     object Home : Screens("home")
     object Register : Screens("register")
     object Usuarios : Screens("usuarios")
+    object Clases : Screens("clases")
+
 }
 
 @Composable
@@ -32,5 +35,9 @@ fun AppNavigation(navController: NavHostController) {
         composable("usuarios") {
             UserListScreen()
         }
+        composable("clases") {
+            ClaseListScreen()
+        }
+
     }
 }

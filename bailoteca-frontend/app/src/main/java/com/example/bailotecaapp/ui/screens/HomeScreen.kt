@@ -9,7 +9,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import androidx.navigation.NavHostController
 import com.example.bailotecaapp.navigation.Screens
 
 @Composable
@@ -32,6 +31,10 @@ fun HomeScreen(navController: NavController) {
         // Botón para ir a la lista de usuarios
         Button(onClick = { navController.navigate(Screens.Usuarios.route) }) {
             Text("Ver usuarios registrados")
+        }
+
+        Button(onClick = { navController.navigate(Screens.Clases.route) }) {
+            Text("Ver clases disponibles")
         }
     }
 }
