@@ -86,6 +86,29 @@ Muestra un mensaje simple de bienvenida. Será extendida próximamente.
 
 ---
 
+## LOGIN
+
+### Diagrama de Flujo del Funcionamiento del Login
+
+Este diagrama describe el flujo de autenticación del usuario en la aplicación La Bailoteca:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant AndroidApp
+    participant FirebaseAuth
+    participant SpringBackend
+
+    User->>AndroidApp: Email + Password
+    AndroidApp->>FirebaseAuth: Sign in
+    FirebaseAuth-->>AndroidApp: JWT (idToken)
+    AndroidApp->>SpringBackend: GET /api/... + Authorization: Bearer idToken
+    SpringBackend->>FirebaseAuth: Validar token
+    FirebaseAuth-->>SpringBackend: OK (usuario válido)
+    SpringBackend-->>AndroidApp: Datos del usuario
+```
+
+
 ## Capturas de pantalla
 
 *(Se añadirán más adelante cuando haya contenido visual).*
