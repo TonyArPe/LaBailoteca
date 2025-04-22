@@ -536,64 +536,9 @@ En SecurityConfig, se permite acceso público a los archivos HTML y al endpoint 
 - El módulo está aislado y fácilmente integrable con la interfaz real de la aplicación móvil/web en el futuro.
 
 
-## 💬 Módulo de Chat Grupal (clases)
+## Módulo de Chat Grupal (clases)
 
-### 📌 ¿En qué se diferencia del chat privado?
-
-- Está orientado a conversaciones grupales entre un profesor y todos los alumnos inscritos en una clase concreta.
-- Utiliza un solo canal compartido para la clase:  
-  `/topic/clase/{id}`
-- Cualquier mensaje enviado se emite a todos los suscriptores del canal de esa clase.
-- No tiene campo receptor, sino que el mensaje está vinculado a una **Clase**.
-
-### 🧩 Estructura de datos (reutiliza `Mensaje`)
-
-- Se establece `esGrupal = true`.
-- El campo `clase` contiene el identificador de la clase (relación `ManyToOne`).
-
-Ejemplo de mensaje grupal:
-
-```json
-{
-  "contenido": "¡Hola a todos!",
-  "esGrupal": true,
-  "emisor": {
-    "id": 3,
-    "nombre": "Profesor Tomás"
-  },
-  "clase": {
-    "id": 7
-  },
-  "fechaEnvio": "2025-04-22T17:00:00"
-}
-```
-
-### Canal de comunicación WebSocket
-- Destino para recibir mensajes grupales:
-`/topic/clase/{id}`
-
-- En el frontend (JS/HTML), al entrar en un chat de clase:
-```java
-stompClient.subscribe("/topic/clase/" + claseId, (msg) => {
-  const mensaje = JSON.parse(msg.body);
-  // Renderizar en pantalla...
-});
-```
-- Mensaje enviado desde el frontend:
-```java
-stompClient.send("/app/mensaje", {}, JSON.stringify(mensaje));
-```
-- Envío de mensajes grupales:
-```java
-if (mensaje.isEsGrupal()) {
-    messagingTemplate.convertAndSend("/topic/clase/" + mensaje.getClase().getId(), mensaje);
-}
-```
-
-```markdown
-## 💬 Módulo de Chat Grupal (clases)
-
-### 📌 ¿En qué se diferencia del chat privado?
+### Diferencias del chat privado
 
 - Está orientado a conversaciones grupales entre un profesor y todos los alumnos inscritos en una clase concreta.
 - Utiliza un solo canal compartido para la clase:  
@@ -601,7 +546,7 @@ if (mensaje.isEsGrupal()) {
 - Cualquier mensaje enviado se emite a todos los suscriptores del canal de esa clase.
 - No tiene campo receptor, sino que el mensaje está vinculado a una **Clase**.
 
-### 🧩 Estructura de datos (reutiliza `Mensaje`)
+### Estructura de datos (reutiliza `Mensaje`)
 
 - Se establece `esGrupal = true`.
 - El campo `clase` contiene el identificador de la clase (relación `ManyToOne`).
