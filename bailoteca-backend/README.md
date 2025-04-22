@@ -179,22 +179,211 @@ Este módulo permite a los usuarios autenticados interactuar con las clases ofre
 
 - Se utiliza `findByNombreContainingIgnoreCase(...)` para búsquedas más intuitivas.
 - Se pueden añadir más filtros (por fecha, nivel, etc.) en el futuro.
+Inscripciones
+
+    GET /api/inscripciones/usuario/{usuarioId} → Lista de inscripciones de un usuario
+
+    GET /api/inscripciones/clase/{claseId} → Lista de inscripciones a una clase
+
+    POST /api/inscripciones?claseId=... → Inscribirse en una clase
+
+    DELETE /api/inscripciones/{id} → Cancelar inscripción (según permisos)
+
+## Módulo de Gestión de Inscripciones
+
+Este módulo permite a los usuarios registrarse en clases y consultar sus inscripciones, así como permitir a profesores y administradores gestionar los alumnos inscritos.
+
+### Acceso por rol
+
+- `ADMIN:` puede consultar y eliminar cualquier inscripción.
+- `PROFESOR:` puede consultar y eliminar inscripciones de sus propias clases.
+- `USUARIO:` puede consultar y cancelar sus propias inscripciones.
+- `INVITADO:` no tiene acceso a este módulo.
+
+### Endpoints implementados
+
+| Método | Ruta                              | Descripción                                   | Acceso                     |
+|--------|-----------------------------------|-----------------------------------------------|----------------------------|
+| GET    | `/api/inscripciones`             | Obtener todas las inscripciones               | Solo `ADMIN`               |
+| GET    | `/api/inscripciones/usuario/{id}`| Obtener inscripciones de un usuario           | `ADMIN` o el mismo         |
+| GET    | `/api/inscripciones/clase/{id}`  | Obtener inscripciones a una clase             | `ADMIN` o profesor dueño   |
+| POST   | `/api/inscripciones?claseId=...` | Inscribir al usuario autenticado en una clase | Cualquier `USUARIO`        |
+| DELETE | `/api/inscripciones/{id}`        | Cancelar una inscripción                      | `ADMIN`, profesor o usuario implicado |
+
+### Seguridad aplicada
+
+- Todos los endpoints validan el token JWT para asegurar que el usuario esté autenticado.
+- Se comprueba el rol del usuario para permitir solo acciones autorizadas.
+- El campo `usuario` en una inscripción siempre se asigna automáticamente a partir del JWT, evitando que un usuario pueda inscribir a otro.
+
+### Lógica de protección personalizada
+
+Ejemplo de lógica en el controlador:
+
+```java
+if (
+    actual.getId().equals(inscripcion.getUsuario().getId()) ||
+    actual.getId().equals(inscripcion.getClase().getProfesor().getId()) ||
+    actual.getRol().name().equals("ADMIN")
+) {
+    // Permitir acción
+} else {
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+}
+```
+Esto asegura que solo el usuario implicado, su profesor o un administrador puedan eliminar una inscripción.
+
+### Notas adicionales
+- No se permite crear inscripciones duplicadas a una misma clase.
+- El campo estado de la inscripción se establece automáticamente como ACTIVO.
+- El sistema podría ampliarse en el futuro para gestionar listas de espera, inscripciones pendientes o aprobaciones manuales.
+
+## Módulo de Gestión de Eventos
+
+Este módulo permite a los profesores y administradores gestionar los eventos públicos de la academia. Los usuarios e invitados pueden consultar eventos, pero solo el personal autorizado puede crearlos, modificarlos o eliminarlos.
+
+### Acceso por rol
+
+- `ADMIN:` puede ver, crear, editar o eliminar cualquier evento.
+- `PROFESOR:` puede crear y modificar sus propios eventos.
+- `USUARIO:` solo puede consultar eventos.
+- `INVITADO:` puede consultar eventos activos.
+
+### Endpoints implementados
+
+| Método | Ruta                  | Descripción                                   | Acceso            |
+|--------|-----------------------|-----------------------------------------------|-------------------|
+| GET    | `/api/eventos`        | Lista todos los eventos registrados           | Público           |
+| GET    | `/api/eventos/{id}`   | Obtiene un evento específico                  | Público           |
+| POST   | `/api/eventos`        | Crea un nuevo evento                          | `ADMIN`, `PROFESOR` |
+| PUT    | `/api/eventos/{id}`   | Edita un evento (solo el organizador o un admin) | `ADMIN`, `PROFESOR` |
+| DELETE | `/api/eventos/{id}`   | Elimina un evento (solo el organizador o un admin) | `ADMIN`, `PROFESOR` |
+
+### Seguridad aplicada
+
+- Los métodos `POST`, `PUT` y `DELETE` están protegidos mediante lógica personalizada.
+- El organizador del evento se guarda automáticamente desde el usuario autenticado al crear un nuevo evento.
+- Solo el organizador o un administrador puede modificar o eliminar un evento.
+- La validación del token JWT y recuperación del usuario se realiza mediante `SecurityContextHolder`.
+
+### Notas adicionales
+
+- Los eventos se crean en estado `ACTIVO` por defecto.
+- Se recomienda añadir filtros opcionales por fecha o estado (`ACTIVO`, `CANCELADO`, `POSPUESTO`) en el futuro.
 
 
-### Pagos
-- `/api/pagos-evento`
-- `/api/pagos-mensualidad`
+## Módulo de Gestión de Pagos
 
-### Notificaciones
-- `/api/notificaciones` + WebSocket STOMP con HTML de prueba incluido
+Este módulo permite llevar un control de los pagos realizados por los usuarios en la academia. Los pagos pueden ser por:
+
+- Participación en eventos puntuales.
+- Pagos mensuales por clases regulares.
+
+Los registros de pago se realizan de forma manual por parte de administradores o profesores, ya que los pagos se efectúan en persona y en efectivo.
+
+### Acceso por rol
+
+- `ADMIN:` puede ver, crear y eliminar cualquier pago (eventos o mensualidades).
+- `PROFESOR:` puede registrar y consultar pagos de sus alumnos.
+- `USUARIO:` no tiene acceso a los endpoints de pagos (por seguridad y privacidad).
+
+### Endpoints implementados
+
+#### 🔹 `/api/pagos-evento`
+
+| Método | Ruta                          | Descripción                          | Acceso            |
+|--------|-------------------------------|--------------------------------------|-------------------|
+| GET    | `/api/pagos-evento`           | Obtener todos los pagos por evento   | `ADMIN`, `PROFESOR` |
+| GET    | `/api/pagos-evento/usuario/{id}` | Obtener pagos por usuario            | `ADMIN`, `PROFESOR` |
+| GET    | `/api/pagos-evento/evento/{id}`  | Obtener pagos por evento             | `ADMIN`, `PROFESOR` |
+| POST   | `/api/pagos-evento`           | Registrar un nuevo pago de evento    | `ADMIN`, `PROFESOR` |
+| DELETE | `/api/pagos-evento/{id}`      | Eliminar un pago (si eres el dueño o admin) | `ADMIN`, propietario |
+
+#### 🔹 `/api/pagos-mensualidad`
+
+| Método | Ruta                              | Descripción                          | Acceso            |
+|--------|-----------------------------------|--------------------------------------|-------------------|
+| GET    | `/api/pagos-mensualidad`         | Obtener todos los pagos mensuales    | `ADMIN`, `PROFESOR` |
+| GET    | `/api/pagos-mensualidad/usuario/{id}` | Obtener pagos mensuales de un usuario | `ADMIN`, `PROFESOR` |
+| GET    | `/api/pagos-mensualidad/mes/{mes}` | Obtener pagos registrados para un mes | `ADMIN`, `PROFESOR` |
+| POST   | `/api/pagos-mensualidad`         | Registrar nuevo pago mensual         | `ADMIN`, `PROFESOR` |
+| DELETE | `/api/pagos-mensualidad/{id}`    | Eliminar un pago mensual             | `ADMIN`           |
+
+### Seguridad aplicada
+
+- Los endpoints están protegidos mediante autenticación JWT.
+- Las acciones están limitadas según el rol del usuario autenticado.
+- Para eliminar un pago, se comprueba que el usuario sea `ADMIN` o el mismo que realizó el pago (`pago.getUsuario().getId()`).
+- No se permite a los usuarios normales modificar, crear ni borrar pagos.
+
+### Notas adicionales
+
+- Cada pago se relaciona con el usuario que lo realiza mediante `@ManyToOne`.
+- En `PagoEvento`, también se vincula con un evento.
+- En `PagoMensualidad`, se guarda el mes y la fecha del pago como referencia.
+- Se puede extender este módulo en el futuro para añadir filtros por fecha o generación de reportes.
+
+## Módulo de Notificaciones
+
+Este módulo permite enviar, recibir y gestionar notificaciones en tiempo real entre los usuarios de la plataforma, utilizando WebSockets con STOMP, además de exponer endpoints REST para su gestión.
+
+### Acceso por rol
+
+- `ADMIN` y `PROFESOR:` pueden generar notificaciones para sus alumnos u otros usuarios.
+- `USUARIO:` puede recibir notificaciones, marcarlas como leídas o eliminarlas.
+- `INVITADO:` no tiene acceso a este módulo.
+
+### Endpoints implementados
+
+| Método | Ruta                                              | Descripción                                   | Acceso            |
+|--------|---------------------------------------------------|-----------------------------------------------|-------------------|
+| GET    | `/api/notificaciones/usuario/{usuarioId}`         | Obtener todas las notificaciones del usuario  | Usuario autenticado |
+| GET    | `/api/notificaciones/usuario/{usuarioId}/noleidas`| Obtener solo notificaciones no leídas         | Usuario autenticado |
+| GET    | `/api/notificaciones/usuario/{usuarioId}/contador-noleidas` | Contar notificaciones no leídas              | Usuario autenticado |
+| POST   | `/api/notificaciones`                             | Crear y enviar una nueva notificación         | `ADMIN`, `PROFESOR` |
+| PUT    | `/api/notificaciones/{id}/leida`                  | Marcar una notificación como leída            | Usuario autenticado |
+| PUT    | `/api/notificaciones/usuario/{usuarioId}/marcar-todas-leidas` | Marcar todas como leídas                     | Usuario autenticado |
+| DELETE | `/api/notificaciones/{id}`                        | Eliminar una notificación                     | Usuario autenticado |
+
+### WebSocket en tiempo real
+
+Se ha configurado un canal de WebSocket para enviar notificaciones instantáneamente a los usuarios conectados:
+
+| Destino STOMP          | Descripción                                      |
+|-------------------------|--------------------------------------------------|
+| `/app/notificar`        | Endpoint para enviar notificaciones desde el cliente |
+| `/topic/notificaciones` | Canal público donde todos los suscriptores recibirán nuevas notificaciones |
+
+#### Estructura del WebSocket:
+
+Cliente → `/app/notificar` → [Servidor] → `/topic/notificaciones` → Clientes suscritos
+
+### Seguridad aplicada
+
+- El envío de notificaciones vía REST o WebSocket requiere autenticación.
+- Se verifica que el receptor exista antes de guardar una notificación.
+- Solo el usuario receptor puede consultar, marcar o eliminar sus notificaciones.
+- El sistema registra automáticamente la fecha de envío y marca la notificación como no leída por defecto.
+
+### Clases clave
+
+- **`NotificacionService:`** lógica de negocio y validación de acceso.
+- **`NotificacionController:`** endpoints REST para gestión de notificaciones.
+- **`NotificacionWebSocketController:`** maneja las notificaciones enviadas vía WebSocket.
+- **`WebSocketConfig:`** configuración de STOMP y canal `/ws`.
+
+### Notas adicionales
+
+- Las notificaciones pueden tener distintos tipos (`TipoNotificacion` enum).
+- Se almacena quién envía la notificación (emisor) y quién la recibe (receptor).
+- Los mensajes no leídos pueden ser contados y marcados como leídos en lote.
+- Para facilitar pruebas, se incluye un HTML simple en `static/notificaciones.html` para visualizar las notificaciones entrantes por WebSocket.
 
 ---
 
 ## En desarrollo / mejoras futuras
 
-- Sistema de roles más granular para profesores y alumnos
 - Panel de control estadístico (asistencias, inscripciones)
-- Endpoint para edición de perfil con seguridad reforzada
 
 ---
 

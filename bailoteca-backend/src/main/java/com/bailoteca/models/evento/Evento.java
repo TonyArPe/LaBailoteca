@@ -2,10 +2,14 @@ package com.bailoteca.models.evento;
 
 import java.time.LocalDateTime;
 
+import com.bailoteca.models.usuario.Usuario;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -16,7 +20,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * Entidad que representa un evento.
- * Los eventos son actividades organizadas por administradores o profesores, 
+ * Los eventos son actividades organizadas por administradores o profesores,
  * y pueden ser visualizados por usuarios registrados.
  */
 @Entity
@@ -30,16 +34,17 @@ public class Evento {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     private String nombre;
     private String descripcion;
     private LocalDateTime fecha;
     private String lugar;
-    
+
     @Enumerated(EnumType.STRING)
     private EstadoEvento estado;
-    
-    
-    private Long organizadorId; // ID del organizador, que será un ADMIN o PROFESOR
-}
 
+    @ManyToOne
+    @JoinColumn(name = "organizador_id")
+    private Usuario organizador;
+
+}

@@ -30,7 +30,7 @@ public class PagoMensualidad {
     private Usuario usuario;
     private String mes;
     private LocalDate fechaPago;
-    private double cantifdad;
+    private double cantidad;
     private boolean pagado;
 }
 
