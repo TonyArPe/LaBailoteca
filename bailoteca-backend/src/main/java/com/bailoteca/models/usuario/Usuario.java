@@ -4,6 +4,7 @@ import java.time.LocalDate;
 
 import com.bailoteca.models.enums.Rol;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -20,12 +21,12 @@ import lombok.NoArgsConstructor;
  * Contiene informacion del perfil y estado del Usuario.
  */
 
- @Entity
- @Table(name = "usuarios")
+@Entity
+@Table(name = "usuarios")
 @Data
- @NoArgsConstructor
- @AllArgsConstructor
- @Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -33,6 +34,8 @@ public class Usuario {
 
     private String nombre;
     private String apellido;
+
+    @Column(unique = true)
     private String correo;
     private String contrasenna;
     private Rol rol;

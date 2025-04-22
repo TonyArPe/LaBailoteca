@@ -1,5 +1,8 @@
 package com.bailoteca.controller.usuario;
 
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,17 +33,20 @@ public class UsuarioController {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Obtiene todos los usuarios del sistema.
+     * Obtiene todos los usuarios del sistema (solo ADMIN).
+     * llega desde el token JWT
      * 
      * @return Lista de usuarios
      */
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public List<Usuario> getUsuarios() {
         return usuarioRepo.findAll();
     }
 
     /**
-     * Crea un nuevo usuario en el sistema. La contraseña se codifica automáticamente.
+     * Crea un nuevo usuario en el sistema. La contraseña se codifica
+     * automáticamente.
      * 
      * @param usuario Usuario a crear
      * @return Usuario creado
@@ -71,5 +77,21 @@ public class UsuarioController {
     @DeleteMapping("/{id}")
     public void deleteUsuario(@PathVariable Long id) {
         usuarioRepo.deleteById(id);
+    }
+
+    /**
+     * Devuelve el perfil del usuario autenticado.
+     * extrae el correo desde el JWT, busca el usuario en base de datos y lo devuelve.
+     * 
+     * @return Datos del usuario actual
+     */
+    @GetMapping("/me")
+    public Usuario getMiPerfil() {
+        String correo = ((UserDetails) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal()).getUsername();
+
+        return usuarioRepo.findByCorreo(correo).orElse(null);
     }
 }
