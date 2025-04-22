@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Chat Privado - La Bailoteca</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 20px;
+      }
+      #mensajes {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 300px;
+        overflow-y: scroll;
+      }
+      input,
+      button {
+        padding: 8px;
+        margin-top: 10px;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Chat Privado</h2>
+
+    <label for="emisor">ID Emisor:</label>
+    <input type="number" id="emisor" />
+
+    <label for="receptor">ID Receptor:</label>
+    <input type="number" id="receptor" />
+
+    <label for="nombreEmisor">Nombre Emisor:</label>
+    <input type="text" id="nombreEmisor" placeholder="Solo visual" />
+
+    <div id="mensajes"></div>
+
+    <input type="text" id="mensaje" placeholder="Escribe tu mensaje..." />
+    <button onclick="enviarMensaje()">Enviar</button>
+
+    <script>
+      let stompClient = null;
+      let emisorId = null;
+      let receptorId = null;
+      let conectado = false;
+      let mensajePendiente = null;
+
+      function conectar() {
+        emisorId = document.getElementById("emisor").value;
+        receptorId = document.getElementById("receptor").value;
+
+        if (!emisorId || !receptorId) {
+          console.warn("⚠️ Debes completar los IDs antes de conectar.");
+          return;
+        }
+
+        const socket = new SockJS("/ws");
+        stompClient = Stomp.over(socket);
+
+        stompClient.connect(
+          {},
+          () => {
+            const id1 = Math.min(emisorId, receptorId);
+            const id2 = Math.max(emisorId, receptorId);
+            const canal = `/topic/chat/${id1}/${id2}`;
+
+            console.log("✅ Suscrito a:", canal);
+
+            stompClient.subscribe(canal, (msg) => {
+              const mensaje = JSON.parse(msg.body);
+              mostrarMensaje(mensaje);
+            });
+          },
+          (error) => {
+            console.error("❌ Error en WebSocket:", error);
+            setTimeout(() => conectar(), 3000); // reconexión
+          }
+        );
+      }
+
+      function mostrarMensaje(mensaje) {
+        const mensajesDiv = document.getElementById("mensajes");
+        mensajesDiv.innerHTML += `<p><strong>${mensaje.emisor.nombre}:</strong> ${mensaje.contenido}</p>`;
+        mensajesDiv.scrollTop = mensajesDiv.scrollHeight;
+      }
+
+      function enviarMensaje() {
+        emisorId = document.getElementById("emisor").value;
+        receptorId = document.getElementById("receptor").value;
+
+        const contenido = document.getElementById("mensaje").value;
+        const nombre = document.getElementById("nombreEmisor").value;
+
+        if (!contenido.trim()) return;
+
+        if (!stompClient || !stompClient.connected) {
+          conectar();
+          setTimeout(enviarMensaje, 500);
+          return;
+        }
+
+        const mensaje = {
+          contenido: contenido,
+          esGrupal: false,
+          emisor: {
+            id: parseInt(emisorId),
+            nombre: nombre,
+          },
+          receptor: {
+            id: parseInt(receptorId),
+          },
+          fechaEnvio: new Date().toISOString(),
+        };
+
+        stompClient.send("/app/mensaje", {}, JSON.stringify(mensaje));
+        document.getElementById("mensaje").value = "";
+      }
+    </script>
+  </body>
+</html>

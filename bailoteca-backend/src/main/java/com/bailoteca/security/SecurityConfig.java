@@ -24,21 +24,25 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
 
-    /**
-     * Define la cadena de filtros de seguridad HTTP.
-     * 
-     * - Desactiva CSRF(trabajamos con tokens, no cookies)
-     * - Define sesiones sin estado (stateless)
-     * - Aplica el filtro JWT a todas las peticiones
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // acceso libre para login/registro
-                .anyRequest().authenticated() // todo lo demás requiere autenticación
+                // Públicos (sin autenticación)
+                .requestMatchers(
+                    "/", 
+                    "/index.html", 
+                    "/chat.html", 
+                    "/chat-privado.html", 
+                    "/notificaciones.html",
+                    "/ws/**",
+                    "/api/auth/**"
+                ).permitAll()
+
+                // Protegidos: el resto de endpoints requiere autenticación
+                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 

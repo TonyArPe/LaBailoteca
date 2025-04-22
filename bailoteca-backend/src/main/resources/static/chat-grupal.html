@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Chat Grupal - La Bailoteca</title>
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 20px; }
+    #mensajes { border: 1px solid #ccc; padding: 10px; height: 300px; overflow-y: scroll; }
+    input, button { padding: 8px; margin-top: 10px; width: 100%; }
+  </style>
+</head>
+<body>
+  <h2>Chat Grupal (Clase ID)</h2>
+  <label for="claseId">ID de la clase:</label>
+  <input type="number" id="claseId" placeholder="Ej: 1" />
+
+  <label for="usuario">Nombre del emisor:</label>
+  <input type="text" id="usuario" placeholder="Ej: Ana o Javi" />
+
+  <div id="mensajes"></div>
+
+  <input type="text" id="mensaje" placeholder="Escribe tu mensaje..." />
+  <button onclick="enviarMensaje()">Enviar</button>
+
+  <script>
+    let stompClient = null;
+    let claseId = null;
+
+    function conectar() {
+      claseId = document.getElementById('claseId').value;
+      const socket = new SockJS('/ws');
+      stompClient = Stomp.over(socket);
+
+      stompClient.connect({}, () => {
+        stompClient.subscribe(`/topic/clase/${claseId}`, (mensaje) => {
+          const msg = JSON.parse(mensaje.body);
+          document.getElementById('mensajes').innerHTML += `<p><strong>${msg.emisor.nombre}:</strong> ${msg.contenido}</p>`;
+        });
+      });
+    }
+
+    function enviarMensaje() {
+      if (!stompClient || !stompClient.connected) {
+        conectar();
+        setTimeout(enviarMensaje, 500); // espera a la conexión
+        return;
+      }
+
+      const contenido = document.getElementById('mensaje').value;
+      const nombre = document.getElementById('usuario').value;
+
+      const mensaje = {
+        contenido: contenido,
+        claseId: parseInt(claseId),
+        esGrupal: true,
+        emisor: {
+          nombre: nombre // solo a efectos visuales en este ejemplo
+        },
+        fechaEnvio: new Date().toISOString()
+      };
+
+      stompClient.send("/app/mensaje", {}, JSON.stringify(mensaje));
+      document.getElementById('mensaje').value = '';
+    }
+  </script>
+</body>
+</html>
