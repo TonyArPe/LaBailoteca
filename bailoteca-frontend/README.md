@@ -1,96 +1,66 @@
-# BailotecaApp
+# La Bailoteca App — Android Frontend
 
-Aplicación móvil desarrollada en **Kotlin** con **Jetpack Compose**, diseñada para complementar el sistema de gestión de academias de baile del proyecto *La Bailoteca*. Esta app permite a los usuarios acceder a funcionalidades como inicio de sesión, consulta de clases, eventos y notificaciones.
+Aplicación móvil desarrollada en **Kotlin** con **Jetpack Compose**, como interfaz para los usuarios del sistema La Bailoteca. Conectada al backend Spring Boot mediante Retrofit y protegida por Firebase Authentication y JWT.
 
 ---
 
 ## Tecnologías utilizadas
 
-- **Kotlin**
-- **Jetpack Compose** (UI declarativa moderna)
-- **Navigation Compose**
-- **Material 3**
-- **Arquitectura MVVM** *(próximamente)*
-- **Firebase Authentication** *(próximamente)*
+- Kotlin + Jetpack Compose
+- Navigation Compose
+- Material 3 (UI moderna)
+- MVVM (en proceso)
+- Retrofit + Gson
+- Firebase Authentication
 
 ---
 
 ## Estructura del proyecto
 
 ```
-com.example.bailotecaapp
-├── data          # Modelos y repositorios (pendiente)
-├── navigation    # Sistema de navegación
+bailoteca-frontend/
+├── data            # Modelos y ViewModels
+├── navigation      # Gestor de rutas
 ├── ui
-│   ├── components # Elementos reutilizables
-│   ├── screens    # Pantallas individuales (Login, Home...)
-│   └── theme      # Personalización visual
-├── utils         # Constantes, helpers, etc.
-└── MainActivity.kt # Punto de entrada de la app
+│   ├── components  # Elementos reutilizables (botones, inputs)
+│   ├── screens     # Pantallas (Login, Home...)
+│   └── theme       # Colores, tipografía, formas
+├── utils           # Constantes y helpers
+└── MainActivity.kt # Punto de entrada
 ```
 
 ---
 
 ## Funcionalidades implementadas
 
-### Navegación básica entre pantallas
+### Login con Firebase
 
-Se utiliza `Navigation Compose` para definir rutas seguras y controladas:
+- Registro e inicio de sesión con email y contraseña
+- Obtención del token JWT desde Firebase
+- Envío del token al backend Spring Boot
+
+### Consulta de usuarios
+
+- Petición protegida al backend para obtener datos reales
+- Validación del token en backend
+- Renderizado en pantalla con Compose
+
+### Navegación declarativa
+
+- `NavController` para moverse entre pantallas
+- Rutas seguras usando `sealed class Screens`
 
 ```kotlin
 sealed class Screens(val route: String) {
     object Login : Screens("login")
     object Home : Screens("home")
+    object Usuarios : Screens("usuarios")
 }
 ```
 
-La navegación se gestiona mediante un `NavController`, y las pantallas se declaran en `AppNavigation`.
-
-### Pantalla de Login (demo)
-
-Pantalla inicial con un botón de prueba que redirige a la pantalla de inicio:
-
-```kotlin
-Button(onClick = {
-    navController.navigate(Screens.Home.route)
-}) {
-    Text("Entrar")
-}
-```
-
-### Pantalla de Inicio
-
-Muestra un mensaje simple de bienvenida. Será extendida próximamente.
-
 ---
 
-## Justificación de decisiones
-
-| Elemento              | Razón de uso                                      |
-|-----------------------|--------------------------------------------------|
-| **Jetpack Compose**   | UI moderna, mantenible y sin XML                 |
-| **Navigation Compose**| Navegación declarativa, fácil integración        |
-| **MVVM** *(próximamente)* | Separación de lógica de UI y estado             |
-| **sealed class Screens** | Seguridad en rutas y mejor mantenibilidad       |
-| **Scaffold**          | Layout base que respeta márgenes del sistema     |
-
----
-
-## Próximos pasos
-
-- Integrar Firebase Authentication.
-- Implementar arquitectura MVVM con ViewModel y Repository.
-- Crear pantalla de listado de clases.
-- Mostrar eventos y notificaciones.
-- Sincronización con el backend REST en Spring Boot.
-
----
-
-## LOGIN
-
-### Diagrama de Flujo del Funcionamiento del Login
-
-Este diagrama describe el flujo de autenticación del usuario en la aplicación La Bailoteca:
+## Diagrama de flujo de autenticación
 
 ```mermaid
 sequenceDiagram
@@ -101,20 +71,54 @@ sequenceDiagram
 
     User->>AndroidApp: Email + Password
     AndroidApp->>FirebaseAuth: Sign in
-    FirebaseAuth-->>AndroidApp: JWT (idToken)
-    AndroidApp->>SpringBackend: GET /api/... + Authorization: Bearer idToken
+    FirebaseAuth-->>AndroidApp: idToken
+    AndroidApp->>SpringBackend: Authorization: Bearer idToken
     SpringBackend->>FirebaseAuth: Validar token
-    FirebaseAuth-->>SpringBackend: OK (usuario válido)
+    FirebaseAuth-->>SpringBackend: OK
     SpringBackend-->>AndroidApp: Datos del usuario
 ```
 
+---
+
+## Conexión con backend (Retrofit)
+
+```kotlin
+Retrofit.Builder()
+    .baseUrl("http://10.0.2.2:8080/api/")
+    .addConverterFactory(GsonConverterFactory.create())
+    .build()
+```
+
+Se utilizan endpoints como:
+- `GET /usuarios/me`
+- `GET /usuarios`
+
+---
+
+## Seguridad
+
+- El token de Firebase se envía en cada petición protegida
+- El backend valida el token y devuelve datos solo si es válido
+- Se usa `Authorization: Bearer <idToken>`
+
+---
+
+## Próximos pasos
+
+- Arquitectura MVVM completa (con ViewModel y Repository)
+- Pantalla de inscripción en clases y eventos
+- Integración de notificaciones (mensajes / avisos)
+- Mejora visual con temas personalizados
+
+---
 
 ## Capturas de pantalla
 
-*(Se añadirán más adelante cuando haya contenido visual).*
+*(Se añadirán más adelante)*
 
 ---
 
 ## Autor
+**Antonio Manuel Aragón Pérez** — 2º DAM, Curso 24/25
 
-Desarrollado por **Antonio Manuel Aragón Pérez** como parte del proyecto final *La Bailoteca*.
+---

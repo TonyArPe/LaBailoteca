@@ -1,5 +1,7 @@
 package com.bailoteca.controller.usuario;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -65,8 +67,31 @@ public class UsuarioController {
      * @return Usuario encontrado o null si no existe
      */
     @GetMapping("/{id}")
-    public Usuario getUsuario(@PathVariable Long id) {
-        return usuarioRepo.findById(id).orElse(null);
+    public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
+        // Obtener el usuario autenticado (correo)
+        String correoAuth = ((UserDetails) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal()).getUsername();
+
+        // Buscar quién está autenticado
+        Usuario actual = usuarioRepo.findByCorreo(correoAuth).orElse(null);
+        if (actual == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Si es ADMIN, permitir
+        if (actual.getRol().name().equals("ADMIN")) {
+            return ResponseEntity.of(usuarioRepo.findById(id));
+        }
+
+        // Si el ID solicitado es el suyo propio, permitir
+        if (actual.getId().equals(id)) {
+            return ResponseEntity.of(usuarioRepo.findById(id));
+        }
+
+        // Si no es ni ADMIN ni el mismo usuario, denegar
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     /**
@@ -75,13 +100,32 @@ public class UsuarioController {
      * @param id del Usuario a borrar
      */
     @DeleteMapping("/{id}")
-    public void deleteUsuario(@PathVariable Long id) {
-        usuarioRepo.deleteById(id);
+    public ResponseEntity<?> deleteUsuario(@PathVariable Long id) {
+        // Obtener el usuario autenticado (correo)
+        String correoAuth = ((UserDetails) SecurityContextHolder
+                .getContext()
+                .getAuthentication()
+                .getPrincipal()).getUsername();
+
+        Usuario actual = usuarioRepo.findByCorreo(correoAuth).orElse(null);
+        if (actual == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        // Permitir si es ADMIN o si el usuario borra su propia cuenta
+        if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
+            usuarioRepo.deleteById(id);
+            return ResponseEntity.ok().build();
+        }
+
+        // Denegar en cualquier otro caso
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     /**
      * Devuelve el perfil del usuario autenticado.
-     * extrae el correo desde el JWT, busca el usuario en base de datos y lo devuelve.
+     * extrae el correo desde el JWT, busca el usuario en base de datos y lo
+     * devuelve.
      * 
      * @return Datos del usuario actual
      */

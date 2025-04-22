@@ -1,88 +1,74 @@
 # La Bailoteca — Proyecto Fullstack de Gestión de Academia de Baile
 
-**La Bailoteca** es una aplicación fullstack desarrollada como Trabajo de Fin de Grado, destinada a la gestión integral de academias de baile. Combina un backend robusto en Java con Spring Boot y un frontend móvil en Android usando Kotlin y Jetpack Compose.
+**La Bailoteca** es una aplicación fullstack desarrollada como Trabajo de Fin de Grado (TFG), destinada a la gestión integral de academias de baile. El sistema combina un backend robusto en Java con Spring Boot y una aplicación Android nativa en Kotlin con Jetpack Compose.
 
 ---
 
-## Estructura del proyecto
+## Estructura del repositorio
 
 ```
 LaBailoteca/
-├── bailoteca-backend/   → Backend en Java (Spring Boot + PostgreSQL + Docker)
-├── bailoteca-frontend/  → App Android nativa (Kotlin + Jetpack Compose)
-├── docs/                → Documentación técnica y apuntes personales
-└── README.md            → Documentación general del proyecto
+├── bailoteca-backend/     # Backend en Java (Spring Boot + PostgreSQL + Docker)
+├── bailoteca-frontend/    # App Android (Kotlin + Jetpack Compose)
+├── docs/                  # Documentación técnica y apuntes personales
+└── README.md              # Este archivo: presentación general
 ```
 
 ---
 
-## Tecnologías utilizadas
+## Tecnologías principales
 
 ### Backend
 - Java 21
 - Spring Boot
-- PostgreSQL
-- Docker
-- WebSockets (STOMP)
-- Firebase Authentication (validación de usuarios móviles)
-- Arquitectura modular por dominios
+- PostgreSQL + Docker
+- JWT Authentication
+- Firebase (validación de usuarios móviles)
+- Arquitectura modular por dominio
 
-### Frontend móvil (Android)
-- Kotlin
-- Jetpack Compose
+### App Android
+- Kotlin + Jetpack Compose
 - MVVM Architecture
 - Navigation Compose
-- Material 3
 - Firebase Authentication
+- Retrofit + JWT
 
 ---
 
-## Funcionalidades principales (en desarrollo)
+## Funcionalidades destacadas
 
-- Autenticación de usuarios mediante Firebase.
-- Gestión de clases, eventos, profesores y horarios.
-- Sistema de inscripción y pagos (mensualidad o evento).
+- Registro, login y seguridad basada en roles (`ADMIN`, `PROFESOR`, `USUARIO`, `INVITADO`).
+- Gestión de clases, eventos, inscripciones y pagos.
+- CRUD de usuarios, asignación de profesores, horarios y contenido.
 - Notificaciones en tiempo real (WebSockets).
-- Panel de administración y gestión de usuarios.
-- App móvil con navegación, registro y consulta de clases/eventos.
+- App móvil funcional conectada al backend mediante JWT.
 
 ---
 
-## Instalación y ejecución
+## Estado actual
 
-### Backend
-```bash
-cd bailoteca-backend
-docker-compose up
-```
-
-Asegúrate de tener Docker instalado para levantar PostgreSQL automáticamente.
-
-### Frontend Android
-1. Abre `bailoteca-frontend/` con Android Studio.
-2. Compila y ejecuta en un emulador o dispositivo real.
-
----
-
-## Documentación
-
-Puedes encontrar apuntes personales, decisiones técnicas y explicaciones paso a paso en la carpeta `/docs`, incluyendo:
-
-- Apuntes de frontend Android.
-- Documentación técnica del backend.
-- Estructura de base de datos.
-- Justificación de arquitectura.
+- ✅ Backend funcional con seguridad y API REST completa
+- ✅ App Android conectada a Firebase y al backend (login, usuarios)
+- ⏳ Módulo web pendiente de desarrollo (previsto en React + Vite)
 
 ---
 
 ## Autor
 
-Desarrollado por **Antonio Manuel Aragón Pérez**, alumno de 2º DAM, como parte del TFG.
+Desarrollado por **Antonio Manuel Aragón Pérez**, alumno de 2º DAM, como parte del Trabajo de Fin de Grado (2025).
+
+---
+
+## Documentación técnica
+
+- [Backend](bailoteca-backend/README.md)
+- [App Android](bailoteca-frontend/README.md)
+- [docs/](docs/): diagramas, apuntes y decisiones técnicas
 
 ---
 
 ## Licencia
 
-Este proyecto es de uso académico y no está destinado a producción. Derechos reservados © 2025.
+Proyecto con fines educativos. No destinado a producción.
 
 ---
