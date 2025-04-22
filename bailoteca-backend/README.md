@@ -379,6 +379,50 @@ Cliente → `/app/notificar` → [Servidor] → `/topic/notificaciones` → Clie
 - Los mensajes no leídos pueden ser contados y marcados como leídos en lote.
 - Para facilitar pruebas, se incluye un HTML simple en `static/notificaciones.html` para visualizar las notificaciones entrantes por WebSocket.
 
+## Módulo de Chat Interno
+
+Este módulo permite a profesores y alumnos comunicarse mediante un sistema de mensajería tipo WhatsApp. Soporta chats privados (entre un profesor y un alumno de su clase) y chats grupales (todos los alumnos inscritos en una clase + el profesor).
+
+### Acceso por rol
+
+- `PROFESOR:` puede iniciar chats con alumnos inscritos en sus clases, y participar en chats grupales.
+- `USUARIO:` puede escribir a su profesor si está inscrito en una clase.
+- `ADMIN:` acceso general si se habilita en el futuro (no obligatorio actualmente).
+
+### Estructura de entidades
+
+- **`Chat:`** representa una conversación. Puede ser privada (usuario1 y usuario2) o grupal (asociada a una clase).
+- **`Mensaje:`** representa un mensaje enviado. Tiene contenido, `fechaEnvio`, emisor, receptor (si es privado), o clase (si es grupal).
+
+### Endpoints implementados
+
+| Método | Ruta                     | Descripción                              |
+|--------|---------------------------|------------------------------------------|
+| GET    | `/api/mensajes/chat/{id}` | Obtener mensajes de un chat privado      |
+| GET    | `/api/mensajes/clase/{id}`| Obtener mensajes del chat grupal de una clase |
+| POST   | `/api/mensajes`           | Crear un nuevo mensaje (privado o grupal)|
+
+- Todos los mensajes se envían también en tiempo real mediante WebSocket.
+
+### WebSocket
+
+#### Suscripciones desde el frontend:
+
+- **Grupo:** `subscribe("/topic/clase/{id}")`  
+  (los alumnos y el profesor de la clase)
+- **Privado:** `subscribe("/topic/chat/{id}")`  
+  (solo entre el profesor y alumno)
+
+#### Envío de mensajes:
+
+- **Endpoint:** `send("/app/mensaje", mensaje)`  
+  El servidor guarda y reenvía el mensaje a todos los suscriptores del chat.
+
+### Seguridad aplicada
+
+- La lógica de autorización (que el emisor y receptor estén en la misma clase, o que el usuario esté inscrito) puede agregarse fácilmente en el `MensajeService` para mayor control.
+- El sistema usa tokens JWT para autenticar al usuario.
+
 ---
 
 ## En desarrollo / mejoras futuras
