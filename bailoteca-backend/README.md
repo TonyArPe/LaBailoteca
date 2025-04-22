@@ -289,7 +289,7 @@ Los registros de pago se realizan de forma manual por parte de administradores o
 
 ### Endpoints implementados
 
-#### 🔹 `/api/pagos-evento`
+#### `/api/pagos-evento`
 
 | Método | Ruta                          | Descripción                          | Acceso            |
 |--------|-------------------------------|--------------------------------------|-------------------|
@@ -299,7 +299,7 @@ Los registros de pago se realizan de forma manual por parte de administradores o
 | POST   | `/api/pagos-evento`           | Registrar un nuevo pago de evento    | `ADMIN`, `PROFESOR` |
 | DELETE | `/api/pagos-evento/{id}`      | Eliminar un pago (si eres el dueño o admin) | `ADMIN`, propietario |
 
-#### 🔹 `/api/pagos-mensualidad`
+#### `/api/pagos-mensualidad`
 
 | Método | Ruta                              | Descripción                          | Acceso            |
 |--------|-----------------------------------|--------------------------------------|-------------------|
