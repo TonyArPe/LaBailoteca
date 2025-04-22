@@ -422,6 +422,118 @@ Este módulo permite a profesores y alumnos comunicarse mediante un sistema de m
 
 - La lógica de autorización (que el emisor y receptor estén en la misma clase, o que el usuario esté inscrito) puede agregarse fácilmente en el `MensajeService` para mayor control.
 - El sistema usa tokens JWT para autenticar al usuario.
+## Módulo de Chat en Tiempo Real
+
+Este módulo permite la comunicación en tiempo real entre usuarios registrados de la academia, implementando un sistema de mensajería tipo WhatsApp con WebSocket y STOMP.
+
+### Objetivo
+
+Facilitar la comunicación privada entre profesores y alumnos inscritos en sus clases, así como permitir chats grupales entre el profesor y todos los alumnos de una clase. Todo el sistema funciona en tiempo real y los mensajes se almacenan en la base de datos.
+
+### Tecnologías empleadas
+
+- **WebSocket + STOMP:** comunicación bidireccional en tiempo real.
+- **SockJS:** compatibilidad con navegadores que no soportan WebSocket nativo.
+- **Spring WebSocket (SimpMessagingTemplate):** envío y recepción de mensajes desde el backend.
+- **HTML y JS:** cliente de prueba para simular chats privados y grupales.
+- **Spring Boot y JPA:** para la persistencia de mensajes.
+
+### Estructura del módulo
+
+#### Entidades
+
+**`Mensaje:`** Representa un mensaje en el sistema. Puede ser privado o grupal.
+
+| Campo       | Tipo            | Descripción                                |
+|-------------|-----------------|--------------------------------------------|
+| `id`        | `Long`          | Identificador del mensaje                  |
+| `contenido` | `String`        | Texto del mensaje                          |
+| `fechaEnvio`| `LocalDateTime` | Fecha y hora de envío                      |
+| `emisor`    | `Usuario`       | Usuario que envía el mensaje               |
+| `receptor`  | `Usuario`       | Usuario receptor (solo en chats privados)  |
+| `clase`     | `Clase`         | Clase asociada (solo en chats grupales)    |
+| `esGrupal`  | `boolean`       | Define si el mensaje es privado o grupal   |
+
+#### Repositorio
+
+**`MensajeRepo:`** Contiene métodos personalizados:
+
+```java
+List<Mensaje> findByClaseIdOrderByFechaEnvioAsc(Long claseId);
+
+List<Mensaje> findByEmisorIdAndReceptorIdOrReceptorIdAndEmisorIdOrderByFechaEnvioAsc(
+    Long emisorId, Long receptorId, Long receptorId2, Long emisorId2);
+```
+
+
+### MensajeService
+- Guarda el mensaje en la base de datos.
+- Envía el mensaje al canal correspondiente usando SimpMessagingTemplate.
+- Verifica que el emisor y receptor existan.
+- Envío a dos canales privados:
+    - `user/{receptorId}/queue/chat/{emisorId}`
+    - `user/{emisorId}/queue/chat/{receptorId}`
+
+**Envio para un chat privado:**
+```java
+messagingTemplate.convertAndSend("/user/" + receptorId + "/queue/chat/" + emisorId, mensaje);
+messagingTemplate.convertAndSend("/user/" + emisorId + "/queue/chat/" + receptorId, mensaje);
+```
+
+**Envío para chat grupal:**
+```java
+messagingTemplate.convertAndSend("/topic/clase/" + mensaje.getClase().getId(), mensaje);
+```
+
+### MensajeWebSocketController
+```java
+@MessageMapping("/mensaje")
+public void recibirMensaje(Mensaje mensaje) {
+    mensajeService.enviarMensaje(mensaje);
+}
+```
+
+## Frontend de prueba (HTML estático)
+### chat-privado.html:
+
+- HTML simple con campos para IDs de emisor y receptor y caja de mensajes.
+- Se conecta a /ws y se suscribe a ambos canales (queue/chat/X).
+- Muestra los mensajes recibidos en pantalla.
+- Simula el comportamiento de WhatsApp sin autenticación.
+**Suscripciones:**
+```java
+stompClient.subscribe("/user/" + emisorId + "/queue/chat/" + receptorId, callback);
+stompClient.subscribe("/user/" + receptorId + "/queue/chat/" + emisorId, callback);
+```
+
+## Seguridad y acceso
+WebSocket expuesto por el endpoint `/ws.`
+El broker **STOMP** está configurado en `WebSocketConfig:`
+  - `setUserDestinationPrefix("/user");`
+  - `enableSimpleBroker("/topic", "/queue");`
+  - `setApplicationDestinationPrefixes("/app");`
+
+
+En SecurityConfig, se permite acceso público a los archivos HTML y al endpoint /ws:
+```java
+.requestMatchers("/", "/chat-privado.html", "/chat-grupal.html", "/ws/**").permitAll();
+```
+
+## Estado actual del módulo
+- Funcionalidad: operativa.
+- Se pueden enviar y recibir mensajes correctamente.
+- Los mensajes se guardan correctamente en la base de datos.
+### Posibles mejoras:
+- Integrar WebSocket con el sistema de autenticación real.
+- Mostrar mensajes históricos al cargar el chat.
+- Validar que no se puedan enviar mensajes vacíos (ya implementado).
+- Añadir timestamps, leer/recibido y mejoras visuales.
+### Notas técnicas
+- El chat se comporta como WhatsApp en cuanto a lógica:
+- Cada conversación tiene su canal.
+- Las conversaciones privadas solo las ven emisor y receptor.
+- Las grupales son visibles para todos los inscritos en una clase.
+- El módulo está aislado y fácilmente integrable con la interfaz real de la aplicación móvil/web en el futuro.
 
 ---
 
