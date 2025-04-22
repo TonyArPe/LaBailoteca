@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface ClaseRepo extends JpaRepository<Clase, Long> {
     List<Clase> findByProfesorId(Long profesorId);
+    List<Clase> findByNombreContainingIgnoreCase(String nombre);
 }

@@ -24,21 +24,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UsuarioController {
 
-    /**
-     * Repositorio de usuarios para operaciones CRUD.
-     */
     private final UsuarioRepo usuarioRepo;
-
-    /**
-     * Codificador de contraseñas (BCrypt).
-     */
     private final PasswordEncoder passwordEncoder;
 
     /**
      * Obtiene todos los usuarios del sistema (solo ADMIN).
-     * llega desde el token JWT
-     * 
-     * @return Lista de usuarios
      */
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
@@ -49,93 +39,100 @@ public class UsuarioController {
     /**
      * Crea un nuevo usuario en el sistema. La contraseña se codifica
      * automáticamente.
-     * 
-     * @param usuario Usuario a crear
-     * @return Usuario creado
      */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
         usuario.setFechaRegistro(LocalDate.now());
-        usuario.setContrasenna(passwordEncoder.encode(usuario.getContrasenna())); // 🔐 Encriptar antes de guardar
+        usuario.setContrasenna(passwordEncoder.encode(usuario.getContrasenna()));
         return usuarioRepo.save(usuario);
     }
 
     /**
-     * Obtiene un usuario por su ID.
-     * 
-     * @param id ID del usuario a obtener
-     * @return Usuario encontrado o null si no existe
+     * Obtiene un usuario por su ID (ADMIN o el propio usuario).
      */
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
-        // Obtener el usuario autenticado (correo)
-        String correoAuth = ((UserDetails) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal()).getUsername();
-
-        // Buscar quién está autenticado
-        Usuario actual = usuarioRepo.findByCorreo(correoAuth).orElse(null);
-        if (actual == null) {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
 
-        // Si es ADMIN, permitir
-        if (actual.getRol().name().equals("ADMIN")) {
+        if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
             return ResponseEntity.of(usuarioRepo.findById(id));
         }
 
-        // Si el ID solicitado es el suyo propio, permitir
-        if (actual.getId().equals(id)) {
-            return ResponseEntity.of(usuarioRepo.findById(id));
-        }
-
-        // Si no es ni ADMIN ni el mismo usuario, denegar
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     /**
-     * Elimina un usuario por su ID.
-     * 
-     * @param id del Usuario a borrar
+     * Elimina un usuario por su ID (ADMIN o el propio usuario).
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUsuario(@PathVariable Long id) {
-        // Obtener el usuario autenticado (correo)
-        String correoAuth = ((UserDetails) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal()).getUsername();
-
-        Usuario actual = usuarioRepo.findByCorreo(correoAuth).orElse(null);
-        if (actual == null) {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
 
-        // Permitir si es ADMIN o si el usuario borra su propia cuenta
         if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
             usuarioRepo.deleteById(id);
             return ResponseEntity.ok().build();
         }
 
-        // Denegar en cualquier otro caso
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+    /**
+     * Actualiza un usuario por su ID (ADMIN o el propio usuario).
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Usuario> updateUsuario(@PathVariable Long id, @RequestBody Usuario updatedUsuario) {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
+            return usuarioRepo.findById(id)
+                    .map(usuario -> {
+                        usuario.setNombre(updatedUsuario.getNombre());
+                        usuario.setApellido(updatedUsuario.getApellido());
+                        usuario.setTelefono(updatedUsuario.getTelefono());
+                        usuario.setDireccion(updatedUsuario.getDireccion());
+                        usuario.setFotoPerfil(updatedUsuario.getFotoPerfil());
+                        usuario.setFechaNacimiento(updatedUsuario.getFechaNacimiento());
+
+                        // Permite cambiar la contraseña:
+                        if (updatedUsuario.getContrasenna() != null && !updatedUsuario.getContrasenna().isBlank()) {
+                            usuario.setContrasenna(passwordEncoder.encode(updatedUsuario.getContrasenna()));
+                        }
+
+                        return ResponseEntity.ok(usuarioRepo.save(usuario));
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        }
+
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     /**
      * Devuelve el perfil del usuario autenticado.
-     * extrae el correo desde el JWT, busca el usuario en base de datos y lo
-     * devuelve.
-     * 
-     * @return Datos del usuario actual
      */
     @GetMapping("/me")
     public Usuario getMiPerfil() {
-        String correo = ((UserDetails) SecurityContextHolder
-                .getContext()
-                .getAuthentication()
-                .getPrincipal()).getUsername();
+        return getUsuarioAutenticado();
+    }
 
-        return usuarioRepo.findByCorreo(correo).orElse(null);
+    /**
+     * Método auxiliar para obtener el usuario autenticado actual.
+     */
+    private Usuario getUsuarioAutenticado() {
+        try {
+            String correo = ((UserDetails) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal()).getUsername();
+
+            return usuarioRepo.findByCorreo(correo).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
