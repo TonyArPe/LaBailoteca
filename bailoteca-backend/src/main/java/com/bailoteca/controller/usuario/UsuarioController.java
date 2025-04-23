@@ -98,6 +98,11 @@ public class UsuarioController {
                         usuario.setDireccion(updatedUsuario.getDireccion());
                         usuario.setFotoPerfil(updatedUsuario.getFotoPerfil());
                         usuario.setFechaNacimiento(updatedUsuario.getFechaNacimiento());
+                        
+                        // Solo puede modificarse este campo si eres ADMIN
+                        if (actual.getRol().name().equals("ADMIN")) {
+                            usuario.setActivo(updatedUsuario.isActivo());
+                        }                        
 
                         // Permite cambiar la contraseña:
                         if (updatedUsuario.getContrasenna() != null && !updatedUsuario.getContrasenna().isBlank()) {
