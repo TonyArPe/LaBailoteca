@@ -3,6 +3,7 @@ package com.bailoteca.models.clase;
 import java.util.List;
 
 import com.bailoteca.models.usuario.Usuario;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -24,14 +25,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name="clases")
+@Table(name = "clases")
 public class Clase {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nombre;
 
-    @Column(length= 1000)
+    @Column(length = 1000)
     private String descripcion;
 
     @ManyToOne
@@ -39,8 +40,9 @@ public class Clase {
     private Usuario profesor;
     private String videoPresentacion;
 
-    @OneToMany
-    (mappedBy="clase", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "clase", cascade = CascadeType.ALL, orphanRemoval = true)
+    // Indica que es el padre de HorarioClase
+    @JsonManagedReference
     private List<HorarioClase> horarioClases;
 
 }

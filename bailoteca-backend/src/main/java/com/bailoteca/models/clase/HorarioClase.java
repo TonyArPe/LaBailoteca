@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -22,6 +24,8 @@ public class HorarioClase {
 
     @ManyToOne
     @JoinColumn(name = "clase_id")
+    // Indica que es el hijo de Clase
+    @JsonBackReference
     private Clase clase;
-}
 
+}
