@@ -38,7 +38,8 @@ public class SecurityConfig {
                     "/chat-privado.html", 
                     "/notificaciones.html",
                     "/ws/**",
-                    "/api/auth/**"
+                    "/api/auth/**",
+                    "/api/clases/**"
                 ).permitAll()
 
                 // Protegidos: el resto de endpoints requiere autenticación

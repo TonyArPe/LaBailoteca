@@ -97,3 +97,44 @@ Probar recepción por **WebSocket** en `notificaciones.html`.
 
 ### Chat grupal:
 - que funcione con `/topic/clase/{id}`.
+
+---
+
+# TEST REALIZADOS
+## BLOQUE 1: Autenticación y Usuarios
+
+**(✔️COMPLETADO)**
+
+Incluye:
+
+- Login con token JWT
+
+- Registro de nuevos usuarios
+
+- Acceso denegado a usuarios desactivados
+
+- Activación manual del usuario
+
+- Confirmación de login tras activación
+
+## BLOQUE 2: Perfil de Usuario y Autogestión
+
+**(✔️COMPLETADO)**
+
+Incluye:
+
+- Modificación de datos personales por parte del propio usuario (teléfono, dirección, fecha de nacimiento, etc.).
+
+- Endpoint /api/usuarios/me para obtener el perfil del usuario autenticado.
+
+- Protección para evitar que un usuario edite a otro sin permisos.
+
+- Edición del perfil por parte del administrador (con token de ADMIN).
+
+- Borrado lógico del usuario (activo = false) mediante método DELETE.
+
+- Confirmación de que el borrado se respeta en el login y en los listados.
+
+- Intentos maliciosos de modificar otros usuarios son bloqueados con 403.
+
+- Restricción en campos no modificables como dni, controlado por omisión en el PUT.
