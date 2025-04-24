@@ -20,6 +20,8 @@ import jakarta.persistence.CascadeType;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.bailoteca.models.enums.Dificultad;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -38,6 +40,8 @@ public class Clase {
     @ManyToOne
     @JoinColumn(name = "profesor_id", nullable = false)
     private Usuario profesor;
+    private String ubicacion;
+    private Dificultad dificultad;
     private String videoPresentacion;
 
     @OneToMany(mappedBy = "clase", cascade = CascadeType.ALL, orphanRemoval = true)
