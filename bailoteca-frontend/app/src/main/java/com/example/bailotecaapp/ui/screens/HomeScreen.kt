@@ -4,15 +4,21 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
 fun HomeScreen(navController: NavController) {
+
+    val sesionViewModel: SesionViewModel = viewModel()
+    val usuario by sesionViewModel.usuario.collectAsState()
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -26,6 +32,14 @@ fun HomeScreen(navController: NavController) {
             color = MaterialTheme.colorScheme.primary
         )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Mostrar nombre del usuario logueado
+        Text(
+            text = "Hola, ${usuario?.nombre ?: "..."}, Bailemos!",
+            style = MaterialTheme.typography.bodyMedium
+        )
+
         Spacer(modifier = Modifier.height(32.dp))
 
         // Botón para ir a la lista de usuarios
@@ -33,6 +47,7 @@ fun HomeScreen(navController: NavController) {
             Text("Ver usuarios registrados")
         }
 
+        //Boton para ir a la lista de clases
         Button(onClick = { navController.navigate(Screens.Clases.route) }) {
             Text("Ver clases disponibles")
         }

@@ -17,4 +17,10 @@ interface ApiService {
     suspend fun getClasesDisponibles(
         @Header("Authorization") token: String
     ): Response<List<Clase>>
+
+    @GET("api/usuarios/me")
+    suspend fun getUsuarioActual(
+        @Header("Authorization") token: String
+    ): Response<Usuario>
+
 }

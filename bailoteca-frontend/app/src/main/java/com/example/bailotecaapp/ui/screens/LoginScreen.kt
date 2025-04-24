@@ -15,6 +15,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
 fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewModel()) {
@@ -24,6 +25,7 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val sesionViewModel: SesionViewModel = viewModel()
 
     Scaffold { padding ->
         Column(
@@ -85,6 +87,8 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
                         password,
                         onSuccess = { token ->
                             isLoading = false
+                            navController.navigate(Screens.Home.route)
+                            sesionViewModel.cargarUsuarioActual()
                             navController.navigate(Screens.Home.route)
                         },
                         onError = { error ->

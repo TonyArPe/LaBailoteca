@@ -11,12 +11,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
 fun ClaseListScreen(viewModel: ClaseViewModel = viewModel()) {
     val clases by viewModel.clases.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
+    val sesionViewModel: SesionViewModel = viewModel()
+    val usuario by sesionViewModel.usuario.collectAsState()
+
 
     // Llamar a la API cuando se abre la pantalla
     LaunchedEffect(Unit) {

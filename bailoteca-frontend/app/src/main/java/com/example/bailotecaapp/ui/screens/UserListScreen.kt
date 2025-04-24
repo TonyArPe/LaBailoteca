@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.components.UsuarioCard
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 
 @Composable
@@ -20,6 +21,9 @@ fun UserListScreen(viewModel: UsuarioViewModel = viewModel()) {
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
+    val sesionViewModel: SesionViewModel = viewModel()
+    val usuario by sesionViewModel.usuario.collectAsState()
+
 
     // Lanzamos la carga solo una vez cuando se abre esta pantalla
     LaunchedEffect(Unit) {
