@@ -197,7 +197,7 @@ Incluye pruebas con:
 
 **(✔️COMPLETADO)**
 
-### Incluye:
+Incluye:
 
 - Inscripción del usuario autenticado a una clase (`POST /api/inscripciones?claseId=...`)
 - Visualización de inscripciones por usuario (`GET /api/inscripciones/usuario/{id}`)
@@ -213,11 +213,11 @@ Incluye pruebas con:
 
 | Acción                          | ADMIN | PROFESOR                  | USUARIO                  |
 |---------------------------------|-------|---------------------------|--------------------------|
-| Ver todas las inscripciones     | ✅     | ❌                         | ❌                        |
-| Ver inscripciones de un usuario | ✅     | ❌                         | ✅ si es el propio        |
-| Ver inscripciones por clase     | ✅     | ✅ si es el profesor asignado | ❌                        |
-| Inscribirse a una clase         | ❌     | ❌                         | ✅                        |
-| Eliminar inscripción            | ✅     | ✅ si es el profesor de la clase | ✅ si es suya            |
+| Ver todas las inscripciones     | **SI**     | **NO**                         | **NO**                       |
+| Ver inscripciones de un usuario | **SI**     | **NO**                         | **SI** si es el propio        |
+| Ver inscripciones por clase     | **SI**     | **SI** es el profesor asignado | **NO**                        |
+| Inscribirse a una clase         | **NO**     | **NO**                         | **SI**                       |
+| Eliminar inscripción            | **SI**     | **SI** es el profesor de la clase | **SI** si es suya            |
 
 ### Seguridad aplicada
 
@@ -228,10 +228,54 @@ Incluye pruebas con:
 
 ### Pruebas realizadas
 
-- ✅ Inscribirse correctamente como usuario autenticado.
-- ✅ Visualizar inscripciones propias.
-- ✅ Ver inscripciones por clase (como profesor dueño y admin).
-- ✅ Ver todas las inscripciones (como admin).
-- ✅ Evitar duplicados (`409 Conflict`).
-- ✅ Eliminar inscripción desde los tres roles posibles (usuario, profesor, admin).
-- ✅ Comprobaciones de seguridad sin token y con rol incorrecto (`403 / 401`).
+- Inscribirse correctamente como usuario autenticado.
+- Visualizar inscripciones propias.
+- Ver inscripciones por clase (como profesor dueño y admin).
+- Ver todas las inscripciones (como admin).
+- Evitar duplicados (`409 Conflict`).
+- Eliminar inscripción desde los tres roles posibles (usuario, profesor, admin).
+- Comprobaciones de seguridad sin token y con rol incorrecto (`403 / 401`).
+
+## BLOQUE 5: Gestión de Eventos
+
+**(✔️COMPLETADO)**
+
+Incluye:
+
+- Visualización de todos los eventos públicos (GET /api/eventos)
+
+- Visualización individual por ID (GET /api/eventos/{id})
+
+- Creación de evento por parte de profesores (POST /api/eventos)
+
+- Edición del evento por parte del profesor organizador (PUT /api/eventos/{id})
+
+- Borrado lógico por parte del profesor organizador (DELETE /api/eventos/{id})
+
+    Seguridad:
+
+    - Usuarios normales solo pueden ver
+
+    - Acceso denegado sin token o con token de otro usuario
+
+    - Profesores solo pueden editar/eliminar eventos propios
+
+## BLOQUE 6: Pagos de Eventos y Mensualidades
+
+**(✔️COMPLETADO)**
+
+Incluye:
+
+  - Registro de pagos de eventos y mensualidades
+
+  - Visualización por parte del admin
+
+  - Visualización de pagos personales por usuario
+
+  - Visualización de pagos de un evento concreto (solo admin)
+
+Pruebas realizadas:
+
+- Manejo de errores implementado y validado `(500, 404, 409)`(Faltaban las excepciones)
+
+- Eliminar pagos con permisos correctos (solo admin)
