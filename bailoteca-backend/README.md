@@ -422,6 +422,13 @@ El backend validará automáticamente el token y autorizará al usuario
   - Si el token es válido y el usuario existe → acceso permitido
   - Si el token es inválido o no existe el usuario en la base de datos → error 403
 
+## Autenticación con Firebase y token en Retrofit
+
+- El token JWT de Firebase se añade automáticamente a cada petición protegida mediante un interceptor en `RetrofitInstance.kt`.
+- Este token es necesario para acceder a rutas protegidas en el backend, como `/api/clases` o `/api/usuarios`.
+- El interceptor usa `Firebase.auth.currentUser?.getIdToken(false)` y lo añade al header `Authorization: Bearer <token>`.
+
+
 ### Clases clave
 
 - **`NotificacionService:`** lógica de negocio y validación de acceso.
