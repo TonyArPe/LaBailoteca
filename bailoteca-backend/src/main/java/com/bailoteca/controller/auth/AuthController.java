@@ -1,13 +1,13 @@
 package com.bailoteca.controller.auth;
 
-import com.bailoteca.security.JwtUtils;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import com.bailoteca.models.usuario.Usuario;
+import com.bailoteca.repository.usuario.UsuarioRepo;
 
 import java.util.Map;
 
@@ -20,8 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtUtils jwtUtils;
+    private final UsuarioRepo usuarioRepo;
 
     /**
      * Endpoint para iniciar sesión.
@@ -30,15 +29,12 @@ public class AuthController {
      * @return JWT si la autenticación es válida
      */
     @PostMapping("/login")
-    public Map<String, String> login(@Valid @RequestBody AuthRequest request) {
-        // Autentica al usuario usando AuthenticationManager
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getCorreo(), request.getContrasenna())
-        );
+    public ResponseEntity<Usuario> login(@RequestBody Map<String, String> payload) {
+        String correo = payload.get("correo");
 
-        // Genera un token JWT para el usuario autenticado
-        String jwt = jwtUtils.generateToken((UserDetails) authentication.getPrincipal());
-
-        return Map.of("token", jwt);
+        return usuarioRepo.findByCorreo(correo)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.status(HttpStatus.UNAUTHORIZED).build());
     }
+
 }

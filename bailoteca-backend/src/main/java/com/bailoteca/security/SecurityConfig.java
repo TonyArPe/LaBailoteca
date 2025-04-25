@@ -26,7 +26,6 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Públicos
                 .requestMatchers(
                     "/", 
                     "/index.html", 
@@ -36,18 +35,15 @@ public class SecurityConfig {
                     "/ws/**",
                     "/api/auth/**"
                 ).permitAll()
-
-                // El resto requiere autenticación
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class); // Solo este filtro
 
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Aún usado para login
         return new BCryptPasswordEncoder(); 
     }
 
