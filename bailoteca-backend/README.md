@@ -365,6 +365,63 @@ Cliente → `/app/notificar` → [Servidor] → `/topic/notificaciones` → Clie
 - Solo el usuario receptor puede consultar, marcar o eliminar sus notificaciones.
 - El sistema registra automáticamente la fecha de envío y marca la notificación como no leída por defecto.
 
+## Autenticación con Firebase
+
+Utilizamos Firebase Authentication en el frontend (Android) para gestionar el login y registro de usuarios mediante email y contraseña. El backend en Spring Boot valida los tokens JWT emitidos por Firebase para autenticar a los usuarios.
+
+### Configuración en el Backend
+
+Se ha añadido soporte completo para validar tokens de Firebase en el backend mediante Firebase Admin SDK.
+
+#### Dependencia añadida (`pom.xml`):
+
+```xml
+<dependency>
+    <groupId>com.google.firebase</groupId>
+    <artifactId>firebase-admin</artifactId>
+    <version>9.2.0</version>
+</dependency>
+```
+
+**Filtro de validación:** `FirebaseJwtFilter`
+
+```java
+FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+String email = decodedToken.getEmail();
+```
+
+Este filtro:
+
+  - Extrae el email del token
+
+  - Carga el usuario desde la base de datos usando CustomUserDetailsService
+
+  - Autentica el usuario en el contexto de Spring Security
+
+**Seguridad** `(SecurityConfig.java)`
+
+El filtro FirebaseJwtFilter se añade al SecurityFilterChain para interceptar todas las peticiones protegidas:
+
+```java
+.addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class)
+```
+
+Las rutas públicas se configuran mediante `.requestMatchers(...).permitAll().`
+#### Requisitos para que funcione
+
+  - El usuario debe estar registrado en Firebase Authentication con un email válido
+
+  - El mismo email debe existir en la base de datos del backend (campo correo)
+
+  - El frontend debe enviar el token JWT de Firebase en cada petición:
+
+**Authorization:** `Bearer <token>`
+
+El backend validará automáticamente el token y autorizará al usuario
+
+  - Si el token es válido y el usuario existe → acceso permitido
+  - Si el token es inválido o no existe el usuario en la base de datos → error 403
+
 ### Clases clave
 
 - **`NotificacionService:`** lógica de negocio y validación de acceso.
