@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import com.bailoteca.models.evento.EstadoEvento;
+import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.evento.Evento;
 
 public interface EventoRepo extends JpaRepository<Evento, Long> {

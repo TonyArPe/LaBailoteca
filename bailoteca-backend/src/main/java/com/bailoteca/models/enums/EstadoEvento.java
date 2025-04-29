@@ -1,4 +1,4 @@
-package com.bailoteca.models.evento;
+package com.bailoteca.models.enums;
 
 public enum EstadoEvento {
     ACTIVO,
