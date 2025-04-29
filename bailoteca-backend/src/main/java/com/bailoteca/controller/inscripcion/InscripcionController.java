@@ -65,7 +65,8 @@ public class InscripcionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         var clase = claseRepo.findById(claseId).orElse(null);
-        if (clase == null) return ResponseEntity.notFound().build();
+        if (clase == null)
+            return ResponseEntity.notFound().build();
 
         if (actual.getRol().name().equals("ADMIN") || clase.getProfesor().getId().equals(actual.getId())) {
             return ResponseEntity.ok(inscripcionRepo.findByClaseId(claseId));
@@ -80,7 +81,8 @@ public class InscripcionController {
     @PostMapping
     public ResponseEntity<Inscripcion> create(@RequestParam Long claseId) {
         Usuario actual = getUsuarioAutenticado();
-        if (actual == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         if (!claseRepo.existsById(claseId)) {
             return ResponseEntity.notFound().build();
@@ -103,28 +105,37 @@ public class InscripcionController {
     }
 
     /**
-     * Elimina una inscripción si el usuario es el propietario, ADMIN o profesor dueño de la clase.
+     * Elimina una inscripción si el usuario es el propietario, ADMIN o profesor
+     * dueño de la clase.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         Usuario actual = getUsuarioAutenticado();
-        if (actual == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         return inscripcionRepo.findById(id).map(inscripcion -> {
             Long usuarioId = inscripcion.getUsuario().getId();
             Long profesorId = inscripcion.getClase().getProfesor().getId();
 
-            if (
-                actual.getId().equals(usuarioId) ||
-                actual.getId().equals(profesorId) ||
-                actual.getRol().name().equals("ADMIN")
-            ) {
+            if (actual.getId().equals(usuarioId) ||
+                    actual.getId().equals(profesorId) ||
+                    actual.getRol().name().equals("ADMIN")) {
                 inscripcionRepo.deleteById(id);
                 return ResponseEntity.ok().build();
             }
 
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/mias")
+    public ResponseEntity<List<Inscripcion>> getInscripcionesDelAutenticado() {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        return ResponseEntity.ok(inscripcionRepo.findByUsuarioId(actual.getId()));
     }
 
     /**
