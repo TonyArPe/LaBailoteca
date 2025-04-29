@@ -17,6 +17,12 @@ interface ApiService {
         @Header("Authorization") token: String
     ): Response<List<Usuario>>
 
+    @POST("api/usuarios")
+    suspend fun crearUsuario(
+        @Header("Authorization") authHeader: String,
+        @Body usuario: Usuario
+    ): Response<Usuario>
+
     @GET("api/clases")
     suspend fun getClasesDisponibles(
         @Header("Authorization") token: String
@@ -43,4 +49,5 @@ interface ApiService {
     suspend fun getMisInscripciones(
         @Header("Authorization") token: String
     ): Response<List<Inscripcion>>
+
 }

@@ -4,19 +4,19 @@ import com.example.bailotecaapp.model.enums.Rol
 import java.time.LocalDate
 
 data class Usuario(
-    val id: Long,
+    val id: Long = 0L,
     val nombre: String,
-    val apellido: String,
+    val apellido: String = "",
     val correo: String,
     val contrasenna: String,
-    val rol: Rol,
-    val fotoPerfil: String?,
-    val telefono: String?,
-    val direccion: String?,
-    val fechaNacimiento: String?, // formato ISO-8601
-    val genero: String?,
-    val dni: String?,
-    val fechaRegistro: String?, // formato ISO-8601
-    val activo: Boolean,
-    val pagado: Boolean
+    val rol: Rol = Rol.USUARIO,
+    val fotoPerfil: String? = null,
+    val telefono: String? = null,
+    val direcion: String? = null,
+    val fechaNacimiento: String? = null,
+    val genero: String? = null,
+    val dni: String? = null,
+    val fechaRegistro: String? = null,
+    val activo: Boolean = false,
+    val pagado: Boolean = false
 )
