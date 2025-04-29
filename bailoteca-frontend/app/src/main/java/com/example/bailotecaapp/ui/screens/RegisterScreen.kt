@@ -113,7 +113,7 @@ fun RegisterScreen(
                                                 sesionViewModel.cargarUsuarioActual() // carga el perfil
                                                 navController.navigate(Screens.Home.route)
                                             } else {
-                                                errorMessage = "Error backend: ${'$'}{response.code()}"
+                                                errorMessage = "Error backend: ${response.code()}"
                                             }
                                         } catch (e: Exception) {
                                             errorMessage = "Error al crear usuario: ${'$'}{e.message}"

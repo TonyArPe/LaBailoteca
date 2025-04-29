@@ -12,7 +12,7 @@ data class Usuario(
     val rol: Rol = Rol.USUARIO,
     val fotoPerfil: String? = null,
     val telefono: String? = null,
-    val direcion: String? = null,
+    val direccion: String? = null,
     val fechaNacimiento: String? = null,
     val genero: String? = null,
     val dni: String? = null,
