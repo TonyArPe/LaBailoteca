@@ -2,6 +2,7 @@ package com.bailoteca.models.evento;
 
 import java.time.LocalDateTime;
 
+import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.usuario.Usuario;
 
 import jakarta.persistence.Entity;

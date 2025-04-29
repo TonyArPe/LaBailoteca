@@ -1,7 +1,7 @@
 package com.bailoteca.controller.evento;
 
+import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.evento.Evento;
-import com.bailoteca.models.evento.EstadoEvento;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.evento.EventoRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
