@@ -31,4 +31,10 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Body inscripcionRequest: InscripcionRequest
     ): Response<Void>
+
+    @GET("api/clases/{id}")
+    suspend fun getClasePorId(
+        @Header("Authorization") token: String,
+        @retrofit2.http.Path("id") claseId: Long
+    ): Response<Clase>
 }

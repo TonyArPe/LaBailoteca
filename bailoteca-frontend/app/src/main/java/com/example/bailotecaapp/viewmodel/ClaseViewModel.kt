@@ -10,12 +10,15 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class ClaseViewModel : ViewModel() {
 
     // Lista observable de clases
     private val _clases = MutableStateFlow<List<Clase>>(emptyList())
     val clases: StateFlow<List<Clase>> = _clases
+    private val _claseSeleccionada = MutableStateFlow<Clase?>(null)
+    val claseSeleccionada: StateFlow<Clase?> = _claseSeleccionada
 
     // Cargando
     private val _isLoading = MutableStateFlow(false)
@@ -58,6 +61,20 @@ class ClaseViewModel : ViewModel() {
         }?.addOnFailureListener {
             _isLoading.value = false
             _errorMessage.value = "Error al obtener token de Firebase"
+        }
+    }
+
+    fun obtenerClasePorId(id: Long) {
+        viewModelScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val response = RetrofitInstance.api.getClasePorId("Bearer $token", id)
+                if (response.isSuccessful) {
+                    _claseSeleccionada.value = response.body()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 }

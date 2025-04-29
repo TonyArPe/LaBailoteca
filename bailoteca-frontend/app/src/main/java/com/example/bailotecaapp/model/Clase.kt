@@ -6,6 +6,6 @@ data class Clase(
     val descripcion: String,
     val profesor: Usuario,
     val videoPresentacion: String,
-    val horarioClases: List<HorarioClase>,
-    val inscritos: List<Usuario> = emptyList()
+    val horarioClases: List<HorarioClase>?,
+    val inscritos: List<Usuario>? = emptyList()
 )

@@ -7,17 +7,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.bailotecaapp.model.Clase
 import com.example.bailotecaapp.model.Usuario
+import androidx.compose.foundation.clickable
 
 @Composable
 fun ClaseCard(
     clase: Clase,
     usuarioActual: Usuario?,
-    onInscribirse: (Long) -> Unit
+    onInscribirse: (Long) -> Unit,
+    onVerDetalle: (Long) -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .padding(vertical = 8.dp)
+            .clickable { onVerDetalle(clase.id) },
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -28,14 +31,20 @@ fun ClaseCard(
 
             Text("Profesor: ${clase.profesor.nombre}", style = MaterialTheme.typography.labelSmall)
 
-            clase.horarioClases.forEach {
-                Text("- ${it.diaSemana} ${it.horaInicio} - ${it.horaFin}")
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (!clase.horarioClases.isNullOrEmpty()) {
+                (clase.horarioClases).forEach { horario ->
+                    Text(text = "${horario.diaSemana} ${horario.horaInicio}")
+                }
+            } else {
+                Text(text = "Horarios no disponibles", style = MaterialTheme.typography.labelSmall)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Solo mostrar si hay usuario logueado
-            val yaInscrito = clase.inscritos.any { it.id == usuarioActual?.id }
+            // Protección segura para inscritos
+            val yaInscrito = clase.inscritos?.any { it.id == usuarioActual?.id } == true
 
             if (usuarioActual != null && !yaInscrito) {
                 Button(onClick = { onInscribirse(clase.id) }) {

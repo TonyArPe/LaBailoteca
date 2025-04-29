@@ -11,7 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.InscripcionRequest
+import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -22,16 +24,17 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 @Composable
-fun ClaseListScreen(viewModel: ClaseViewModel = viewModel()) {
+fun ClaseListScreen(
+    navController: NavHostController,
+    viewModel: ClaseViewModel = viewModel()
+) {
     val clases by viewModel.clases.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
-
     val sesionViewModel: SesionViewModel = viewModel()
     val usuario by sesionViewModel.usuario.collectAsState()
-
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope() // Aquí debe ir
+    val coroutineScope = rememberCoroutineScope()
 
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
@@ -39,24 +42,23 @@ fun ClaseListScreen(viewModel: ClaseViewModel = viewModel()) {
 
         coroutineScope.launch {
             try {
-                val token = Firebase.auth.currentUser
-                    ?.getIdToken(false)?.await()?.token ?: return@launch
-
-                val response = RetrofitInstance.api
-                    .inscribirseClase("Bearer $token", request)
+                val token =
+                    Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val response = RetrofitInstance.api.inscribirseClase("Bearer $token", request)
 
                 if (response.isSuccessful) {
-                    Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT)
+                        .show()
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(context, "Error al inscribirse: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error al inscribirse: ${e.message}", Toast.LENGTH_SHORT)
+                    .show()
             }
         }
     }
 
-    // Llamar a la API cuando se abre la pantalla
     LaunchedEffect(Unit) {
         viewModel.obtenerClases()
     }
@@ -69,27 +71,23 @@ fun ClaseListScreen(viewModel: ClaseViewModel = viewModel()) {
                 .padding(16.dp)
         ) {
             when {
-                isLoading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                error != null -> Text(
+                    text = error ?: "Error desconocido",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center)
+                )
 
-                error != null -> {
-                    Text(
-                        text = error ?: "Error desconocido",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
-                else -> {
-                    LazyColumn {
-                        items(clases) { clase ->
-                            ClaseCard(
-                                clase = clase,
-                                usuarioActual = usuario,
-                                onInscribirse = { claseId -> inscribirseAClase(claseId) }
-                            )
-                        }
+                else -> LazyColumn {
+                    items(clases) { clase ->
+                        ClaseCard(
+                            clase = clase,
+                            usuarioActual = usuario,
+                            onInscribirse = { claseId -> inscribirseAClase(claseId) },
+                            onVerDetalle = { claseId ->
+                                navController.navigate(Screens.ClaseDetail.createRoute(claseId))
+                            }
+                        )
                     }
                 }
             }

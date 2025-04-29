@@ -9,13 +9,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.components.UsuarioCard
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 
 @Composable
-fun UserListScreen(viewModel: UsuarioViewModel = viewModel()) {
+fun UserListScreen(navController: NavController,
+                   viewModel: UsuarioViewModel = viewModel()) {
 
     // Observamos el estado desde el ViewModel
     val usuarios by viewModel.usuarios.collectAsState()
