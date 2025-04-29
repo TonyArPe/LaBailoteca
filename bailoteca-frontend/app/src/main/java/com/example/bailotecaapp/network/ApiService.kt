@@ -1,6 +1,7 @@
 package com.example.bailotecaapp.network
 
 import com.example.bailotecaapp.model.Clase
+import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.InscripcionRequest
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -37,4 +38,9 @@ interface ApiService {
         @Header("Authorization") token: String,
         @retrofit2.http.Path("id") claseId: Long
     ): Response<Clase>
+
+    @GET("api/inscripciones/mias")
+    suspend fun getMisInscripciones(
+        @Header("Authorization") token: String
+    ): Response<List<Inscripcion>>
 }

@@ -35,6 +35,8 @@ fun ClaseListScreen(
     val usuario by sesionViewModel.usuario.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val inscripciones by sesionViewModel.inscripciones.collectAsState()
+
 
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
@@ -83,6 +85,7 @@ fun ClaseListScreen(
                         ClaseCard(
                             clase = clase,
                             usuarioActual = usuario,
+                            inscripciones = inscripciones,
                             onInscribirse = { claseId -> inscribirseAClase(claseId) },
                             onVerDetalle = { claseId ->
                                 navController.navigate(Screens.ClaseDetail.createRoute(claseId))

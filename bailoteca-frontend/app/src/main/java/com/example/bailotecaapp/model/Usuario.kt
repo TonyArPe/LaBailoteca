@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.model
 
+import com.example.bailotecaapp.model.enums.Rol
 import java.time.LocalDate
 
 data class Usuario(
@@ -7,14 +8,15 @@ data class Usuario(
     val nombre: String,
     val apellido: String,
     val correo: String,
-    val rol: String,
+    val contrasenna: String,
+    val rol: Rol,
     val fotoPerfil: String?,
     val telefono: String?,
     val direccion: String?,
-    val fechaNacimiento: String?, // JSON lo devuelve como String (yyyy-MM-dd)
+    val fechaNacimiento: String?, // formato ISO-8601
     val genero: String?,
     val dni: String?,
-    val fechaRegistro: String?,   // También vendrá como String
+    val fechaRegistro: String?, // formato ISO-8601
     val activo: Boolean,
     val pagado: Boolean
 )

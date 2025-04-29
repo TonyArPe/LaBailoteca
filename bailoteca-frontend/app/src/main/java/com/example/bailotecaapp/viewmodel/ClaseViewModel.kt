@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Clase
+import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.network.RetrofitInstance
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -17,8 +18,12 @@ class ClaseViewModel : ViewModel() {
     // Lista observable de clases
     private val _clases = MutableStateFlow<List<Clase>>(emptyList())
     val clases: StateFlow<List<Clase>> = _clases
+
     private val _claseSeleccionada = MutableStateFlow<Clase?>(null)
     val claseSeleccionada: StateFlow<Clase?> = _claseSeleccionada
+
+    private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
+    val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
     // Cargando
     private val _isLoading = MutableStateFlow(false)
@@ -74,6 +79,20 @@ class ClaseViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            }
+        }
+    }
+
+    fun cargarMisInscripciones() {
+        viewModelScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val response = RetrofitInstance.api.getMisInscripciones("Bearer $token")
+                if (response.isSuccessful) {
+                    _inscripciones.value = response.body() ?: emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("SesionViewModel", "Error al cargar inscripciones: ${e.message}")
             }
         }
     }
