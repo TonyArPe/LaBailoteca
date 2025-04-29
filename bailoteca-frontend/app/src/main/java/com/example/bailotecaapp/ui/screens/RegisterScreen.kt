@@ -11,12 +11,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.navigation.Screens
 
 @Composable
-fun RegisterScreen(navController: NavController, viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()) {
+fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel = viewModel()) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -56,10 +57,7 @@ fun RegisterScreen(navController: NavController, viewModel: LoginViewModel = and
                 onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -71,10 +69,7 @@ fun RegisterScreen(navController: NavController, viewModel: LoginViewModel = and
                 label = { Text("Contraseña") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -104,11 +99,7 @@ fun RegisterScreen(navController: NavController, viewModel: LoginViewModel = and
 
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodyMedium)
             }
         }
     }

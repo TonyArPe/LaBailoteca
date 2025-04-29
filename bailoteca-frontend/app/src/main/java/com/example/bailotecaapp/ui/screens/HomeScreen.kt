@@ -9,13 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
-fun HomeScreen(navController: NavController) {
-
+fun HomeScreen(navController: NavHostController) {
     val sesionViewModel: SesionViewModel = viewModel()
     val usuario by sesionViewModel.usuario.collectAsState()
 
@@ -34,20 +33,19 @@ fun HomeScreen(navController: NavController) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Mostrar nombre del usuario logueado
         Text(
-            text = "Hola, ${usuario?.nombre ?: "..."}, Bailemos!",
+            text = "Hola, ${usuario?.nombre ?: "..."}, ¡bailemos!",
             style = MaterialTheme.typography.bodyMedium
         )
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Botón para ir a la lista de usuarios
         Button(onClick = { navController.navigate(Screens.Usuarios.route) }) {
             Text("Ver usuarios registrados")
         }
 
-        //Boton para ir a la lista de clases
+        Spacer(modifier = Modifier.height(16.dp))
+
         Button(onClick = { navController.navigate(Screens.Clases.route) }) {
             Text("Ver clases disponibles")
         }
