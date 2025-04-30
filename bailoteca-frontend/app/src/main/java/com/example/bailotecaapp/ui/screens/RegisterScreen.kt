@@ -101,11 +101,14 @@ fun RegisterScreen(
                                 if (token != null) {
                                     val usuario = Usuario(
                                         nombre = name,
+                                        apellido = "Prueba",
                                         correo = email,
                                         contrasenna = password,
                                         rol = Rol.USUARIO,
-                                        activo = true
+                                        activo = true,
+                                        pagado = false
                                     )
+
                                     coroutineScope.launch {
                                         try {
                                             val response = RetrofitInstance.api.crearUsuario("Bearer $token", usuario)

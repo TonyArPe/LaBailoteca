@@ -75,6 +75,7 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                         onSuccess = {
                             isLoading = false
                             sesionViewModel.cargarUsuarioActual()
+                            sesionViewModel.cargarMisInscripciones()
                             navController.navigate(Screens.Home.route)
                         },
                         onError = { error ->

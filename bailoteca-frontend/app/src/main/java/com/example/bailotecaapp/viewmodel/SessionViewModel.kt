@@ -31,32 +31,21 @@ class SesionViewModel : ViewModel() {
      * Obtiene el usuario actual desde el backend usando el token Firebase
      */
     fun cargarUsuarioActual() {
-        _isLoading.value = true
-        _error.value = null
-
-        val user = Firebase.auth.currentUser
-        user?.getIdToken(true)?.addOnSuccessListener { result ->
-            val token = result.token ?: ""
-            val authHeader = "Bearer $token"
-
-            viewModelScope.launch {
-                try {
-                    val response = RetrofitInstance.api.getUsuarioActual(authHeader)
-                    if (response.isSuccessful && response.body() != null) {
+        viewModelScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
+                if (token != null) {
+                    val response = RetrofitInstance.api.getUsuarioActual("Bearer $token")
+                    if (response.isSuccessful) {
                         _usuario.value = response.body()
+                        Log.d("SesionViewModel", "Usuario cargado: ${_usuario.value}")
                     } else {
-                        _error.value = "Error: ${response.code()}"
+                        Log.e("SesionViewModel", "Error al obtener perfil: ${response.code()}")
                     }
-                } catch (e: Exception) {
-                    _error.value = "Excepción: ${e.message}"
-                    Log.e("SesionViewModel", "Error al obtener usuario: ${e.localizedMessage}")
-                } finally {
-                    _isLoading.value = false
                 }
+            } catch (e: Exception) {
+                Log.e("SesionViewModel", "Excepción al cargar usuario: ${e.message}")
             }
-        }?.addOnFailureListener {
-            _isLoading.value = false
-            _error.value = "Error al obtener token de Firebase"
         }
     }
 
@@ -64,12 +53,15 @@ class SesionViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val response = RetrofitInstance.api.getMisInscripciones("Bearer $token")
+                val usuarioId = usuario.value?.id ?: return@launch
+                val response = RetrofitInstance.api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     _inscripciones.value = response.body() ?: emptyList()
+                } else {
+                    Log.e("SesionViewModel", "Error al obtener inscripciones: ${response.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("SesionViewModel", "Error cargando inscripciones: ${e.message}")
+                Log.e("SesionViewModel", "Error al cargar inscripciones: ${e.message}")
             }
         }
     }

@@ -9,7 +9,11 @@ import androidx.compose.ui.unit.dp
 import com.example.bailotecaapp.model.Clase
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
+import android.util.Log
 
+/**
+ * Muestra una tarjeta con la información de una clase, permitiendo inscribirse si el usuario no está ya inscrito.
+ */
 @Composable
 fun ClaseCard(
     clase: Clase,
@@ -18,7 +22,10 @@ fun ClaseCard(
     onInscribirse: (Long) -> Unit,
     onVerDetalle: (Long) -> Unit
 ) {
-    val yaInscrito = inscripciones.any { it.clase.id == clase.id }
+    Log.d("ClaseCard", "usuarioActual: ${usuarioActual?.id}, clase.id: ${clase.id}")
+    Log.d("ClaseCard", "Inscripciones del usuario: ${inscripciones.map { it.claseId }}")
+
+    val yaInscrito = inscripciones.any { it.claseId == clase.id }
 
     Card(
         modifier = Modifier
@@ -37,12 +44,12 @@ fun ClaseCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (!clase.horarioClases.isNullOrEmpty()) {
+            if (clase.horarioClases.isNotEmpty()) {
                 clase.horarioClases.forEach { horario ->
                     Text(text = "${horario.diaSemana} ${horario.horaInicio}")
                 }
             } else {
-                Text(text = "Horarios no disponibles", style = MaterialTheme.typography.labelSmall)
+                Text("Horarios no disponibles", style = MaterialTheme.typography.labelSmall)
             }
 
             Spacer(modifier = Modifier.height(8.dp))

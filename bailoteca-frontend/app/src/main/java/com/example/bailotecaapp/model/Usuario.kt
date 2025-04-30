@@ -1,10 +1,9 @@
 package com.example.bailotecaapp.model
 
 import com.example.bailotecaapp.model.enums.Rol
-import java.time.LocalDate
 
 data class Usuario(
-    val id: Long = 0L,
+    val id: Long? = null,
     val nombre: String,
     val apellido: String = "",
     val correo: String,

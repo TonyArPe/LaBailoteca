@@ -9,6 +9,7 @@ import retrofit2.Response
 import com.example.bailotecaapp.model.Usuario
 import retrofit2.http.Body
 import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface ApiService {
 
@@ -48,6 +49,12 @@ interface ApiService {
     @GET("api/inscripciones/mias")
     suspend fun getMisInscripciones(
         @Header("Authorization") token: String
+    ): Response<List<Inscripcion>>
+
+    @GET("api/inscripciones/usuario/{usuarioId}")
+    suspend fun getInscripcionesPorUsuario(
+        @Header("Authorization") token: String,
+        @Path("usuarioId") usuarioId: Long
     ): Response<List<Inscripcion>>
 
 }
