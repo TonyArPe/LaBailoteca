@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -72,6 +73,7 @@ fun ClaseListScreen(
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
                     sesionViewModel.cargarMisInscripciones() // 🔄 actualizar lista
+                    Log.d("ClaseListScreen", "Inscripciones recargadas tras inscribirse")
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
@@ -103,6 +105,11 @@ fun ClaseListScreen(
 
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(clases, key = { it.id }) { clase ->
+                        // Aquí usar un remembered yaInscrito también ayuda
+                        val yaInscrito = remember(inscripciones) {
+                            inscripciones.any { it.claseId == clase.id }
+                        }
+
                         ClaseCard(
                             clase = clase,
                             usuarioActual = usuario,

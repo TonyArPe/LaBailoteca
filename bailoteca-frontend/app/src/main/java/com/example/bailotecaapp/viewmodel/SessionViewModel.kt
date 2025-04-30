@@ -57,6 +57,7 @@ class SesionViewModel : ViewModel() {
                 val response = RetrofitInstance.api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     _inscripciones.value = response.body() ?: emptyList()
+                    Log.d("SesionViewModel", "Inscripciones cargadas: ${_inscripciones.value}")
                 } else {
                     Log.e("SesionViewModel", "Error al obtener inscripciones: ${response.code()}")
                 }

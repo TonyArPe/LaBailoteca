@@ -61,6 +61,7 @@ fun ClaseCard(
 
             if (usuarioActual != null) {
                 if (!yaInscrito) {
+                    Log.d("ClaseCard", "yaInscrito=${yaInscrito}, claseId=${clase.id}, inscripciones=${inscripciones.map { it.claseId }}")
                     Button(onClick = { onInscribirse(clase.id) }) {
                         Text("Inscribirme")
                     }
