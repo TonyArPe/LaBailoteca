@@ -2,6 +2,7 @@ package com.bailoteca.controller.inscripcion;
 
 import com.bailoteca.models.inscripcion.Inscripcion;
 import com.bailoteca.models.usuario.Usuario;
+import com.bailoteca.dto.InscripcionRequest;
 import com.bailoteca.models.enums.EstadoInscripcion;
 import com.bailoteca.repository.inscripcion.InscripcionRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
@@ -79,24 +80,24 @@ public class InscripcionController {
      * Inscribe al usuario autenticado en una clase.
      */
     @PostMapping
-    public ResponseEntity<Inscripcion> create(@RequestParam Long claseId) {
+    public ResponseEntity<Inscripcion> create(@RequestBody InscripcionRequest request) {
         Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
+        if (actual == null || !actual.getId().equals(request.getUsuarioId())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-        if (!claseRepo.existsById(claseId)) {
+        if (!claseRepo.existsById(request.getClaseId())) {
             return ResponseEntity.notFound().build();
         }
 
-        boolean yaInscrito = inscripcionRepo.existsByUsuarioIdAndClaseId(actual.getId(), claseId);
+        boolean yaInscrito = inscripcionRepo.existsByUsuarioIdAndClaseId(request.getUsuarioId(), request.getClaseId());
         if (yaInscrito) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(null);
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
         Inscripcion inscripcion = Inscripcion.builder()
                 .usuario(actual)
-                .clase(claseRepo.findById(claseId).get())
+                .clase(claseRepo.findById(request.getClaseId()).get())
                 .fechaInscripcion(LocalDate.now())
                 .estado(EstadoInscripcion.ACTIVA)
                 .build();
