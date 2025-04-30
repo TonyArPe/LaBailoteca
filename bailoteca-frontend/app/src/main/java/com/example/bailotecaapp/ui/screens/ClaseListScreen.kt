@@ -107,13 +107,14 @@ fun ClaseListScreen(
                     items(clases, key = { it.id }) { clase ->
                         // Aquí usar un remembered yaInscrito también ayuda
                         val yaInscrito = remember(inscripciones) {
-                            inscripciones.any { it.claseId == clase.id }
-                        }
+                            inscripciones.any { it.claseId.id == clase.id }
+                    }
 
                         ClaseCard(
                             clase = clase,
                             usuarioActual = usuario,
                             inscripciones = inscripciones,
+                            yaInscrito = yaInscrito,
                             onInscribirse = { claseId -> inscribirseAClase(claseId) },
                             onVerDetalle = { claseId -> navController.navigate(Screens.ClaseDetail.createRoute(claseId)) }
                         )

@@ -27,11 +27,10 @@ fun ClaseCard(
     clase: Clase,
     usuarioActual: Usuario?,
     inscripciones: List<Inscripcion>,
+    yaInscrito: Boolean,
     onInscribirse: (Long) -> Unit,
     onVerDetalle: (Long) -> Unit
 ) {
-    val yaInscrito = inscripciones.any { it.claseId == clase.id }
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
