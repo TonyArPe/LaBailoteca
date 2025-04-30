@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.InscripcionRequest
+import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -25,16 +27,36 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun ClaseListScreen(
     navController: NavHostController,
-    viewModel: ClaseViewModel = viewModel()
+    viewModel: ClaseViewModel = viewModel(),
+    sesionViewModel: SesionViewModel = viewModel()
 ) {
     val clases by viewModel.clases.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
-    val sesionViewModel: SesionViewModel = viewModel()
     val usuario by sesionViewModel.usuario.collectAsState()
+    val inscripciones by sesionViewModel.inscripciones.collectAsState()
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
+    /**
+     * Al montar la pantalla: cargamos el usuario actual.
+     */
+    LaunchedEffect(true) {
+        sesionViewModel.cargarUsuarioActual()
+    }
+
+    /**
+     * Cuando ya tenemos el usuario, cargamos sus inscripciones.
+     */
+    LaunchedEffect(usuario?.id) {
+        if (usuario != null) {
+            sesionViewModel.cargarMisInscripciones()
+        }
+    }
+
+    /**
+     * Función para inscribirse en una clase.
+     */
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
         val request = InscripcionRequest(usuarioId = userId, claseId = claseId)
@@ -46,6 +68,7 @@ fun ClaseListScreen(
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
+                    sesionViewModel.cargarMisInscripciones()
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
@@ -55,10 +78,16 @@ fun ClaseListScreen(
         }
     }
 
+    /**
+     * Cargamos las clases.
+     */
     LaunchedEffect(Unit) {
         viewModel.obtenerClases()
     }
 
+    /**
+     * Renderizado de la pantalla.
+     */
     Scaffold { padding ->
         Box(
             modifier = Modifier
@@ -73,12 +102,22 @@ fun ClaseListScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.Center)
                 )
+
+                usuario == null -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
                 else -> LazyColumn {
+                    Log.d("ClaseListScreen", "Usuario actual: ${usuario?.id}")
+                    Log.d("ClaseListScreen", "Inscripciones actuales: ${inscripciones.map { it.claseId }}")
+
                     items(clases) { clase ->
                         ClaseCard(
                             clase = clase,
                             usuarioActual = usuario,
-                            onInscribirse = { claseId -> inscribirseAClase(claseId) }
+                            inscripciones = inscripciones,
+                            onInscribirse = { claseId -> inscribirseAClase(claseId) },
+                            onVerDetalle = { claseId -> navController.navigate(Screens.ClaseDetail.createRoute(claseId)) }
                         )
                     }
                 }

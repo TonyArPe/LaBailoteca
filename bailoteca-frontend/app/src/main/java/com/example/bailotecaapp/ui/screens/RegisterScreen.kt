@@ -13,16 +13,29 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.viewmodel.LoginViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.network.RetrofitInstance
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @Composable
-fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel = viewModel()) {
+fun RegisterScreen(
+    navController: NavHostController,
+    loginViewModel: LoginViewModel = viewModel(),
+    sesionViewModel: SesionViewModel = viewModel()
+) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold { padding ->
         Column(
@@ -79,17 +92,51 @@ fun RegisterScreen(navController: NavHostController, viewModel: LoginViewModel =
                 onClick = {
                     isLoading = true
                     errorMessage = null
-                    viewModel.register(
-                        email, password,
-                        onSuccess = {
-                            isLoading = false
-                            navController.navigate(Screens.Home.route)
-                        },
-                        onError = {
-                            isLoading = false
-                            errorMessage = it
+
+                    Firebase.auth.createUserWithEmailAndPassword(email, password)
+                        .addOnSuccessListener { result ->
+                            val user = result.user
+                            user?.getIdToken(true)?.addOnSuccessListener { idTokenResult ->
+                                val token = idTokenResult.token
+                                if (token != null) {
+                                    val usuario = Usuario(
+                                        nombre = name,
+                                        apellido = "Prueba",
+                                        correo = email,
+                                        contrasenna = password,
+                                        rol = Rol.USUARIO,
+                                        activo = true,
+                                        pagado = false
+                                    )
+
+                                    coroutineScope.launch {
+                                        try {
+                                            val response = RetrofitInstance.api.crearUsuario("Bearer $token", usuario)
+                                            if (response.isSuccessful) {
+                                                sesionViewModel.cargarUsuarioActual() // carga el perfil
+                                                navController.navigate(Screens.Home.route)
+                                            } else {
+                                                errorMessage = "Error backend: ${response.code()}"
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = "Error al crear usuario: ${'$'}{e.message}"
+                                        } finally {
+                                            isLoading = false
+                                        }
+                                    }
+                                } else {
+                                    errorMessage = "No se pudo obtener el token."
+                                    isLoading = false
+                                }
+                            }?.addOnFailureListener {
+                                errorMessage = "Error al obtener token: ${'$'}{it.message}"
+                                isLoading = false
+                            }
                         }
-                    )
+                        .addOnFailureListener {
+                            errorMessage = "Error en Firebase: ${'$'}{it.message}"
+                            isLoading = false
+                        }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading

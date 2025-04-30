@@ -1,20 +1,21 @@
 package com.example.bailotecaapp.model
 
-import java.time.LocalDate
+import com.example.bailotecaapp.model.enums.Rol
 
 data class Usuario(
-    val id: Long,
+    val id: Long? = null,
     val nombre: String,
-    val apellido: String,
+    val apellido: String = "",
     val correo: String,
-    val rol: String,
-    val fotoPerfil: String?,
-    val telefono: String?,
-    val direccion: String?,
-    val fechaNacimiento: String?, // JSON lo devuelve como String (yyyy-MM-dd)
-    val genero: String?,
-    val dni: String?,
-    val fechaRegistro: String?,   // También vendrá como String
-    val activo: Boolean,
-    val pagado: Boolean
+    val contrasenna: String,
+    val rol: Rol = Rol.USUARIO,
+    val fotoPerfil: String? = null,
+    val telefono: String? = null,
+    val direccion: String? = null,
+    val fechaNacimiento: String? = null,
+    val genero: String? = null,
+    val dni: String? = null,
+    val fechaRegistro: String? = null,
+    val activo: Boolean = false,
+    val pagado: Boolean = false
 )

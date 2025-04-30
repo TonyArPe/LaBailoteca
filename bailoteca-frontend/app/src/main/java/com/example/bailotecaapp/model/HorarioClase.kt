@@ -3,7 +3,7 @@ package com.example.bailotecaapp.model
 data class HorarioClase(
     val id: Long,
     val diaSemana: String,
-    val horaInicio: String,  // Formato: "HH:mm:ss"
+    val horaInicio: String, // formato ISO "HH:mm:ss"
     val horaFin: String,
-    val clase: Clase? = null // Para evitar ciclos
+    val clase: Clase? = null // Evita ciclos infinitos
 )
