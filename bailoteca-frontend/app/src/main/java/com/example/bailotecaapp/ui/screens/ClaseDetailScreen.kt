@@ -1,39 +1,89 @@
 package com.example.bailotecaapp.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.network.RetrofitInstance
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
- * Pantalla de detalle para mostrar toda la información real de una clase.
- * Se basa en los campos del modelo backend sin asumir inscritos.
+ * Pantalla que muestra el detalle de una clase.
  */
 @Composable
 fun ClaseDetailScreen(
     navController: NavHostController,
     claseId: Long,
-    viewModel: ClaseViewModel = viewModel()
+    viewModel: ClaseViewModel = viewModel(),
+    sesionViewModel: SesionViewModel = viewModel()
 ) {
     val clase by viewModel.claseSeleccionada.collectAsState()
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val inscripciones by sesionViewModel.inscripciones.collectAsState()
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
 
-    // Cargar la clase solo una vez cuando entra
+    // Estado: buscamos si está inscrito en esta clase
+    val inscripcionActual = inscripciones.find { it.claseId == claseId }
+
+    /**
+     * Cargar la clase y los datos del usuario al entrar
+     */
     LaunchedEffect(claseId) {
-        // Pequeño delay opcional para UX si usas animaciones
         delay(150)
         viewModel.obtenerClasePorId(claseId)
     }
 
+    LaunchedEffect(Unit) {
+        sesionViewModel.cargarUsuarioActual()
+    }
+
+    LaunchedEffect(usuario?.id) {
+        if (usuario != null) {
+            sesionViewModel.cargarMisInscripciones()
+        }
+    }
+
+    /**
+     * Función para cancelar la inscripción en esta clase
+     */
+    fun cancelarInscripcion(inscripcionId: Long) {
+        coroutineScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val response = RetrofitInstance.api.eliminarInscripcion("Bearer $token", inscripcionId)
+
+                if (response.isSuccessful) {
+                    Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
+                    sesionViewModel.cargarMisInscripciones()
+                } else {
+                    Toast.makeText(context, "Error al cancelar inscripción: ${response.code()}", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    /**
+     * Interfaz visual
+     */
     Scaffold { padding ->
         Box(
             modifier = Modifier
@@ -51,10 +101,7 @@ fun ClaseDetailScreen(
                         color = MaterialTheme.colorScheme.primary
                     )
 
-                    Text(
-                        text = c.descripcion,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
+                    Text(c.descripcion, style = MaterialTheme.typography.bodyMedium)
 
                     Divider()
 
@@ -71,7 +118,6 @@ fun ClaseDetailScreen(
                     }
 
                     Divider()
-
                     Text("🕒 Horarios:", style = MaterialTheme.typography.titleSmall)
 
                     (c.horarioClases ?: emptyList()).forEach { horario ->
@@ -79,6 +125,16 @@ fun ClaseDetailScreen(
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
+
+                    // ✅ Mostrar botón para cancelar si el usuario está inscrito
+                    if (inscripcionActual != null) {
+                        Button(
+                            onClick = { cancelarInscripcion(inscripcionActual.id) },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        ) {
+                            Text("Cancelar inscripción")
+                        }
+                    }
 
                     OutlinedButton(
                         onClick = { navController.popBackStack() },
