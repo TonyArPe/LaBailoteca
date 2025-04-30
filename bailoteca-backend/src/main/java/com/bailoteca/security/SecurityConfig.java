@@ -33,7 +33,8 @@ public class SecurityConfig {
                     "/chat-privado.html", 
                     "/notificaciones.html",
                     "/ws/**",
-                    "/api/auth/**"
+                    "/api/auth/**",
+                    "/api/usuarios"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
