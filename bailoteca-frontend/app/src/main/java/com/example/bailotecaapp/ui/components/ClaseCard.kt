@@ -32,62 +32,40 @@ fun ClaseCard(
 ) {
     val yaInscrito = inscripciones.any { it.claseId == clase.id }
 
-    Log.d("ClaseCard", "usuarioActual: ${usuarioActual?.id}, clase.id: ${clase.id}")
-    Log.d("ClaseCard", "Inscripciones del usuario: ${inscripciones.map { it.claseId }}")
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
             .clickable { onVerDetalle(clase.id) },
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = clase.nombre, style = MaterialTheme.typography.titleMedium)
-            Text(text = clase.descripcion, style = MaterialTheme.typography.bodyMedium)
+            Text(clase.nombre, style = MaterialTheme.typography.titleMedium)
+            Text(clase.descripcion, style = MaterialTheme.typography.bodyMedium)
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Profesor: ${clase.profesor.nombre}",
-                style = MaterialTheme.typography.labelSmall
-            )
+            Text("Profesor: ${clase.profesor.nombre}", style = MaterialTheme.typography.labelSmall)
 
             Spacer(modifier = Modifier.height(8.dp))
 
             if (clase.horarioClases.isNotEmpty()) {
                 clase.horarioClases.forEach { horario ->
-                    Text(
-                        text = "${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}",
-                        style = MaterialTheme.typography.labelSmall
-                    )
+                    Text("• ${horario.diaSemana} ${horario.horaInicio} - ${horario.horaFin}")
                 }
             } else {
                 Text("Horarios no disponibles", style = MaterialTheme.typography.labelSmall)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // Zona de inscripción
-            when {
-                usuarioActual == null -> {
-                    Text(
-                        text = "Inicia sesión para inscribirte",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                yaInscrito -> {
-                    Text(
-                        text = "✅ Ya estás inscrito",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-                else -> {
+            if (usuarioActual != null) {
+                if (!yaInscrito) {
                     Button(onClick = { onInscribirse(clase.id) }) {
                         Text("Inscribirme")
                     }
+                } else {
+                    Text("Ya estás inscrito", style = MaterialTheme.typography.labelMedium)
                 }
             }
         }

@@ -1,6 +1,5 @@
 package com.example.bailotecaapp.ui.screens
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +23,9 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+/**
+ * Pantalla que muestra el listado de clases disponibles para inscribirse.
+ */
 @Composable
 fun ClaseListScreen(
     navController: NavHostController,
@@ -39,23 +41,24 @@ fun ClaseListScreen(
     val coroutineScope = rememberCoroutineScope()
 
     /**
-     * Al montar la pantalla: cargamos el usuario actual.
+     * Cargar el usuario y las inscripciones al montar la pantalla.
      */
-    LaunchedEffect(true) {
+    LaunchedEffect(Unit) {
         sesionViewModel.cargarUsuarioActual()
     }
 
-    /**
-     * Cuando ya tenemos el usuario, cargamos sus inscripciones.
-     */
     LaunchedEffect(usuario?.id) {
         if (usuario != null) {
             sesionViewModel.cargarMisInscripciones()
         }
     }
 
+    LaunchedEffect(Unit) {
+        viewModel.obtenerClases()
+    }
+
     /**
-     * Función para inscribirse en una clase.
+     * Función que realiza la inscripción a una clase y actualiza las inscripciones del ViewModel.
      */
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
@@ -68,7 +71,7 @@ fun ClaseListScreen(
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
-                    sesionViewModel.cargarMisInscripciones()
+                    sesionViewModel.cargarMisInscripciones() // 🔄 actualizar lista
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
@@ -79,14 +82,7 @@ fun ClaseListScreen(
     }
 
     /**
-     * Cargamos las clases.
-     */
-    LaunchedEffect(Unit) {
-        viewModel.obtenerClases()
-    }
-
-    /**
-     * Renderizado de la pantalla.
+     * Interfaz visual.
      */
     Scaffold { padding ->
         Box(
@@ -103,15 +99,10 @@ fun ClaseListScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
 
-                usuario == null -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
+                usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                else -> LazyColumn {
-                    Log.d("ClaseListScreen", "Usuario actual: ${usuario?.id}")
-                    Log.d("ClaseListScreen", "Inscripciones actuales: ${inscripciones.map { it.claseId }}")
-
-                    items(clases) { clase ->
+                else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(clases, key = { it.id }) { clase ->
                         ClaseCard(
                             clase = clase,
                             usuarioActual = usuario,

@@ -13,9 +13,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.network.RetrofitInstance
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.example.bailotecaapp.network.RetrofitInstance
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
@@ -23,7 +23,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
- * Pantalla que muestra el detalle de una clase.
+ * Pantalla de detalle para mostrar información completa de una clase,
+ * y permitir desinscribirse si el usuario está apuntado.
  */
 @Composable
 fun ClaseDetailScreen(
@@ -39,11 +40,8 @@ fun ClaseDetailScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    // Estado: buscamos si está inscrito en esta clase
-    val inscripcionActual = inscripciones.find { it.claseId == claseId }
-
     /**
-     * Cargar la clase y los datos del usuario al entrar
+     * Obtener la clase al entrar, y actualizar usuario e inscripciones.
      */
     LaunchedEffect(claseId) {
         delay(150)
@@ -60,10 +58,14 @@ fun ClaseDetailScreen(
         }
     }
 
+    // Estado: buscamos si está inscrito
+    val inscripcionActual = inscripciones.find { it.claseId == claseId }
+    val estaInscrito = inscripcionActual != null
+
     /**
-     * Función para cancelar la inscripción en esta clase
+     * Eliminar la inscripción de esta clase.
      */
-    fun cancelarInscripcion(inscripcionId: Long) {
+    fun desinscribirse(inscripcionId: Long) {
         coroutineScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
@@ -73,7 +75,7 @@ fun ClaseDetailScreen(
                     Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
                     sesionViewModel.cargarMisInscripciones()
                 } else {
-                    Toast.makeText(context, "Error al cancelar inscripción: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
@@ -82,7 +84,7 @@ fun ClaseDetailScreen(
     }
 
     /**
-     * Interfaz visual
+     * UI de detalle de la clase.
      */
     Scaffold { padding ->
         Box(
@@ -92,15 +94,8 @@ fun ClaseDetailScreen(
                 .padding(16.dp)
         ) {
             clase?.let { c ->
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Text(
-                        text = c.nombre,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(c.nombre, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                     Text(c.descripcion, style = MaterialTheme.typography.bodyMedium)
 
                     Divider()
@@ -119,18 +114,17 @@ fun ClaseDetailScreen(
 
                     Divider()
                     Text("🕒 Horarios:", style = MaterialTheme.typography.titleSmall)
-
-                    (c.horarioClases ?: emptyList()).forEach { horario ->
+                    c.horarioClases.forEach { horario ->
                         Text("• ${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}")
                     }
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    // ✅ Mostrar botón para cancelar si el usuario está inscrito
-                    if (inscripcionActual != null) {
+                    if (estaInscrito && inscripcionActual != null) {
                         Button(
-                            onClick = { cancelarInscripcion(inscripcionActual.id) },
-                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                            onClick = { desinscribirse(inscripcionActual.id) },
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                         ) {
                             Text("Cancelar inscripción")
                         }
@@ -143,9 +137,7 @@ fun ClaseDetailScreen(
                         Text("Volver")
                     }
                 }
-            } ?: run {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
+            } ?: CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
     }
 }
