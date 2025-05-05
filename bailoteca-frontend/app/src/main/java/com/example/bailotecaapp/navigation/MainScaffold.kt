@@ -11,23 +11,36 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(navController: NavHostController) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val sesionViewModel: SesionViewModel = viewModel()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             DrawerContent(
                 onItemSelected = { destination ->
-                    scope.launch { drawerState.close() }
-                    navController.navigate(destination)
-                }
+                    scope.launch {
+                        drawerState.close()
+                        if (destination == "logout") {
+                            sesionViewModel.cerrarSesion()
+                            navController.navigate("login") {
+                                popUpTo(0) // Limpia el backstack para evitar volver con el botón atrás
+                            }
+                        } else {
+                            navController.navigate(destination)
+                        }
+                    }
+                },
+                sesionViewModel = sesionViewModel
             )
         }
     ) {
@@ -43,9 +56,7 @@ fun MainScaffold(navController: NavHostController) {
                 )
             }
         ) { padding ->
-            AppNavigation(
-                navController = navController,
-                modifier = Modifier.padding(padding)
+            AppNavigation(navController, modifier = Modifier.padding(padding)
             )
         }
     }

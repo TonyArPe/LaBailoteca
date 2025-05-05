@@ -66,4 +66,7 @@ class SesionViewModel : ViewModel() {
             }
         }
     }
+    fun cerrarSesion() {
+        _usuario.value = null
+    }
 }

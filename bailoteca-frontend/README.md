@@ -130,21 +130,34 @@ Se corrigieron problemas de mapeo asegurando que los modelos de Kotlin reflejen 
 
 ---
 
-# NAVIGATION DRAWER
-## Scaffold
-El **Scaffold** es un componente de alto nivel que ofrece una estructura básica para pantallas con elementos típicos como:
+## Navegación general y estructura principal
 
-- TopAppBar (barra superior)
+Se ha implementado una estructura de navegación global basada en **Scaffold** de Jetpack Compose, que incluye:
 
-- BottomBar (barra inferior)
+- **TopAppBar**: Barra superior con el título de la app y botón de menú lateral.
+- **Drawer lateral**: Implementado con `ModalNavigationDrawer`, mostrando las rutas disponibles según el rol del usuario.
+- **Sistema de navegación central**: `AppNavigation` conectado dentro del Scaffold para permitir el cambio de pantallas de forma fluida.
+- **Correcto manejo del padding**: Evita solapamiento con la TopAppBar.
 
-- FloatingActionButton (botón flotante)
+### Archivos relevantes
 
-- DrawerContent (panel lateral o Navigation Drawer)
+- **MainScaffold.kt**: Contenedor principal de la app con barra superior y drawer.
+- **DrawerContent.kt**: Lista de rutas del menú lateral.
+- **AppNavigation.kt**: Rutas navegables dentro de la aplicación.
 
-- Content (el contenido principal)
+### Apuntes personales
 
-Es el equivalente moderno al clásico DrawerLayout + AppBarLayout de Android XML, pero diseñado para Compose.
+#### ¿Qué es Scaffold?
+
+- Es una estructura base en Jetpack Compose que permite colocar de forma ordenada elementos como barras superiores, barras inferiores, menús laterales y el contenido principal.
+- El Scaffold tiene un bloque `padding -> {}` que hay que respetar para evitar que el contenido se solape con otros elementos visuales (como la barra superior).
+
+#### ¿Cómo se ha montado la navegación?
+
+1. Se usa `ModalNavigationDrawer` para el menú lateral.
+2. Dentro del drawer, se utiliza una función `DrawerContent()` personalizada que llama a `navController.navigate(destino)` al pulsar una opción.
+3. El contenido principal del Scaffold llama a `AppNavigation`, que contiene todas las rutas (LoginScreen, HomeScreen, etc.).
+4. Se usa `rememberCoroutineScope()` para abrir/cerrar el drawer animadamente con `drawerState.open()` y `drawerState.close()`.
 
 ## Próximos pasos
 
