@@ -101,7 +101,50 @@ Se utilizan endpoints como:
 - El backend valida el token y devuelve datos solo si es válido
 - Se usa `Authorization: Bearer <idToken>`
 
+### Inscripción de usuarios a clases
+
+El backend expone un endpoint:
+
+- **POST** `/api/inscripciones?claseId={id}`: Permite registrar la inscripción del usuario autenticado en una clase.
+- También permite obtener inscripciones por usuario o por clase.
+
+El modelo **Inscripcion** relaciona:
+
+- **Usuario**: Información del usuario inscrito.
+- **Clase**: Detalles de la clase.
+- **Fecha**: Representada como `LocalDate`.
+- **Estado**: Representado por `EstadoInscripcion`.
+
+En el frontend (Jetpack Compose):
+
+- Se accede a las inscripciones del usuario para controlar el estado de la UI (botón "Inscribirme").
+- Si el usuario ya está inscrito:
+  - Se oculta el botón.
+  - Se muestra el mensaje: **"Ya estás inscrito"**.
+- Desde la pantalla de detalle, se permite cancelar la inscripción.
+
+Se corrigieron problemas de mapeo asegurando que los modelos de Kotlin reflejen correctamente la estructura anidada del backend:
+
+- **usuario**: Representado por el modelo `Usuario`.
+- **clase**: Representada por el modelo `Clase`.
+
 ---
+
+# NAVIGATION DRAWER
+## Scaffold
+El **Scaffold** es un componente de alto nivel que ofrece una estructura básica para pantallas con elementos típicos como:
+
+- TopAppBar (barra superior)
+
+- BottomBar (barra inferior)
+
+- FloatingActionButton (botón flotante)
+
+- DrawerContent (panel lateral o Navigation Drawer)
+
+- Content (el contenido principal)
+
+Es el equivalente moderno al clásico DrawerLayout + AppBarLayout de Android XML, pero diseñado para Compose.
 
 ## Próximos pasos
 
