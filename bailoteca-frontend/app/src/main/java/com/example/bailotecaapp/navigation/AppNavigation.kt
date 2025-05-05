@@ -1,6 +1,8 @@
 package com.example.bailotecaapp.navigation
 
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -8,9 +10,11 @@ import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.screens.*
 
 @Composable
-fun AppNavigation(navController: NavHostController) {
+fun AppNavigation(navController: NavHostController,
+                  modifier: Modifier = Modifier) {
     NavHost(
         navController = navController,
+        modifier = modifier,
         startDestination = Screens.Login.route
     ) {
         composable(Screens.Login.route) {

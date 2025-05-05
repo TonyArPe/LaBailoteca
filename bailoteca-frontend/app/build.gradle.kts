@@ -55,17 +55,18 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // Activity para Compose
-    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation(libs.androidx.activity.compose.v182)
 
     // Jetpack Compose (versión 1.7.8)
     implementation("androidx.compose.ui:ui:1.7.8")
     implementation("androidx.compose.material3:material3:1.2.1")
+    implementation(libs.androidx.foundation.layout.android)
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
 
     // Couritines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation(libs.kotlinx.coroutines.android)
 
     // Navigation con Compose
     implementation("androidx.navigation:navigation-compose:2.7.7")
@@ -76,16 +77,16 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
 
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
-    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation(libs.firebase.auth.ktx)
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation(libs.retrofit)
 
     // Conversor Gson para parsear JSON automáticamente
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation(libs.converter.gson)
 
     // OkHttp para logging (opcional pero muy útil para depurar)
-    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+    implementation(libs.logging.interceptor)
 
 }
 

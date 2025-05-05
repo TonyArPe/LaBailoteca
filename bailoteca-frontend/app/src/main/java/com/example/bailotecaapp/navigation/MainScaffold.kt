@@ -1,16 +1,18 @@
 package com.example.bailotecaapp.navigation
 
-import androidx.compose.runtime.Composable
-import androidx.navigation.NavHostController
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.Text
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.ModalNavigationDrawer
+import com.example.bailotecaapp.ui.components.DrawerContent
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
+import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,7 +43,10 @@ fun MainScaffold(navController: NavHostController) {
                 )
             }
         ) { padding ->
-            NavigationGraph(navController, modifier = Modifier.padding(padding))
+            AppNavigation(
+                navController = navController,
+                modifier = Modifier.padding(padding)
+            )
         }
     }
 }
