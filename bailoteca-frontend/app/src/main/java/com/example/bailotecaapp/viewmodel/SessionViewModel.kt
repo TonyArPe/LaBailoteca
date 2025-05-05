@@ -5,9 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.RetrofitInstance
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,12 +13,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+/**
+ * ViewModel que gestiona la sesión del usuario autenticado, así como sus inscripciones y perfil.
+ */
 class SesionViewModel : ViewModel() {
 
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario
-
-    val token = FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.result?.token
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -31,32 +30,39 @@ class SesionViewModel : ViewModel() {
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
-
     init {
         cargarUsuarioActual()
     }
+
     /**
-     * Obtiene el usuario actual desde el backend usando el token Firebase
+     * Obtiene el usuario autenticado desde el backend y lo guarda en el estado observable.
      */
     fun cargarUsuarioActual() {
         viewModelScope.launch {
+            _isLoading.value = true
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
                 if (token != null) {
                     val response = RetrofitInstance.api.getUsuarioActual("Bearer $token")
                     if (response.isSuccessful) {
                         _usuario.value = response.body()
-                        Log.d("SesionViewModel", "Usuario cargado: ${_usuario.value}")
+                        Log.d("SesionViewModel", "Usuario cargado correctamente.")
                     } else {
-                        Log.e("SesionViewModel", "Error al obtener perfil: ${response.code()}")
+                        _error.value = "Error al obtener perfil: ${response.code()}"
                     }
                 }
             } catch (e: Exception) {
-                Log.e("SesionViewModel", "Excepción al cargar usuario: ${e.message}")
+                _error.value = "Excepción al cargar usuario: ${e.localizedMessage}"
+                Log.e("SesionViewModel", "Error: ${e.message}", e)
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
+    /**
+     * Carga un usuario por ID desde el backend (requiere token válido).
+     */
     fun cargarUsuarioDesdeBackend(id: Long) {
         viewModelScope.launch {
             try {
@@ -66,27 +72,18 @@ class SesionViewModel : ViewModel() {
                     if (response.isSuccessful) {
                         _usuario.value = response.body()
                     } else {
-                        Log.e("SesionViewModel", "Error al obtener usuario por ID: ${response.code()}")
+                        _error.value = "Error al obtener usuario por ID: ${response.code()}"
                     }
                 }
             } catch (e: Exception) {
-                Log.e("SesionViewModel", "Excepción al obtener usuario por ID: ${e.message}")
+                _error.value = "Excepción al obtener usuario por ID: ${e.localizedMessage}"
             }
         }
     }
 
-    fun cargarUsuarioDesdeApi(id: String) {
-        viewModelScope.launch {
-            try {
-                val usuarioDesdeApi = ApiService.getUsuarioPorId(id)
-                _usuario.value = usuarioDesdeApi
-            } catch (e: Exception) {
-                Log.e("SesionViewModel", "Error cargando usuario", e)
-            }
-        }
-    }
-
-
+    /**
+     * Obtiene todas las inscripciones del usuario actual autenticado.
+     */
     fun cargarMisInscripciones() {
         viewModelScope.launch {
             try {
@@ -95,16 +92,29 @@ class SesionViewModel : ViewModel() {
                 val response = RetrofitInstance.api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     _inscripciones.value = response.body() ?: emptyList()
-                    Log.d("SesionViewModel", "Inscripciones cargadas: ${_inscripciones.value}")
+                    Log.d("SesionViewModel", "Inscripciones cargadas correctamente.")
                 } else {
-                    Log.e("SesionViewModel", "Error al obtener inscripciones: ${response.code()}")
+                    _error.value = "Error al obtener inscripciones: ${response.code()}"
                 }
             } catch (e: Exception) {
-                Log.e("SesionViewModel", "Error al cargar inscripciones: ${e.message}")
+                _error.value = "Error al cargar inscripciones: ${e.localizedMessage}"
             }
         }
     }
+
+    /**
+     * Borra la sesión actual y limpia los estados.
+     */
     fun cerrarSesion() {
         _usuario.value = null
+        _inscripciones.value = emptyList()
+        _error.value = null
+    }
+
+    /**
+     * Establece un usuario manualmente (por ejemplo para pruebas).
+     */
+    fun setUsuario(usuario: Usuario) {
+        _usuario.value = usuario
     }
 }

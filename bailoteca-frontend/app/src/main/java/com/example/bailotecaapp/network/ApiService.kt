@@ -10,6 +10,7 @@ import com.example.bailotecaapp.model.Usuario
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ApiService {
@@ -36,6 +37,14 @@ interface ApiService {
         @Body usuario: Usuario
     ): Response<Usuario>
 
+    @PUT("api/usuarios/{id}")
+    suspend fun actualizarUsuario(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long,
+        @Body usuario: Usuario
+    ): Response<Usuario>
+
+
     @GET("api/clases")
     suspend fun getClasesDisponibles(
         @Header("Authorization") token: String
@@ -51,7 +60,7 @@ interface ApiService {
     suspend fun inscribirseClase(
         @Header("Authorization") token: String,
         @Body inscripcionRequest: InscripcionRequest
-    ): Response<Void>
+    ): Response<Inscripcion>
 
     @GET("api/inscripciones/mias")
     suspend fun getMisInscripciones(

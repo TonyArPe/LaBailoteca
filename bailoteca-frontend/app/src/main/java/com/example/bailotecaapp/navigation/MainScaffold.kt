@@ -4,56 +4,69 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.ui.components.DrawerContent
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
-import androidx.navigation.NavHostController
 
+/**
+ * Estructura principal del layout de la aplicación, con AppBar, Drawer y navegación integrada.
+ *
+ * @param navController Controlador de navegación de Jetpack Compose.
+ * @param sessionViewModel ViewModel que gestiona la sesión del usuario autenticado.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScaffold(navController: NavHostController, sessionViewModel: SesionViewModel) {
+fun MainScaffold(
+    navController: NavHostController,
+    sessionViewModel: SesionViewModel = viewModel()
+) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    // Obtenemos el usuario desde el ViewModel
+    // Estado del usuario autenticado
     val usuario by sessionViewModel.usuario.collectAsState()
 
-    // Lanzamos la carga del usuario solo una vez
+    // Cargar usuario al iniciar solo una vez
     LaunchedEffect(Unit) {
-        sessionViewModel.cargarUsuarioDesdeApi(idUsuario = "id_desde_firebase_o_token")
+        sessionViewModel.cargarUsuarioActual()
     }
 
-    Scaffold(
+    ModalNavigationDrawer(
+        drawerState = drawerState,
         drawerContent = {
-            if (usuario != null) {
+            usuario?.let {
                 DrawerContent(
+                    onItemSelected = { ruta ->
+                        navController.navigate(ruta)
+                    },
                     navController = navController,
-                    usuario = usuario!!,
-                    onCloseDrawer = { scope.launch { drawerState.close() } }
+                    usuario = it,
+                    onCloseDrawer = { scope.launch { drawerState.close() } },
+                    sesionViewModel = sessionViewModel
                 )
             }
-        },
-        topBar = {
-            TopAppBar(
-                title = { Text("La Bailoteca") },
-                navigationIcon = {
-                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                        Icon(Icons.Default.Menu, contentDescription = "Menú")
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("La Bailoteca") },
+                    navigationIcon = {
+                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menú")
+                        }
                     }
-                }
+                )
+            }
+        ) { padding ->
+            AppNavigation(
+                navController = navController,
+                modifier = Modifier.padding(padding)
             )
         }
-    ) { padding ->
-        AppNavigation(
-            navController = navController,
-            modifier = Modifier.padding(padding)
-        )
     }
 }
