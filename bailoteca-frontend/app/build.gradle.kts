@@ -64,6 +64,7 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
     // Couritines
     implementation(libs.kotlinx.coroutines.android)
