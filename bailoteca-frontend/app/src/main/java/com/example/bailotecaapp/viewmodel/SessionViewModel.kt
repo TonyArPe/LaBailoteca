@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.RetrofitInstance
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -18,6 +20,8 @@ class SesionViewModel : ViewModel() {
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario
 
+    val token = FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.result?.token
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -27,6 +31,10 @@ class SesionViewModel : ViewModel() {
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
+
+    init {
+        cargarUsuarioActual()
+    }
     /**
      * Obtiene el usuario actual desde el backend usando el token Firebase
      */
@@ -48,6 +56,36 @@ class SesionViewModel : ViewModel() {
             }
         }
     }
+
+    fun cargarUsuarioDesdeBackend(id: Long) {
+        viewModelScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
+                if (token != null) {
+                    val response = RetrofitInstance.api.getUsuarioPorId("Bearer $token", id)
+                    if (response.isSuccessful) {
+                        _usuario.value = response.body()
+                    } else {
+                        Log.e("SesionViewModel", "Error al obtener usuario por ID: ${response.code()}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SesionViewModel", "Excepción al obtener usuario por ID: ${e.message}")
+            }
+        }
+    }
+
+    fun cargarUsuarioDesdeApi(id: String) {
+        viewModelScope.launch {
+            try {
+                val usuarioDesdeApi = ApiService.getUsuarioPorId(id)
+                _usuario.value = usuarioDesdeApi
+            } catch (e: Exception) {
+                Log.e("SesionViewModel", "Error cargando usuario", e)
+            }
+        }
+    }
+
 
     fun cargarMisInscripciones() {
         viewModelScope.launch {

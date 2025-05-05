@@ -24,6 +24,12 @@ interface ApiService {
         @Header("Authorization") token: String
     ): Response<Usuario>
 
+    @GET("api/usuarios/{id}")
+    suspend fun getUsuarioPorId(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long
+    ): Response<Usuario>
+
     @POST("api/usuarios")
     suspend fun crearUsuario(
         @Header("Authorization") authHeader: String,

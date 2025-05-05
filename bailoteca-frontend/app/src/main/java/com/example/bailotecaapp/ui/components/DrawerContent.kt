@@ -7,69 +7,76 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavHostController
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
- * Componente DrawerContent que muestra un menú lateral de navegación.
- * Las opciones que se muestran dependen del rol del usuario.
+ * Componente DrawerContent que muestra el menú lateral de navegación personalizado según el rol.
  *
- * @param onItemSelected Función callback que se ejecuta al seleccionar un destino del menú.
- * @param sesionViewModel ViewModel que contiene la sesión actual del usuario.
+ * @param onItemSelected Callback para cambiar la pantalla según el destino seleccionado.
+ * @param sesionViewModel ViewModel que gestiona la sesión del usuario autenticado.
  */
 @Composable
 fun DrawerContent(
     onItemSelected: (String) -> Unit,
+    navController: NavHostController,
+    usuario: Usuario,
+    onCloseDrawer: () -> Unit,
     sesionViewModel: SesionViewModel = viewModel()
 ) {
+    val idUsuario = usuario.id
     val usuario by sesionViewModel.usuario.collectAsState()
-    if(usuario != null) {
-        val rol = usuario?.rol ?: "INVITADO"
 
-        // Lista de opciones de navegación según el rol del usuario
-        val opciones = when (rol) {
-            "ADMIN" -> listOf(
-                DrawerDestination.Home,
-                DrawerDestination.Clases,
-                DrawerDestination.Usuarios,
-                DrawerDestination.Perfil,
-                DrawerDestination.Logout
-            )
-
-            "PROFESOR" -> listOf(
-                DrawerDestination.Home,
-                DrawerDestination.Clases,
-                DrawerDestination.Perfil,
-                DrawerDestination.Logout
-            )
-
-            "USUARIO" -> listOf(
-                DrawerDestination.Home,
-                DrawerDestination.Clases,
-                DrawerDestination.Perfil,
-                DrawerDestination.Logout
-            )
-
-            else -> listOf(
-                DrawerDestination.Home
-            )
-        }
-
-        // Composición visual del menú lateral
-        Column(
+    if (usuario == null) {
+        // Mientras no haya usuario, muestra un placeholder
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surface) // Color de fondo visible
                 .padding(16.dp)
         ) {
-            opciones.forEach { item ->
-                NavigationDrawerItem(
-                    label = { Text(item.label) },
-                    selected = false,
-                    onClick = { onItemSelected(item.route) },
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+            Text("Cargando menú...")
+        }
+        return
+    }
+
+    val rol = usuario?.rol ?: "INVITADO"
+    val opciones = when (rol) {
+        "ADMIN" -> listOf(
+            DrawerDestination.Home,
+            DrawerDestination.Clases,
+            DrawerDestination.Usuarios,
+            DrawerDestination.Perfil,
+            DrawerDestination.Logout
+        )
+        "PROFESOR" -> listOf(
+            DrawerDestination.Home,
+            DrawerDestination.Clases,
+            DrawerDestination.Perfil,
+            DrawerDestination.Logout
+        )
+        "USUARIO" -> listOf(
+            DrawerDestination.Home,
+            DrawerDestination.Clases,
+            DrawerDestination.Perfil,
+            DrawerDestination.Logout
+        )
+        else -> listOf(DrawerDestination.Home)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(16.dp)
+    ) {
+        opciones.forEach { item ->
+            NavigationDrawerItem(
+                label = { Text(item.label) },
+                selected = false,
+                onClick = { onItemSelected(item.route) },
+                modifier = Modifier.padding(vertical = 4.dp)
+            )
         }
     }
 }
