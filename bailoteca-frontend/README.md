@@ -159,6 +159,27 @@ Se ha implementado una estructura de navegación global basada en **Scaffold** d
 3. El contenido principal del Scaffold llama a `AppNavigation`, que contiene todas las rutas (LoginScreen, HomeScreen, etc.).
 4. Se usa `rememberCoroutineScope()` para abrir/cerrar el drawer animadamente con `drawerState.open()` y `drawerState.close()`.
 
+### Navegación y menú lateral
+
+La aplicación móvil usa un sistema de navegación centralizado basado en Jetpack Compose Navigation.
+
+#### Componentes clave:
+- `MainScaffold.kt`: define el layout principal con AppBar, Drawer y Navigation.
+- `DrawerContent.kt`: menú lateral dinámico basado en el rol del usuario.
+- `DrawerDestinations.kt`: enum sellado que define las rutas disponibles para cada tipo de usuario.
+- `SesionViewModel.kt`: mantiene el estado del usuario autenticado de forma reactiva.
+
+#### Roles soportados:
+- `ADMIN`: acceso completo a usuarios, clases, perfil y logout.
+- `PROFESOR`: acceso a clases, perfil y logout.
+- `USUARIO`: acceso a clases, perfil y logout.
+
+#### Comportamiento:
+- El menú se muestra como un `ModalNavigationDrawer` con un ancho fijo (`280.dp`).
+- El contenido se adapta automáticamente cuando el drawer está abierto.
+- La sesión permanece activa hasta que el usuario cierra sesión explícitamente.
+
+
 ## Próximos pasos
 
 - Arquitectura MVVM completa (con ViewModel y Repository)

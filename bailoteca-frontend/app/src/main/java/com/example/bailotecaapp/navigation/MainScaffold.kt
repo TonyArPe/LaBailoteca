@@ -6,6 +6,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.ui.components.DrawerContent
@@ -27,10 +28,9 @@ fun MainScaffold(
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    // Estado del usuario autenticado
     val usuario by sessionViewModel.usuario.collectAsState()
 
-    // Cargar usuario al iniciar solo una vez
+    // Carga del usuario actual desde backend al iniciar
     LaunchedEffect(Unit) {
         sessionViewModel.cargarUsuarioActual()
     }
@@ -38,15 +38,27 @@ fun MainScaffold(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            usuario?.let {
+            if (usuario != null) {
                 DrawerContent(
                     onItemSelected = { ruta ->
-                        navController.navigate(ruta)
+                        navController.navigate(ruta) {
+                            popUpTo(navController.graph.startDestinationId) {
+                                inclusive = false
+                            }
+                            launchSingleTop = true
+                        }
+                        scope.launch { drawerState.close() }
                     },
                     navController = navController,
-                    usuario = it,
+                    usuario = usuario!!,
                     onCloseDrawer = { scope.launch { drawerState.close() } },
                     sesionViewModel = sessionViewModel
+                )
+            } else {
+                // Drawer vacío o con "Cargando..."
+                Text(
+                    text = "Cargando menú...",
+                    modifier = Modifier.padding(16.dp)
                 )
             }
         }

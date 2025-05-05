@@ -66,11 +66,12 @@ fun DrawerContent(
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxHeight()
+            .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
-        opciones.forEach { item ->
+    opciones.forEach { item ->
             NavigationDrawerItem(
                 label = { Text(item.label) },
                 selected = false,
