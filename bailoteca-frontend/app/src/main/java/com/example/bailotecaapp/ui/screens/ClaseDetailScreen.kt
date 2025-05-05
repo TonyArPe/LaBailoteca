@@ -59,7 +59,7 @@ fun ClaseDetailScreen(
     }
 
     // Estado: buscamos si está inscrito
-    val inscripcionActual = inscripciones.find { it.claseId.id == claseId }
+    val inscripcionActual = inscripciones.find { it.clase.id == claseId }
     val estaInscrito = inscripcionActual != null
 
     /**

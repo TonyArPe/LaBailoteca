@@ -107,7 +107,7 @@ fun ClaseListScreen(
                     items(clases, key = { it.id }) { clase ->
                         // Aquí usar un remembered yaInscrito también ayuda
                         val yaInscrito = remember(inscripciones) {
-                            inscripciones.any { it.claseId.id == clase.id }
+                            inscripciones.any { it.clase.id == clase.id }
                     }
 
                         ClaseCard(

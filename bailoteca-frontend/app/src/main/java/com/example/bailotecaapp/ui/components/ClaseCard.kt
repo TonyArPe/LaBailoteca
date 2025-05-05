@@ -58,9 +58,11 @@ fun ClaseCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            Log.d("ClaseCard", "yaInscrito=$yaInscrito, claseId=${clase.id}, inscripciones=${inscripciones.map { it.clase.id }}")
+
             if (usuarioActual != null) {
                 if (!yaInscrito) {
-                    Log.d("ClaseCard", "yaInscrito=${yaInscrito}, claseId=${clase.id}, inscripciones=${inscripciones.map { it.claseId }}")
+                    Log.d("ClaseCard", "yaInscrito=${yaInscrito}, claseId=${clase.id}, inscripciones=${inscripciones.map { it.clase }}")
                     Button(onClick = { onInscribirse(clase.id) }) {
                         Text("Inscribirme")
                     }
