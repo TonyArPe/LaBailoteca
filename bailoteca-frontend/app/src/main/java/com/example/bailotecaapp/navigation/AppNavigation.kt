@@ -10,8 +10,10 @@ import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.screens.*
 
 @Composable
-fun AppNavigation(navController: NavHostController,
-                  modifier: Modifier = Modifier) {
+fun AppNavigation(
+    navController: NavHostController,
+    modifier: Modifier = Modifier
+) {
     NavHost(
         navController = navController,
         modifier = modifier,

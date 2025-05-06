@@ -52,7 +52,6 @@ fun MainScaffold(
                         scope.launch { drawerState.close() }
                     },
                     navController = navController,
-                    usuario = it,
                     onCloseDrawer = { scope.launch { drawerState.close() } },
                     sesionViewModel = sessionViewModel
                 )

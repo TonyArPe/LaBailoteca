@@ -17,6 +17,8 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.navigation.Screens
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 /**
  * Pantalla que muestra el perfil del usuario autenticado de forma visual y atractiva.
@@ -29,7 +31,6 @@ fun ProfileScreen(
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
 
-    val usuarioActual = usuario!!
     if (usuario == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -40,6 +41,9 @@ fun ProfileScreen(
         return
     }
 
+    //Para guardar el usuario en una variable una vez hecha la comprobacion
+    val usuarioActual = usuario!!
+
     Scaffold(
         topBar = {
             TopAppBar(title = { Text("Mi Perfil") })
@@ -49,7 +53,8 @@ fun ProfileScreen(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()), // Añade scroll
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {

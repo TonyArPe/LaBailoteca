@@ -19,6 +19,7 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.R
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
@@ -34,7 +35,6 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 fun DrawerContent(
     onItemSelected: (String) -> Unit,
     navController: NavHostController,
-    usuario: Usuario,
     onCloseDrawer: () -> Unit,
     sesionViewModel: SesionViewModel = viewModel()
 ) {
@@ -156,6 +156,12 @@ fun DrawerContent(
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
+        }
+
+        // Cierre de sesion
+        sesionViewModel.cerrarSesion()
+        navController.navigate(Screens.Login.route) {
+            popUpTo(0) { inclusive = true }
         }
     }
 }
