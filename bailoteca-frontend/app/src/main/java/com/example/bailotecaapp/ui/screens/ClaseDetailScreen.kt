@@ -49,7 +49,7 @@ fun ClaseDetailScreen(
     }
 
     LaunchedEffect(Unit) {
-        sesionViewModel.cargarUsuarioActual()
+        sesionViewModel.obtenerUsuarioActual()
     }
 
     LaunchedEffect(usuario?.id) {

@@ -113,7 +113,7 @@ fun RegisterScreen(
                                         try {
                                             val response = RetrofitInstance.api.crearUsuario("Bearer $token", usuario)
                                             if (response.isSuccessful) {
-                                                sesionViewModel.cargarUsuarioActual() // carga el perfil
+                                                sesionViewModel.obtenerUsuarioActual() // carga el perfil
                                                 navController.navigate(Screens.Home.route)
                                             } else {
                                                 errorMessage = "Error backend: ${response.code()}"

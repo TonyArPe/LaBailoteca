@@ -32,13 +32,13 @@ class SesionViewModel : ViewModel() {
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
     init {
-        cargarUsuarioActual()
+        obtenerUsuarioActual()
     }
 
     /**
      * Obtiene el usuario autenticado desde el backend y lo guarda en el estado observable.
      */
-    fun cargarUsuarioActual() {
+    fun obtenerUsuarioActual() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -47,37 +47,16 @@ class SesionViewModel : ViewModel() {
                     val response = RetrofitInstance.api.getUsuarioActual("Bearer $token")
                     if (response.isSuccessful) {
                         _usuario.value = response.body()
-                        Log.d("SesionViewModel", "Usuario cargado correctamente.")
+                        Log.d("SesionViewModel", "Usuario actualizado correctamente.")
                     } else {
                         _error.value = "Error al obtener perfil: ${response.code()}"
                     }
                 }
             } catch (e: Exception) {
-                _error.value = "Excepción al cargar usuario: ${e.localizedMessage}"
+                _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
                 Log.e("SesionViewModel", "Error: ${e.message}", e)
             } finally {
                 _isLoading.value = false
-            }
-        }
-    }
-
-    /**
-     * Carga un usuario por ID desde el backend (requiere token válido).
-     */
-    fun cargarUsuarioDesdeBackend(id: Long) {
-        viewModelScope.launch {
-            try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
-                if (token != null) {
-                    val response = RetrofitInstance.api.getUsuarioPorId("Bearer $token", id)
-                    if (response.isSuccessful) {
-                        _usuario.value = response.body()
-                    } else {
-                        _error.value = "Error al obtener usuario por ID: ${response.code()}"
-                    }
-                }
-            } catch (e: Exception) {
-                _error.value = "Excepción al obtener usuario por ID: ${e.localizedMessage}"
             }
         }
     }
@@ -120,7 +99,7 @@ class SesionViewModel : ViewModel() {
 
                 val response = RetrofitInstance.api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
                 if (response.isSuccessful) {
-                    _usuario.value = response.body() // actualizamos el usuario
+                    obtenerUsuarioActual() // <--- importante: recarga los datos reales del backend
                     onSuccess()
                 } else {
                     onError("Error ${response.code()}: ${response.message()}")
@@ -132,7 +111,7 @@ class SesionViewModel : ViewModel() {
     }
 
     /**
-     * Establece un usuario manualmente (por ejemplo para pruebas).
+     * Establecer usuario de pruebas
      */
     fun setUsuario(usuario: Usuario) {
         _usuario.value = usuario

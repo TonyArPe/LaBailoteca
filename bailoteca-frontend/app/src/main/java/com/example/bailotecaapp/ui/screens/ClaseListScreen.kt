@@ -45,7 +45,7 @@ fun ClaseListScreen(
      * Cargar el usuario y las inscripciones al montar la pantalla.
      */
     LaunchedEffect(Unit) {
-        sesionViewModel.cargarUsuarioActual()
+        sesionViewModel.obtenerUsuarioActual()
     }
 
     LaunchedEffect(usuario?.id) {

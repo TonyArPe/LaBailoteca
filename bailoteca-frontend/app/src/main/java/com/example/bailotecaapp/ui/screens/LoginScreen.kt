@@ -74,7 +74,7 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                         password,
                         onSuccess = {
                             isLoading = false
-                            sesionViewModel.cargarUsuarioActual()
+                            sesionViewModel.obtenerUsuarioActual()
                             sesionViewModel.cargarMisInscripciones()
                             navController.navigate(Screens.Home.route)
                         },
