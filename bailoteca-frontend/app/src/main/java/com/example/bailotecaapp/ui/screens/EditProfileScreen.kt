@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
+import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -27,6 +28,9 @@ fun EditProfileScreen(
 ) {
     val context = LocalContext.current
     val usuario by sesionViewModel.usuario.collectAsState()
+
+    var showErrorDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
     // Estados locales editables
     var nombre by remember { mutableStateOf(usuario?.nombre ?: "") }
@@ -110,12 +114,42 @@ fun EditProfileScreen(
 
             Button(
                 onClick = {
-                    Log.d("EditProfile", "Guardar cambios - aún por implementar")
-                    // TODO: Enviar datos al backend y actualizar ViewModel
+                    val usuarioActualizado = UsuarioUpdateRequest(
+                        nombre = nombre,
+                        telefono = telefono,
+                        direccion = direccion,
+                        fechaNacimiento = fechaNacimiento,
+                        genero = genero,
+                        fotoPerfil = imagenUri?.toString() ?: usuario?.fotoPerfil
+                    )
+
+                    sesionViewModel.actualizarPerfil(
+                        usuarioActualizado = usuarioActualizado,
+                        onSuccess = {
+                            navController.popBackStack() // vuelve a ProfileScreen
+                        },
+                        onError = { errorMsg ->
+                            errorMessage = errorMsg
+                            showErrorDialog = true
+                        }
+                    )
+
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Guardar cambios")
+            }
+            if (showErrorDialog) {
+                AlertDialog(
+                    onDismissRequest = { showErrorDialog = false },
+                    confirmButton = {
+                        TextButton(onClick = { showErrorDialog = false }) {
+                            Text("Aceptar")
+                        }
+                    },
+                    title = { Text("Error al guardar perfil") },
+                    text = { Text(errorMessage) }
+                )
             }
         }
     }

@@ -7,6 +7,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.Response
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.POST
@@ -41,9 +42,8 @@ interface ApiService {
     suspend fun actualizarUsuario(
         @Header("Authorization") token: String,
         @Path("id") id: Long,
-        @Body usuario: Usuario
+        @Body usuario: UsuarioUpdateRequest
     ): Response<Usuario>
-
 
     @GET("api/clases")
     suspend fun getClasesDisponibles(

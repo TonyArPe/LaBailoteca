@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.network.RetrofitInstance
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -109,6 +110,25 @@ class SesionViewModel : ViewModel() {
         _usuario.value = null
         _inscripciones.value = emptyList()
         _error.value = null
+    }
+
+    fun actualizarPerfil(usuarioActualizado: UsuarioUpdateRequest, onSuccess: () -> Unit, onError: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
+                val userId = usuario.value?.id ?: return@launch
+
+                val response = RetrofitInstance.api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
+                if (response.isSuccessful) {
+                    _usuario.value = response.body() // actualizamos el usuario
+                    onSuccess()
+                } else {
+                    onError("Error ${response.code()}: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                onError("Excepción: ${e.localizedMessage}")
+            }
+        }
     }
 
     /**
