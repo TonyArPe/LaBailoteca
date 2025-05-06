@@ -1,20 +1,25 @@
 package com.example.bailotecaapp.ui.screens
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.navigation.Screens
 
 /**
- * Pantalla que muestra el perfil del usuario autenticado.
- *
- * @param navController Controlador de navegación.
- * @param sesionViewModel ViewModel que contiene los datos del usuario actual.
+ * Pantalla de visualización del perfil de usuario.
+ * Muestra la información personal y un botón para acceder a la edicion.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,50 +29,52 @@ fun ProfileScreen(
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
 
+    if (usuario == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Mi perfil") })
+            TopAppBar(title = { Text("Mi Perfil") })
         }
     ) { padding ->
-        if (usuario == null) {
-            Box(
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Foto de perfil
+            Image(
+                painter = rememberAsyncImagePainter(usuario!!.fotoPerfil),
+                contentDescription = "Foto de perfil",
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = androidx.compose.ui.Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text("Datos del usuario", style = MaterialTheme.typography.titleMedium)
+                    .size(120.dp)
+                    .clip(CircleShape)
+            )
 
-                PerfilItem(label = "Nombre", value = usuario!!.nombre)
-                PerfilItem(label = "Correo", value = usuario!!.correo)
-                PerfilItem(label = "Teléfono", value = usuario!!.telefono ?: "No indicado")
-                PerfilItem(label = "Dirección", value = usuario!!.direccion ?: "No indicada")
-                PerfilItem(label = "Fecha de nacimiento", value = usuario!!.fechaNacimiento ?: "No indicada")
-                PerfilItem(label = "Género", value = usuario!!.genero ?: "No indicado")
-                PerfilItem(label = "DNI", value = usuario!!.dni ?: "No indicado")
-                PerfilItem(label = "Registrado el", value = usuario!!.fechaRegistro ?: "Desconocido")
+            Text("Nombre: ${'$'}{usuario!!.nombre}")
+            Text("Correo: ${'$'}{usuario!!.correo}")
+            usuario!!.telefono?.let { Text("Teléfono: ${'$'}it") }
+            usuario!!.direccion?.let { Text("Dirección: ${'$'}it") }
+            usuario!!.genero?.let { Text("Género: ${'$'}it") }
+            usuario!!.fechaNacimiento?.let { Text("Fecha Nacimiento: ${'$'}it") }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(onClick = {
+                navController.navigate(Screens.EditProfile.route)
+            }) {
+                Text("Editar Perfil")
             }
         }
-    }
-}
-
-/**
- * Componente reutilizable para mostrar un campo del perfil.
- */
-@Composable
-fun PerfilItem(label: String, value: String) {
-    Column {
-        Text(text = label, fontWeight = FontWeight.Bold)
-        Text(text = value)
     }
 }

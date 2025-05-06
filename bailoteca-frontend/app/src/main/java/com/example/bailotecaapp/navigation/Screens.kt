@@ -9,5 +9,6 @@ sealed class Screens(val route: String) {
     object ClaseDetail : Screens("clase/{claseId}") {
         fun createRoute(claseId: Long) = "clase/$claseId"
     }
+    object EditProfile : Screens("editProfile")
     object Perfil : Screens("perfil")
 }

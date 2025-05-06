@@ -42,5 +42,8 @@ fun AppNavigation(navController: NavHostController,
         composable(Screens.Perfil.route) {
             ProfileScreen(navController)
         }
+        composable(Screens.EditProfile.route) {
+            EditProfileScreen(navController)
+        }
     }
 }
