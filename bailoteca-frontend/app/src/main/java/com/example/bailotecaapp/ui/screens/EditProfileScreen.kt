@@ -20,6 +20,13 @@ import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
+/**
+ * Pantalla para que el usuario pueda editar sus datos personales.
+ * Incluye la selección de imagen desde la galería y campos editables.
+ *
+ * @param navController Controlador de navegación para volver atrás.
+ * @param sesionViewModel ViewModel que contiene al usuario autenticado.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
@@ -29,15 +36,25 @@ fun EditProfileScreen(
     val context = LocalContext.current
     val usuario by sesionViewModel.usuario.collectAsState()
 
+    if (usuario == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
     // Estados locales editables
-    var nombre by remember { mutableStateOf(usuario?.nombre ?: "") }
-    var telefono by remember { mutableStateOf(usuario?.telefono ?: "") }
-    var direccion by remember { mutableStateOf(usuario?.direccion ?: "") }
-    var fechaNacimiento by remember { mutableStateOf(usuario?.fechaNacimiento ?: "") }
-    var genero by remember { mutableStateOf(usuario?.genero ?: "") }
+    var nombre by remember { mutableStateOf(usuario!!.nombre) }
+    var telefono by remember { mutableStateOf(usuario!!.telefono ?: "") }
+    var direccion by remember { mutableStateOf(usuario!!.direccion ?: "") }
+    var fechaNacimiento by remember { mutableStateOf(usuario!!.fechaNacimiento ?: "") }
+    var genero by remember { mutableStateOf(usuario!!.genero ?: "") }
 
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -59,57 +76,58 @@ fun EditProfileScreen(
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text("Edita tu información", style = MaterialTheme.typography.titleMedium)
 
-            // Imagen actual / seleccionada
-            imagenUri?.let {
-                Image(
-                    painter = rememberAsyncImagePainter(it),
-                    contentDescription = "Foto de perfil",
-                    modifier = Modifier
-                        .size(120.dp)
-                        .align(Alignment.CenterHorizontally)
-                )
-            }
+            // Imagen actual o nueva
+            Image(
+                painter = rememberAsyncImagePainter(imagenUri ?: usuario!!.fotoPerfil),
+                contentDescription = "Foto de perfil",
+                modifier = Modifier
+                    .size(120.dp)
+                    .align(Alignment.CenterHorizontally)
+            )
 
-            Button(
-                onClick = { imagePickerLauncher.launch("image/*") },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
-            ) {
+            Button(onClick = { imagePickerLauncher.launch("image/*") }) {
                 Text("Seleccionar imagen")
             }
 
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
-                label = { Text("Nombre") }
+                label = { Text("Nombre") },
+                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = telefono,
                 onValueChange = { telefono = it },
                 label = { Text("Teléfono") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = direccion,
                 onValueChange = { direccion = it },
-                label = { Text("Dirección") }
+                label = { Text("Dirección") },
+                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = fechaNacimiento,
                 onValueChange = { fechaNacimiento = it },
-                label = { Text("Fecha de nacimiento (AAAA-MM-DD)") }
+                label = { Text("Fecha de nacimiento (AAAA-MM-DD)") },
+                modifier = Modifier.fillMaxWidth()
             )
 
             OutlinedTextField(
                 value = genero,
                 onValueChange = { genero = it },
-                label = { Text("Género") }
+                label = { Text("Género") },
+                modifier = Modifier.fillMaxWidth()
             )
 
             Button(
@@ -120,25 +138,25 @@ fun EditProfileScreen(
                         direccion = direccion,
                         fechaNacimiento = fechaNacimiento,
                         genero = genero,
-                        fotoPerfil = imagenUri?.toString() ?: usuario?.fotoPerfil
+                        fotoPerfil = imagenUri?.toString() ?: usuario!!.fotoPerfil
                     )
 
                     sesionViewModel.actualizarPerfil(
                         usuarioActualizado = usuarioActualizado,
                         onSuccess = {
-                            navController.popBackStack() // vuelve a ProfileScreen
+                            navController.popBackStack()
                         },
                         onError = { errorMsg ->
                             errorMessage = errorMsg
                             showErrorDialog = true
                         }
                     )
-
                 },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Guardar cambios")
             }
+
             if (showErrorDialog) {
                 AlertDialog(
                     onDismissRequest = { showErrorDialog = false },
