@@ -1,14 +1,23 @@
 package com.example.bailotecaapp.ui.components
 
+import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
+import com.example.bailotecaapp.R
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
@@ -25,11 +34,9 @@ fun DrawerContent(
     onCloseDrawer: () -> Unit,
     sesionViewModel: SesionViewModel = viewModel()
 ) {
-    val idUsuario = usuario.id
     val usuario by sesionViewModel.usuario.collectAsState()
 
     if (usuario == null) {
-        // Mientras no haya usuario, muestra un placeholder
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -40,22 +47,25 @@ fun DrawerContent(
         return
     }
 
-    val rol = usuario?.rol ?: "INVITADO"
+    val usuarioActual = usuario!!
+    val rol = usuario!!.rol ?: Rol.INVITADO
+    Log.d("DrawerContent", "ROL = $rol")
+
     val opciones = when (rol) {
-        "ADMIN" -> listOf(
+        Rol.ADMIN -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Usuarios,
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-        "PROFESOR" -> listOf(
+        Rol.PROFESOR -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-        "USUARIO" -> listOf(
+        Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,
@@ -69,15 +79,67 @@ fun DrawerContent(
             .fillMaxHeight()
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
-            .padding(16.dp)
     ) {
-    opciones.forEach { item ->
-            NavigationDrawerItem(
-                label = { Text(item.label) },
-                selected = false,
-                onClick = { onItemSelected(item.route) },
-                modifier = Modifier.padding(vertical = 4.dp)
-            )
+        // HEADER VISUAL DEL MENÚ
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.primaryContainer)
+                .padding(top = 48.dp, bottom = 16.dp)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val fotoPainter = if (usuarioActual.fotoPerfil.isNullOrEmpty()) {
+                    painterResource(id = R.drawable.default_profile)
+                } else {
+                    rememberAsyncImagePainter(usuarioActual.fotoPerfil)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        .padding(4.dp)
+                ) {
+                    Image(
+                        painter = fotoPainter,
+                        contentDescription = "Foto de perfil",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = usuarioActual.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+
+                Text(
+                    text = usuarioActual.rol.name.lowercase().replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+        }
+
+        Divider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+
+        Column(modifier = Modifier.padding(16.dp)) {
+            opciones.forEach { item ->
+                NavigationDrawerItem(
+                    label = { Text(item.label) },
+                    selected = false,
+                    onClick = { onItemSelected(item.route) },
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
         }
     }
 }
