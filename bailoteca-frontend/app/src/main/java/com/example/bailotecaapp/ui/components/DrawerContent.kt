@@ -3,6 +3,7 @@ package com.example.bailotecaapp.ui.components
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
@@ -24,7 +25,10 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
  * Componente DrawerContent que muestra el menú lateral de navegación personalizado según el rol.
  *
  * @param onItemSelected Callback para cambiar la pantalla según el destino seleccionado.
- * @param sesionViewModel ViewModel que gestiona la sesión del usuario autenticado.
+ * @param navController Controlador de navegación.
+ * @param usuario Usuario actualmente autenticado.
+ * @param onCloseDrawer Función para cerrar el drawer.
+ * @param sesionViewModel ViewModel de sesión (por defecto se obtiene con viewModel()).
  */
 @Composable
 fun DrawerContent(
@@ -48,7 +52,7 @@ fun DrawerContent(
     }
 
     val usuarioActual = usuario!!
-    val rol = usuario!!.rol ?: Rol.INVITADO
+    val rol = usuarioActual.rol ?: Rol.INVITADO
     Log.d("DrawerContent", "ROL = $rol")
 
     val opciones = when (rol) {
@@ -80,12 +84,16 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // HEADER VISUAL DEL MENÚ
+        // HEADER
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(top = 48.dp, bottom = 16.dp)
+                .clickable {
+                    onItemSelected(DrawerDestination.Perfil.route)
+                    onCloseDrawer()
+                }
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -129,14 +137,22 @@ fun DrawerContent(
             }
         }
 
-        Divider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+        // Divider visual
+        Divider(
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+        )
 
+        // Opciones del menú
         Column(modifier = Modifier.padding(16.dp)) {
             opciones.forEach { item ->
                 NavigationDrawerItem(
                     label = { Text(item.label) },
                     selected = false,
-                    onClick = { onItemSelected(item.route) },
+                    onClick = {
+                        onItemSelected(item.route)
+                        onCloseDrawer()
+                    },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
