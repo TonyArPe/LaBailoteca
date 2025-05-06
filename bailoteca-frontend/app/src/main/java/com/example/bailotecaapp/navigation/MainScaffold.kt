@@ -2,22 +2,21 @@ package com.example.bailotecaapp.navigation
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.bailotecaapp.ui.components.DrawerContent
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
 
 /**
- * Estructura principal del layout de la aplicación, con AppBar, Drawer y navegación integrada.
- *
- * @param navController Controlador de navegación de Jetpack Compose.
- * @param sessionViewModel ViewModel que gestiona la sesión del usuario autenticado.
+ * Componente principal que configura el Scaffold general de la app.
+ * Muestra un TopAppBar y un NavigationDrawer dependiendo de la pantalla actual.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,18 +26,21 @@ fun MainScaffold(
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-
     val usuario by sessionViewModel.usuario.collectAsState()
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = currentBackStackEntry?.destination
 
-    // Carga del usuario actual desde backend al iniciar
-    LaunchedEffect(Unit) {
-        sessionViewModel.cargarUsuarioActual()
-    }
+    // Se muestra si estamos en pantalla principal, si no flecha para volver
+    val esPantallaPrincipal = currentDestination?.route in listOf(
+        Screens.Home.route,
+        Screens.Clases.route,
+        Screens.Usuarios.route
+    )
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            if (usuario != null) {
+            usuario?.let {
                 DrawerContent(
                     onItemSelected = { ruta ->
                         navController.navigate(ruta) {
@@ -50,15 +52,9 @@ fun MainScaffold(
                         scope.launch { drawerState.close() }
                     },
                     navController = navController,
-                    usuario = usuario!!,
+                    usuario = it,
                     onCloseDrawer = { scope.launch { drawerState.close() } },
                     sesionViewModel = sessionViewModel
-                )
-            } else {
-                // Drawer vacío o con "Cargando..."
-                Text(
-                    text = "Cargando menú...",
-                    modifier = Modifier.padding(16.dp)
                 )
             }
         }
@@ -66,18 +62,33 @@ fun MainScaffold(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("La Bailoteca") },
+                    title = {
+                        Text("La Bailoteca")
+                    },
                     navigationIcon = {
-                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menú")
+                        if (esPantallaPrincipal) {
+                            IconButton(onClick = {
+                                scope.launch { drawerState.open() }
+                            }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menú")
+                            }
+                        } else {
+                            IconButton(onClick = {
+                                navController.navigate(Screens.Home.route) {
+                                    popUpTo(Screens.Home.route) { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            }) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                            }
                         }
                     }
                 )
             }
-        ) { padding ->
+        ) { innerPadding ->
             AppNavigation(
                 navController = navController,
-                modifier = Modifier.padding(padding)
+                modifier = Modifier.padding(innerPadding)
             )
         }
     }
