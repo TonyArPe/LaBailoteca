@@ -101,4 +101,12 @@ dependencies {
 
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.squareup" && requested.name == "javapoet") {
+            useVersion("1.13.0")
+        }
+    }
+}
+
 apply(plugin = "com.google.gms.google-services")

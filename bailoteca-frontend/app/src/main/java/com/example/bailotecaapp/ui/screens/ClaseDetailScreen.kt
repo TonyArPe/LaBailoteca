@@ -13,7 +13,6 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
-import com.example.bailotecaapp.network.RetrofitInstance
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
@@ -21,6 +20,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
  * Pantalla de detalle para mostrar información completa de una clase,
@@ -45,11 +45,11 @@ fun ClaseDetailScreen(
      */
     LaunchedEffect(claseId) {
         delay(150)
-        viewModel.obtenerClasePorId(claseId)
+        viewModel.cargarClase(claseId)
     }
 
     LaunchedEffect(Unit) {
-        sesionViewModel.obtenerUsuarioActual()
+        viewModel.cargarClase(claseId)
     }
 
     LaunchedEffect(usuario?.id) {
@@ -69,7 +69,7 @@ fun ClaseDetailScreen(
         coroutineScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val response = RetrofitInstance.api.eliminarInscripcion("Bearer $token", inscripcionId)
+                val response = viewModel.eliminarInscripcion(token, inscripcionId)
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()

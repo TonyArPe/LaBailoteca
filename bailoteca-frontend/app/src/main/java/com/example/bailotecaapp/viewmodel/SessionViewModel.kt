@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
-import com.example.bailotecaapp.network.BailotecaApi
+import com.example.bailotecaapp.network.ApiService
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,7 +22,7 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
-    private val api: BailotecaApi
+    private val api: ApiService
 ) : ViewModel() {
 
     private val _usuario = MutableStateFlow<Usuario?>(null)
@@ -88,6 +88,7 @@ class SesionViewModel @Inject constructor(
      * Borra la sesión actual y limpia los estados.
      */
     fun cerrarSesion() {
+        Firebase.auth.signOut()
         _usuario.value = null
         _inscripciones.value = emptyList()
         _error.value = null

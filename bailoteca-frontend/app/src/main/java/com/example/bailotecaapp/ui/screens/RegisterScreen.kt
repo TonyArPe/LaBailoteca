@@ -11,30 +11,31 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.bailotecaapp.navigation.Screens
-import com.example.bailotecaapp.viewmodel.LoginViewModel
-import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
-import com.example.bailotecaapp.network.RetrofitInstance
+import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.viewmodel.LoginViewModel
+import com.example.bailotecaapp.viewmodel.RegisterViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 @Composable
 fun RegisterScreen(
     navController: NavHostController,
-    loginViewModel: LoginViewModel = viewModel(),
-    sesionViewModel: SesionViewModel = viewModel()
+    loginViewModel: LoginViewModel = hiltViewModel(),
+    sesionViewModel: SesionViewModel = hiltViewModel(),
+    registerViewModel: RegisterViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold { padding ->
@@ -70,7 +71,10 @@ fun RegisterScreen(
                 onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -82,7 +86,10 @@ fun RegisterScreen(
                 label = { Text("Contraseña") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -95,10 +102,9 @@ fun RegisterScreen(
 
                     Firebase.auth.createUserWithEmailAndPassword(email, password)
                         .addOnSuccessListener { result ->
-                            val user = result.user
-                            user?.getIdToken(true)?.addOnSuccessListener { idTokenResult ->
-                                val token = idTokenResult.token
-                                if (token != null) {
+                            val firebaseUser = result.user
+                            firebaseUser?.getIdToken(true)
+                                ?.addOnSuccessListener {
                                     val usuario = Usuario(
                                         nombre = name,
                                         apellido = "Prueba",
@@ -110,31 +116,25 @@ fun RegisterScreen(
                                     )
 
                                     coroutineScope.launch {
-                                        try {
-                                            val response = RetrofitInstance.api.crearUsuario("Bearer $token", usuario)
+                                        registerViewModel.registrarUsuarioBackend(usuario) { response ->
+                                            isLoading = false
                                             if (response.isSuccessful) {
-                                                sesionViewModel.obtenerUsuarioActual() // carga el perfil
-                                                navController.navigate(Screens.Home.route)
+                                                sesionViewModel.obtenerUsuarioActual()
+                                                navController.navigate(Screens.Home.route) {
+                                                    popUpTo(0) { inclusive = true }
+                                                }
                                             } else {
                                                 errorMessage = "Error backend: ${response.code()}"
                                             }
-                                        } catch (e: Exception) {
-                                            errorMessage = "Error al crear usuario: ${'$'}{e.message}"
-                                        } finally {
-                                            isLoading = false
                                         }
                                     }
-                                } else {
-                                    errorMessage = "No se pudo obtener el token."
+                                }?.addOnFailureListener {
+                                    errorMessage = "Error al obtener token: ${it.message}"
                                     isLoading = false
                                 }
-                            }?.addOnFailureListener {
-                                errorMessage = "Error al obtener token: ${'$'}{it.message}"
-                                isLoading = false
-                            }
                         }
                         .addOnFailureListener {
-                            errorMessage = "Error en Firebase: ${'$'}{it.message}"
+                            errorMessage = "Error en Firebase: ${it.message}"
                             isLoading = false
                         }
                 },

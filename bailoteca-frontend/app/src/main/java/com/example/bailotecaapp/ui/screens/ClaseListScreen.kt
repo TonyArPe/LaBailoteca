@@ -11,14 +11,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.InscripcionRequest
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.example.bailotecaapp.network.RetrofitInstance
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -30,8 +29,8 @@ import kotlinx.coroutines.tasks.await
 @Composable
 fun ClaseListScreen(
     navController: NavHostController,
-    viewModel: ClaseViewModel = viewModel(),
-    sesionViewModel: SesionViewModel = viewModel()
+    viewModel: ClaseViewModel = hiltViewModel(),
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val clases by viewModel.clases.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -46,16 +45,13 @@ fun ClaseListScreen(
      */
     LaunchedEffect(Unit) {
         sesionViewModel.obtenerUsuarioActual()
+        viewModel.obtenerClases()
     }
 
     LaunchedEffect(usuario?.id) {
         if (usuario != null) {
             sesionViewModel.cargarMisInscripciones()
         }
-    }
-
-    LaunchedEffect(Unit) {
-        viewModel.obtenerClases()
     }
 
     /**
@@ -68,7 +64,7 @@ fun ClaseListScreen(
         coroutineScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val response = RetrofitInstance.api.inscribirseClase("Bearer $token", request)
+                val response = viewModel.inscribirseAClase(token, request)
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
@@ -105,10 +101,9 @@ fun ClaseListScreen(
 
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(clases, key = { it.id }) { clase ->
-                        // Aquí usar un remembered yaInscrito también ayuda
                         val yaInscrito = remember(inscripciones) {
                             inscripciones.any { it.clase.id == clase.id }
-                    }
+                        }
 
                         ClaseCard(
                             clase = clase,
