@@ -6,18 +6,24 @@ import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
-import com.example.bailotecaapp.network.RetrofitInstance
+import com.example.bailotecaapp.network.BailotecaApi
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 /**
  * ViewModel que gestiona la sesión del usuario autenticado, así como sus inscripciones y perfil.
+ * Se inyecta con Hilt y gestiona la lógica de autenticación + sincronización de perfil.
  */
-class SesionViewModel : ViewModel() {
+@HiltViewModel
+class SesionViewModel @Inject constructor(
+    private val api: BailotecaApi
+) : ViewModel() {
 
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario
@@ -31,10 +37,6 @@ class SesionViewModel : ViewModel() {
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
-    init {
-        obtenerUsuarioActual()
-    }
-
     /**
      * Obtiene el usuario autenticado desde el backend y lo guarda en el estado observable.
      */
@@ -44,7 +46,7 @@ class SesionViewModel : ViewModel() {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
                 if (token != null) {
-                    val response = RetrofitInstance.api.getUsuarioActual("Bearer $token")
+                    val response = api.getUsuarioActual("Bearer $token")
                     if (response.isSuccessful) {
                         _usuario.value = response.body()
                         Log.d("SesionViewModel", "Usuario actualizado correctamente.")
@@ -69,7 +71,7 @@ class SesionViewModel : ViewModel() {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
                 val usuarioId = usuario.value?.id ?: return@launch
-                val response = RetrofitInstance.api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
+                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     _inscripciones.value = response.body() ?: emptyList()
                     Log.d("SesionViewModel", "Inscripciones cargadas correctamente.")
@@ -97,9 +99,9 @@ class SesionViewModel : ViewModel() {
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
                 val userId = usuario.value?.id ?: return@launch
 
-                val response = RetrofitInstance.api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
+                val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
                 if (response.isSuccessful) {
-                    obtenerUsuarioActual() // <--- importante: recarga los datos reales del backend
+                    obtenerUsuarioActual()
                     onSuccess()
                 } else {
                     onError("Error ${response.code()}: ${response.message()}")
@@ -110,9 +112,6 @@ class SesionViewModel : ViewModel() {
         }
     }
 
-    /**
-     * Establecer usuario de pruebas
-     */
     fun setUsuario(usuario: Usuario) {
         _usuario.value = usuario
     }

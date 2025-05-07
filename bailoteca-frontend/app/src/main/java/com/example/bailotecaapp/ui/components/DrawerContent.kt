@@ -21,6 +21,8 @@ import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.google.firebase.Firebase
+import com.google.firebase.auth.auth
 
 /**
  * Componente DrawerContent que muestra el menú lateral de navegación personalizado según el rol.
@@ -38,22 +40,22 @@ fun DrawerContent(
     onCloseDrawer: () -> Unit,
     sesionViewModel: SesionViewModel = viewModel()
 ) {
-    val usuario by sesionViewModel.usuario.collectAsState()
+    val usuarioState by sesionViewModel.usuario.collectAsState()
 
-    if (usuario == null) {
+    // Mostrar cargando si aún no hay usuario
+    if (usuarioState == null) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Cargando menú...")
+            CircularProgressIndicator()
         }
         return
     }
 
-    val usuarioActual = usuario!!
-    val rol = usuarioActual.rol ?: Rol.INVITADO
-    Log.d("DrawerContent", "ROL = $rol")
+    val usuario = usuarioState!!
+    val rol = usuario.rol ?: Rol.INVITADO
+    Log.d("DrawerContent", "ROL: $rol")
 
     val opciones = when (rol) {
         Rol.ADMIN -> listOf(
@@ -63,13 +65,7 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-        Rol.PROFESOR -> listOf(
-            DrawerDestination.Home,
-            DrawerDestination.Clases,
-            DrawerDestination.Perfil,
-            DrawerDestination.Logout
-        )
-        Rol.USUARIO -> listOf(
+        Rol.PROFESOR, Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,
@@ -84,7 +80,7 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // HEADER
+        // Header con datos del usuario
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -99,10 +95,10 @@ fun DrawerContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val fotoPainter = if (usuarioActual.fotoPerfil.isNullOrEmpty()) {
+                val painter = if (usuario.fotoPerfil.isNullOrEmpty()) {
                     painterResource(id = R.drawable.default_profile)
                 } else {
-                    rememberAsyncImagePainter(usuarioActual.fotoPerfil)
+                    rememberAsyncImagePainter(usuario.fotoPerfil)
                 }
 
                 Box(
@@ -113,55 +109,50 @@ fun DrawerContent(
                         .padding(4.dp)
                 ) {
                     Image(
-                        painter = fotoPainter,
+                        painter = painter,
                         contentDescription = "Foto de perfil",
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(CircleShape)
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = usuarioActual.nombre,
+                    text = usuario.nombre,
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
 
                 Text(
-                    text = usuarioActual.rol.name.lowercase().replaceFirstChar { it.uppercase() },
+                    text = rol.name.lowercase().replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
             }
         }
 
-        // Divider visual
-        Divider(
-            thickness = 1.dp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
-        )
+        Divider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
 
-        // Opciones del menú
         Column(modifier = Modifier.padding(16.dp)) {
             opciones.forEach { item ->
                 NavigationDrawerItem(
                     label = { Text(item.label) },
                     selected = false,
                     onClick = {
-                        onItemSelected(item.route)
+                        if (item == DrawerDestination.Logout) {
+                            sesionViewModel.cerrarSesion()
+                            Firebase.auth.signOut()
+                            navController.navigate(Screens.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        } else {
+                            onItemSelected(item.route)
+                        }
                         onCloseDrawer()
                     },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
-        }
-
-        // Cierre de sesion
-        sesionViewModel.cerrarSesion()
-        navController.navigate(Screens.Login.route) {
-            popUpTo(0) { inclusive = true }
         }
     }
 }

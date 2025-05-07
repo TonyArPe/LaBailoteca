@@ -2,6 +2,7 @@ package com.example.bailotecaapp.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -14,9 +15,28 @@ import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
-fun HomeScreen(navController: NavHostController) {
-    val sesionViewModel: SesionViewModel = viewModel()
-    val usuario by sesionViewModel.usuario.collectAsState()
+fun HomeScreen(navController: NavHostController, sesionViewModel: SesionViewModel = viewModel()) {
+    val usuarioState by sesionViewModel.usuario.collectAsState()
+
+    if (usuarioState == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    val usuario = usuarioState ?: run {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     Column(
         modifier = Modifier
@@ -34,8 +54,8 @@ fun HomeScreen(navController: NavHostController) {
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Hola, ${usuario?.nombre ?: "..."}, ¡bailemos!",
-            style = MaterialTheme.typography.bodyMedium
+            text = "Hola, ${usuario.nombre}, ¡bailemos!",
+            style = MaterialTheme.typography.bodyLarge
         )
 
         Spacer(modifier = Modifier.height(32.dp))

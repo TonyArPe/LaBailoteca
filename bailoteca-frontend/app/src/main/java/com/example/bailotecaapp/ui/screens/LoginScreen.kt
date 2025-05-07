@@ -18,12 +18,28 @@ import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
-fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = viewModel()) {
+fun LoginScreen(
+    navController: NavHostController,
+    viewModel: LoginViewModel = viewModel(),
+    sesionViewModel: SesionViewModel = viewModel()
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    val sesionViewModel: SesionViewModel = viewModel()
+
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val sesionCargando by sesionViewModel.isLoading.collectAsState()
+
+    // Navegamos solo cuando el usuario ya ha sido cargado
+    LaunchedEffect(usuario, sesionCargando) {
+        if (usuario != null && !sesionCargando) {
+            navController.navigate(Screens.Home.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -73,10 +89,9 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                         email,
                         password,
                         onSuccess = {
-                            isLoading = false
                             sesionViewModel.obtenerUsuarioActual()
                             sesionViewModel.cargarMisInscripciones()
-                            navController.navigate(Screens.Home.route)
+                            isLoading = false
                         },
                         onError = { error ->
                             isLoading = false
@@ -85,9 +100,9 @@ fun LoginScreen(navController: NavHostController, viewModel: LoginViewModel = vi
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !sesionCargando
             ) {
-                Text(text = if (isLoading) "Cargando..." else "Iniciar sesión")
+                Text(text = if (isLoading || sesionCargando) "Cargando..." else "Iniciar sesión")
             }
 
             errorMessage?.let {
