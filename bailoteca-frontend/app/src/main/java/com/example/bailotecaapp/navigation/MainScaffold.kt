@@ -7,7 +7,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.bailotecaapp.ui.components.DrawerContent
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScaffold(
     navController: NavHostController,
-    sessionViewModel: SesionViewModel = viewModel()
+    sessionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)

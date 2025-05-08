@@ -11,6 +11,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.navigation.Screens
@@ -21,7 +22,7 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 fun LoginScreen(
     navController: NavHostController,
     viewModel: LoginViewModel = viewModel(),
-    sesionViewModel: SesionViewModel = viewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }

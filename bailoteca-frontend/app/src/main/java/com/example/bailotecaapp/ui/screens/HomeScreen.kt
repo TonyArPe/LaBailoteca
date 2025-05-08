@@ -7,18 +7,42 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
-fun HomeScreen(navController: NavHostController, sesionViewModel: SesionViewModel = viewModel()) {
+fun HomeScreen(
+    navController: NavHostController,
+    sesionViewModel: SesionViewModel = hiltViewModel()
+) {
     val usuarioState by sesionViewModel.usuario.collectAsState()
+    val isLoading by sesionViewModel.isLoading.collectAsState()
+    val error by sesionViewModel.error.collectAsState()
 
-    if (usuarioState == null) {
+    // Lógica para cargar usuario al entrar
+    LaunchedEffect(Unit) {
+        if (usuarioState == null) {
+            sesionViewModel.obtenerUsuarioActual()
+        }
+    }
+
+    // Mostrar errores si hay
+    if (error != null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Error: $error")
+        }
+        return
+    }
+
+    // Mostrar loading
+    if (isLoading || usuarioState == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center
@@ -28,16 +52,9 @@ fun HomeScreen(navController: NavHostController, sesionViewModel: SesionViewMode
         return
     }
 
-    val usuario = usuarioState ?: run {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
+    val usuario = usuarioState!!
 
+    // Contenido principal
     Column(
         modifier = Modifier
             .fillMaxSize()

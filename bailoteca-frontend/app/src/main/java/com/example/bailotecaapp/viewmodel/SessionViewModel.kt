@@ -37,6 +37,12 @@ class SesionViewModel @Inject constructor(
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
+    init {
+        if (_usuario.value == null) {
+            obtenerUsuarioActual()
+        }
+    }
+
     /**
      * Obtiene el usuario autenticado desde el backend y lo guarda en el estado observable.
      */
