@@ -1,9 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-
-    // Hilt
     alias(libs.plugins.hilt)
     id("kotlin-kapt")
 }
@@ -32,14 +29,12 @@ android {
         }
     }
 
-    // Soporte para Jetpack Compose
     buildFeatures {
         compose = true
     }
 
-    // Versión del compilador de Kotlin para Compose
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.7.8"
+        kotlinCompilerExtensionVersion = "1.5.13"
     }
 
     compileOptions {
@@ -50,10 +45,13 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    hilt {
+        enableAggregatingTask = false
+    }
 }
 
 dependencies {
-
     // AndroidX básicos
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -61,7 +59,7 @@ dependencies {
     // Activity para Compose
     implementation(libs.androidx.activity.compose.v182)
 
-    // Jetpack Compose (versión 1.7.8)
+    // Jetpack Compose
     implementation("androidx.compose.ui:ui:1.7.8")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation(libs.androidx.foundation.layout.android)
@@ -70,35 +68,29 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
 
-    // Couritines
+    // Coroutines
     implementation(libs.kotlinx.coroutines.android)
-
-    // Navigation con Compose
-    implementation("androidx.navigation:navigation-compose:2.7.7")
 
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation(libs.firebase.auth.ktx)
 
-    // Retrofit
+    // Retrofit y Gson
     implementation(libs.retrofit)
-
-    // Conversor Gson para parsear JSON automáticamente
     implementation(libs.converter.gson)
 
-    // OkHttp para logging (opcional pero muy útil para depurar)
+    // OkHttp Logging
     implementation(libs.logging.interceptor)
 
     // Hilt
     implementation(libs.hilt.android)
     kapt(libs.hilt.compiler)
-
     implementation(libs.androidx.hilt.navigation.compose)
-
 }
 
 configurations.all {
