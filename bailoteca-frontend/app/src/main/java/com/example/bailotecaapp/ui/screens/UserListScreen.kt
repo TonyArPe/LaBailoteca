@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
@@ -23,7 +24,7 @@ fun UserListScreen(navController: NavController,
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
-    val sesionViewModel: SesionViewModel = viewModel()
+    val sesionViewModel: SesionViewModel = hiltViewModel()
     val usuario by sesionViewModel.usuario.collectAsState()
 
 

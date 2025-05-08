@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -38,9 +39,16 @@ fun DrawerContent(
     onItemSelected: (String) -> Unit,
     navController: NavHostController,
     onCloseDrawer: () -> Unit,
-    sesionViewModel: SesionViewModel = viewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val usuarioState by sesionViewModel.usuario.collectAsState()
+
+    // Para que se cargue el usuario solo la primera vez que se abre el drawer
+    LaunchedEffect(usuarioState) {
+        if (usuarioState == null && Firebase.auth.currentUser != null) {
+            sesionViewModel.obtenerUsuarioActual()
+        }
+    }
 
     // Mostrar cargando si aún no hay usuario
     if (usuarioState == null) {

@@ -19,6 +19,7 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.navigation.Screens
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
  * Pantalla que muestra el perfil del usuario autenticado de forma visual y atractiva.
@@ -27,7 +28,7 @@ import androidx.compose.foundation.verticalScroll
 @Composable
 fun ProfileScreen(
     navController: NavHostController,
-    sesionViewModel: SesionViewModel = viewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
 

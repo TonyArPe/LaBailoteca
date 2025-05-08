@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
@@ -31,7 +32,7 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 @Composable
 fun EditProfileScreen(
     navController: NavHostController,
-    sesionViewModel: SesionViewModel = viewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
     val usuario by sesionViewModel.usuario.collectAsState()

@@ -179,6 +179,51 @@ La aplicación móvil usa un sistema de navegación centralizado basado en Jetpa
 - El contenido se adapta automáticamente cuando el drawer está abierto.
 - La sesión permanece activa hasta que el usuario cierra sesión explícitamente.
 
+### SesionGuard: Componente protector de sesión
+
+Para garantizar que todas las pantallas o componentes que requieren un usuario autenticado
+trabajan con la sesión correctamente cargada, se ha implementado el componente `SesionGuard`.
+
+Este componente:
+- Verifica si el usuario está presente en Firebase.
+- Si el usuario aún no está cargado desde el backend (`SesionViewModel.usuario == null`), lanza automáticamente la petición para recuperarlo.
+- Muestra un `CircularProgressIndicator` mientras tanto.
+- Expone el `Usuario` ya cargado al contenido hijo mediante una función lambda.
+
+#### Ubicación del archivo
+`ui/components/SesionGuard.kt`
+
+#### Ejemplo
+
+```kotlin
+SesionGuard { usuario ->
+    Text("Hola, ${usuario.nombre}")
+}
+```
+
+### Ventaja
+
+Centraliza el control de sesión, evitando repetir if (usuario != null) en cada pantalla.
+Ideal para componentes como el DrawerContent, pantallas de perfil, ajustes, etc.
+
+### 🔐 AppNavigation con protección de sesión
+
+El archivo `AppNavigation.kt` contiene la definición de rutas de la aplicación, diferenciando entre:
+- **Rutas públicas**: accesibles sin autenticación (`/login`, `/register`).
+- **Rutas protegidas**: requieren que el usuario esté autenticado y cargado desde el backend.
+
+Estas rutas sensibles se protegen usando el componente `SesionGuard`, que impide que se renderice la pantalla si no se ha recuperado aún la sesión del usuario desde Firebase y el backend.
+
+Ejemplo de protección:
+
+```kotlin
+composable(Screens.Home.route) {
+    SesionGuard { usuario ->
+        HomeScreen(navController)
+    }
+}
+```
+
 
 ## Próximos pasos
 

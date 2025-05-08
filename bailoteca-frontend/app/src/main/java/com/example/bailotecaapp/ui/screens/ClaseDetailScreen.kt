@@ -30,10 +30,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun ClaseDetailScreen(
     navController: NavHostController,
     claseId: Long,
-    viewModel: ClaseViewModel = viewModel(),
-    sesionViewModel: SesionViewModel = viewModel()
+    claseViewModel: ClaseViewModel = hiltViewModel(),
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
-    val clase by viewModel.claseSeleccionada.collectAsState()
+    val clase by claseViewModel.claseSeleccionada.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
     val inscripciones by sesionViewModel.inscripciones.collectAsState()
     val uriHandler = LocalUriHandler.current
@@ -45,11 +45,11 @@ fun ClaseDetailScreen(
      */
     LaunchedEffect(claseId) {
         delay(150)
-        viewModel.cargarClase(claseId)
+        claseViewModel.cargarClase(claseId)
     }
 
     LaunchedEffect(Unit) {
-        viewModel.cargarClase(claseId)
+        claseViewModel.cargarClase(claseId)
     }
 
     LaunchedEffect(usuario?.id) {
@@ -69,7 +69,7 @@ fun ClaseDetailScreen(
         coroutineScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val response = viewModel.eliminarInscripcion(token, inscripcionId)
+                val response = claseViewModel.eliminarInscripcion(token, inscripcionId)
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()

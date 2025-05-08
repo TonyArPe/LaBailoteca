@@ -17,8 +17,12 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
- * ViewModel que gestiona la sesión del usuario autenticado, así como sus inscripciones y perfil.
- * Se inyecta con Hilt y gestiona la lógica de autenticación + sincronización de perfil.
+ * ViewModel que gestiona el estado de sesión de la aplicación, incluyendo:
+ * - Usuario autenticado y cargado desde el backend.
+ * - Lista de inscripciones del usuario.
+ * - Estado de carga y errores.
+ *
+ * Utilizado por componentes como SesionGuard, DrawerContent, ProfileScreen, etc.
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
@@ -37,32 +41,39 @@ class SesionViewModel @Inject constructor(
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
+    /**
+     * Inicializa la carga del usuario si existe una sesión en Firebase.
+     */
     init {
-        if (_usuario.value == null) {
+        if (_usuario.value == null && Firebase.auth.currentUser != null) {
             obtenerUsuarioActual()
         }
     }
 
     /**
-     * Obtiene el usuario autenticado desde el backend y lo guarda en el estado observable.
+     * Obtiene el perfil del usuario autenticado desde el backend usando el token de Firebase.
      */
     fun obtenerUsuarioActual() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
-                if (token != null) {
-                    val response = api.getUsuarioActual("Bearer $token")
-                    if (response.isSuccessful) {
-                        _usuario.value = response.body()
-                        Log.d("SesionViewModel", "Usuario actualizado correctamente.")
-                    } else {
-                        _error.value = "Error al obtener perfil: ${response.code()}"
-                    }
+                if (token.isNullOrEmpty()) {
+                    _error.value = "Token de autenticación vacío"
+                    return@launch
+                }
+
+                val response = api.getUsuarioActual("Bearer $token")
+                if (response.isSuccessful) {
+                    _usuario.value = response.body()
+                    Log.d("SesionViewModel", "Usuario cargado correctamente: ${_usuario.value?.correo}")
+                } else {
+                    _error.value = "Error al obtener perfil: ${response.code()}"
+                    Log.e("SesionViewModel", "Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
-                Log.e("SesionViewModel", "Error: ${e.message}", e)
+                _error.value = "Error de red al obtener usuario: ${e.localizedMessage}"
+                Log.e("SesionViewModel", "Excepción al obtener usuario", e)
             } finally {
                 _isLoading.value = false
             }
@@ -70,55 +81,80 @@ class SesionViewModel @Inject constructor(
     }
 
     /**
-     * Obtiene todas las inscripciones del usuario actual autenticado.
+     * Carga las inscripciones del usuario actual.
      */
     fun cargarMisInscripciones() {
         viewModelScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val usuarioId = usuario.value?.id ?: return@launch
+                val usuarioId = _usuario.value?.id ?: return@launch
+
                 val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     _inscripciones.value = response.body() ?: emptyList()
                     Log.d("SesionViewModel", "Inscripciones cargadas correctamente.")
                 } else {
                     _error.value = "Error al obtener inscripciones: ${response.code()}"
+                    Log.e("SesionViewModel", "Error HTTP al obtener inscripciones: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _error.value = "Error al cargar inscripciones: ${e.localizedMessage}"
+                Log.e("SesionViewModel", "Excepción al cargar inscripciones", e)
             }
         }
     }
 
     /**
-     * Borra la sesión actual y limpia los estados.
+     * Cierra la sesión actual y limpia todos los estados del ViewModel.
      */
     fun cerrarSesion() {
         Firebase.auth.signOut()
         _usuario.value = null
         _inscripciones.value = emptyList()
         _error.value = null
+        _isLoading.value = false
+        Log.d("SesionViewModel", "Sesión cerrada y estado reiniciado.")
     }
 
-    fun actualizarPerfil(usuarioActualizado: UsuarioUpdateRequest, onSuccess: () -> Unit, onError: (String) -> Unit) {
+    /**
+     * Actualiza el perfil del usuario autenticado.
+     *
+     * @param usuarioActualizado DTO con los datos actualizados.
+     * @param onSuccess Callback si la operación fue exitosa.
+     * @param onError Callback con mensaje si hubo error.
+     */
+    fun actualizarPerfil(
+        usuarioActualizado: UsuarioUpdateRequest,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
         viewModelScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                val userId = usuario.value?.id ?: return@launch
+                val userId = _usuario.value?.id ?: return@launch
 
                 val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
                 if (response.isSuccessful) {
-                    obtenerUsuarioActual()
+                    obtenerUsuarioActual() // refrescar
                     onSuccess()
                 } else {
-                    onError("Error ${response.code()}: ${response.message()}")
+                    val mensaje = "Error ${response.code()}: ${response.message()}"
+                    _error.value = mensaje
+                    onError(mensaje)
+                    Log.e("SesionViewModel", mensaje)
                 }
             } catch (e: Exception) {
-                onError("Excepción: ${e.localizedMessage}")
+                val mensaje = "Excepción: ${e.localizedMessage}"
+                _error.value = mensaje
+                onError(mensaje)
+                Log.e("SesionViewModel", "Excepción al actualizar perfil", e)
             }
         }
     }
 
+    /**
+     * Permite establecer el usuario desde fuera (por ejemplo, tras login).
+     */
     fun setUsuario(usuario: Usuario) {
         _usuario.value = usuario
     }
