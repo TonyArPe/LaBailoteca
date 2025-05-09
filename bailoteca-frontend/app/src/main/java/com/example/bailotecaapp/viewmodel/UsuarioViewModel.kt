@@ -52,7 +52,11 @@ class UsuarioViewModel @Inject constructor(
                     _usuarios.value = response.body()!!
                     Log.d("UsuarioViewModel", "Usuarios cargados correctamente")
                 } else {
-                    _errorMessage.value = "Error ${response.code()}: ${response.message()}"
+                    _errorMessage.value = when (response.code()) {
+                        403 -> "Acceso denegado. No tienes permisos para ver los usuarios."
+                        401 -> "Sesión inválida. Inicia sesión nuevamente."
+                        else -> "Error ${response.code()}: ${response.message() ?: "Respuesta no válida"}"
+                    }
                     Log.e("UsuarioViewModel", "Error: ${response.errorBody()?.string()}")
                 }
 
