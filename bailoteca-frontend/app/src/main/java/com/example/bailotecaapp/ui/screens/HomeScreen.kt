@@ -11,6 +11,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
@@ -77,8 +78,13 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        Button(onClick = { navController.navigate(Screens.Usuarios.route) }) {
-            Text("Ver usuarios registrados")
+        if (usuario.rol == Rol.ADMIN || usuario.rol == Rol.PROFESOR) {
+            Button(
+                onClick = { navController.navigate(Screens.Usuarios.route) },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Ver usuarios registrados")
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
