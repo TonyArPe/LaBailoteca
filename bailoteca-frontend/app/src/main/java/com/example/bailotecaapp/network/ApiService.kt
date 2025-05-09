@@ -83,5 +83,5 @@ interface ApiService {
     suspend fun getMisAlumnos(
         @Header("Authorization") token: String
     ): Response<List<Usuario>>
-    
+
 }

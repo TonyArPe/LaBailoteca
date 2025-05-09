@@ -151,5 +151,4 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    
 }

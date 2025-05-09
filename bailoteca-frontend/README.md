@@ -173,11 +173,70 @@ La aplicación móvil usa un sistema de navegación centralizado basado en Jetpa
 - `ADMIN`: acceso completo a usuarios, clases, perfil y logout.
 - `PROFESOR`: acceso a clases, perfil y logout.
 - `USUARIO`: acceso a clases, perfil y logout.
+- `INVITADO`: acceso a vistas generales
 
 #### Comportamiento:
 - El menú se muestra como un `ModalNavigationDrawer` con un ancho fijo (`280.dp`).
 - El contenido se adapta automáticamente cuando el drawer está abierto.
 - La sesión permanece activa hasta que el usuario cierra sesión explícitamente.
+
+## GESTION DE USUARIOS
+
+#### Seguridad
+
+Se usa Firebase Auth para login y generación de tokens JWT. Cada petición protegida incluye:
+`Authorization: Bearer <idToken>`
+Retrofit se encarga de pasar el token al backend
+
+#### Endpoints usados por el frontend
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/usuarios/me` | Obtiene los datos del usuario actual |
+| `GET` | `/api/usuarios` | Lista de todos los usuarios (solo admin) |
+| `GET` | `/api/usuarios/mis-alumnos` | Lista alumnos inscritos del profesor |
+
+### ViewModel: `UsuarioViewModel.kt`
+
+Carga usuarios desde el backend con `getUsuarios()` 
+Detecta errores por permisos: muestra mensaje `"Acceso denegado..." si 403`
+
+Expone los siguientes estados:
+
+    - `usuarios`: `StateFlow<List<Usuario>>`
+
+    - `isLoading`: `StateFlow<Boolean>`
+
+    - `errorMessage`: `StateFlow<String?>`
+
+### UI: `UserListScreen.kt`
+
+Utiliza LazyColumn para listar todos los usuarios. Si hay error o el rol no tiene permisos → se muestra mensaje de error
+Accede al rol del usuario desde SesionViewModel
+
+### Lógica del ViewModel
+
+```kotlin
+if (response.isSuccessful && response.body() != null) {
+_usuarios.value = response.body()!!
+} else {
+_errorMessage.value = when (response.code()) {
+403 -> "Acceso denegado. No tienes permisos para ver los usuarios."
+else -> "Error ${response.code()}: ${response.message() ?: "Respuesta no válida"}"
+}
+}
+```
+
+### Comportamiento dinámico por rol
+
+### Tabla de permisos para ver lista de usuarios
+
+| Rol       | ¿Puede ver lista de usuarios? | Fuente de datos                  |
+|-----------|-----------------------|-----------------------------------|
+| `ADMIN`   | Sí                   | `GET /api/usuarios`              |
+| `PROFESOR`| Solo alumnos propios | `GET /api/usuarios/mis-alumnos`  |
+| `USUARIO` | No                   | —                                |
+| `INVITADO`| No                   | —                                |
 
 ### SesionGuard: Componente protector de sesión
 
@@ -206,7 +265,7 @@ SesionGuard { usuario ->
 Centraliza el control de sesión, evitando repetir if (usuario != null) en cada pantalla.
 Ideal para componentes como el DrawerContent, pantallas de perfil, ajustes, etc.
 
-### 🔐 AppNavigation con protección de sesión
+### AppNavigation con protección de sesión
 
 El archivo `AppNavigation.kt` contiene la definición de rutas de la aplicación, diferenciando entre:
 - **Rutas públicas**: accesibles sin autenticación (`/login`, `/register`).

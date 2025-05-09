@@ -87,59 +87,77 @@ Credenciales pgAdmin:
 
 Consulta los endpoints y modelos detallados en `docs/` o via Swagger si lo habilitas. Algunos ejemplos:
 
-### Usuarios
-- `POST /api/auth/login` → Login y obtención de token
-- `GET /api/usuarios/me` → Perfil del usuario actual
-- `GET /api/usuarios` → Lista de usuarios (solo admin)
+### Roles y permisos
 
-## Módulo de Gestión de Usuarios
+| Rol       | Acceso                                      |
+|-----------|---------------------------------------------|
+| `ADMIN`   | Ver, editar o eliminar cualquier usuario    |
+| `PROFESOR`| Consultar alumnos inscritos en sus clases   |
+| `USUARIO` | Consultar y editar su propio perfil         |
+| `INVITADO`| Solo puede acceder al endpoint `/me` (perfil actual) |
 
-Este módulo permite gestionar los usuarios de la plataforma (administradores, profesores y alumnos). La lógica de acceso está controlada por roles y validación JWT.
+---
 
-### Acceso por rol
+### Tabla de permisos para ver lista de usuarios
 
-- `ADMIN:` puede ver, editar o eliminar cualquier usuario.
-- `USUARIO:` solo puede acceder, modificar o eliminar su propio perfil.
-- `INVITADO:` no tiene acceso a endpoints protegidos.
+| Rol       | ¿Puede ver lista de usuarios? | Fuente de datos                  |
+|-----------|-------------------------------|-----------------------------------|
+| `ADMIN`   | ✅ Sí                         | `GET /api/usuarios`              |
+| `PROFESOR`| ✅ Solo alumnos propios       | `GET /api/usuarios/mis-alumnos`  |
+| `USUARIO` | ❌ No                         | —                                |
+| `INVITADO`| ❌ No                         | —                                |
 
-### Endpoints implementados
+### 🔐 Seguridad y autenticación
 
-| Método | Ruta                  | Descripción                                   | Acceso            |
-|--------|-----------------------|-----------------------------------------------|-------------------|
-| GET    | `/api/usuarios`       | Obtener todos los usuarios                    | Solo `ADMIN`      |
-| GET    | `/api/usuarios/{id}`  | Obtener un usuario específico                 | `ADMIN` o propietario |
-| GET    | `/api/usuarios/me`    | Obtener el perfil del usuario autenticado     | Cualquier usuario |
-| POST   | `/api/usuarios`       | Crear un nuevo usuario (registro o admin)     | Público / `ADMIN` |
-| PUT    | `/api/usuarios/{id}`  | Editar un usuario (nombre, teléfono, etc.)    | `ADMIN` o propietario |
-| DELETE | `/api/usuarios/{id}`  | Eliminar un usuario                           | `ADMIN` o propietario |
+- **Autenticación con Firebase JWT**
+- **Validación de token** en todos los endpoints
+- Uso de `SecurityContextHolder` para obtener el usuario actual
+- Roles validados manualmente o con `@PreAuthorize`
 
-### Seguridad aplicada
+---
 
-- Todos los endpoints protegidos validan el token JWT.
-- El sistema distingue si el usuario es `ADMIN` o si está accediendo a su propio perfil.
-- Las contraseñas se almacenan de forma segura con BCrypt.
-- Se usan anotaciones `@PreAuthorize` y comprobaciones manuales con el `SecurityContext`.
+### 📦 Endpoints disponibles
 
-### Lógica de protección personalizada
+| Método | Ruta                          | Descripción                              | Acceso            |
+|--------|-------------------------------|------------------------------------------|-------------------|
+| GET    | `/api/usuarios`               | Obtener todos los usuarios               | Solo `ADMIN`      |
+| GET    | `/api/usuarios/{id}`          | Obtener un usuario específico            | `ADMIN` o dueño   |
+| GET    | `/api/usuarios/me`            | Perfil del usuario autenticado           | Cualquiera        |
+| POST   | `/api/usuarios`               | Crear nuevo usuario                      | Público / `ADMIN` |
+| PUT    | `/api/usuarios/{id}`          | Editar perfil del usuario                | `ADMIN` o dueño   |
+| DELETE | `/api/usuarios/{id}`          | Eliminar un usuario                      | `ADMIN` o dueño   |
+| GET    | `/api/usuarios/mis-alumnos`   | Listar alumnos inscritos en clases propias | Solo `PROFESOR` |
 
-Ejemplo de protección en el controlador:
+---
+
+### 📘 Ejemplo de lógica de protección personalizada
 
 ```java
 if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
-    // Permitir acción
-} else {
-    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+  return ResponseEntity.ok(usuario);
 }
+return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 ```
 
-Esto permite que un usuario acceda solo a su propio perfil, y que el administrador pueda gestionar cualquier usuario.
-### Notas adicionales
+---
 
-  - El campo fechaRegistro se asigna automáticamente al crear un usuario.
+### 🔧 Repositorio personalizado
 
-  - Las contraseñas se codifican en el UsuarioController usando passwordEncoder.encode(...) antes de guardarse.
+En `UsuarioRepo` se ha añadido una query específica:
 
-  - Se proporciona el endpoint /api/usuarios/me para que cualquier usuario pueda consultar fácilmente su información actual.
+```java
+@Query("""
+  SELECT u FROM Usuario u
+  WHERE u.id IN (
+    SELECT i.usuario.id
+    FROM Inscripcion i
+    WHERE i.clase.profesor.id = :profesorId
+  )
+""")
+List<Usuario> findAlumnosPorProfesor(Long profesorId);
+```
+
+Esta consulta devuelve todos los usuarios que están inscritos en clases de un profesor específico.
 
 ### Clases y eventos
 - `GET /api/clases`
