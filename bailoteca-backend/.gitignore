@@ -35,3 +35,13 @@ build/
 ### Others ###
 .env
 .idea/
+
+### Logs ###
+*.log
+
+### Maven wrapper OS-specific files ###
+mvnw.cmd
+mvnw
+
+### Java ###
+*.class
