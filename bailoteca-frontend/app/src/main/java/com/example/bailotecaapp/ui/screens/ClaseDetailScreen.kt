@@ -1,5 +1,7 @@
 package com.example.bailotecaapp.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.ClickableText
@@ -24,10 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import androidx.hilt.navigation.compose.hiltViewModel
 
-/**
- * Pantalla de detalle de clase, con renderizado adaptado al rol del usuario.
- * Los invitados pueden ver el contenido, pero no pueden inscribirse ni cancelar.
- */
 @Composable
 fun ClaseDetailScreen(
     navController: NavHostController,
@@ -45,20 +43,17 @@ fun ClaseDetailScreen(
 
         val esInvitado = usuario.rol == Rol.INVITADO
 
-        // Cargar clase al entrar
         LaunchedEffect(claseId) {
             delay(150)
             claseViewModel.cargarClase(claseId)
         }
 
-        // Solo si no es invitado, cargar sus inscripciones
         LaunchedEffect(usuario.id) {
             if (!esInvitado) {
                 sesionViewModel.cargarMisInscripciones()
             }
         }
 
-        // Inscripción actual si existe
         val inscripcionActual = inscripciones.find { it.clase.id == claseId }
         val estaInscrito = inscripcionActual != null
 
@@ -80,7 +75,6 @@ fun ClaseDetailScreen(
             }
         }
 
-        // UI de clase
         Scaffold { padding ->
             Box(
                 modifier = Modifier
@@ -99,7 +93,7 @@ fun ClaseDetailScreen(
                         Text("🎯 Dificultad: ${c.dificultad.name.lowercase().replaceFirstChar { it.uppercaseChar() }}")
                         Text("👨‍🏫 Profesor: ${c.profesor.nombre}")
 
-                        if (c.videoPresentacion.isNotBlank()) {
+                        if (!esInvitado && c.videoPresentacion.isNotBlank()) {
                             ClickableText(
                                 text = AnnotatedString("🎥 Ver video de presentación"),
                                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
@@ -115,7 +109,6 @@ fun ClaseDetailScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        // Solo si es usuario normal o profesor, no invitado
                         if (!esInvitado && estaInscrito && inscripcionActual != null) {
                             Button(
                                 onClick = { desinscribirse(inscripcionActual.id) },
@@ -123,6 +116,21 @@ fun ClaseDetailScreen(
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
                                 Text("Cancelar inscripción")
+                            }
+                        }
+
+                        if (esInvitado) {
+                            Button(
+                                onClick = {
+                                    val asunto = Uri.encode("Consulta sobre la clase: ${c.nombre}")
+                                    val mensaje = Uri.encode("Hola ${c.profesor.nombre},\n\nEstoy interesado en tu clase '${c.nombre}'. ¿Podrías darme más información?\n\nGracias.")
+                                    val correo = Uri.parse("mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje")
+                                    val intent = Intent(Intent.ACTION_SENDTO).apply { data = correo }
+                                    context.startActivity(intent)
+                                },
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            ) {
+                                Text("Contactar al profesor")
                             }
                         }
 

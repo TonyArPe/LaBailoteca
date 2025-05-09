@@ -43,13 +43,13 @@ fun ClaseListScreen(
     /**
      * Cargar el usuario y las inscripciones al montar la pantalla.
      */
-    LaunchedEffect(Unit) {
-        sesionViewModel.obtenerUsuarioActual()
-        viewModel.obtenerClases()
-    }
+    var haCargado by remember { mutableStateOf(false) }
 
-    LaunchedEffect(usuario?.id) {
-        if (usuario != null) {
+    LaunchedEffect(usuario) {
+        if (usuario == null) {
+            sesionViewModel.obtenerUsuarioActual()
+        } else {
+            viewModel.obtenerClases()
             sesionViewModel.cargarMisInscripciones()
         }
     }

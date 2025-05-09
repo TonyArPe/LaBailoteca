@@ -20,6 +20,7 @@ import com.example.bailotecaapp.navigation.Screens
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.bailotecaapp.model.enums.Rol
 
 /**
  * Pantalla que muestra el perfil del usuario autenticado de forma visual y atractiva.
@@ -94,14 +95,16 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Botón para editar perfil
-            Button(
-                onClick = {
+            // Solo para usuarios NO invitados
+            if (usuarioActual.rol != Rol.INVITADO) {
+                InfoRow("Pagado", if (usuarioActual.pagado) "Sí" else "No")
+                InfoRow("Activo", if (usuarioActual.activo) "Sí" else "No")
+
+                Button(onClick = {
                     navController.navigate(Screens.EditProfile.route)
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Editar Perfil")
+                }) {
+                    Text("Editar Perfil")
+                }
             }
         }
     }

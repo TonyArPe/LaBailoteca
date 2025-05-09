@@ -33,10 +33,15 @@ fun SesionGuard(
     val usuario by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
 
-    // Lanza la carga del usuario solo si hay uno en Firebase y aún no se ha recuperado del backend
     LaunchedEffect(usuario) {
-        if (usuario == null && FirebaseAuth.getInstance().currentUser != null) {
-            sesionViewModel.obtenerUsuarioActual()
+        val authUser = FirebaseAuth.getInstance().currentUser
+        if (usuario == null) {
+            if (authUser != null) {
+                sesionViewModel.obtenerUsuarioActual()
+            } else {
+                // Si no hay usuario en Firebase, nos da el rol invitado
+                sesionViewModel.entrarComoInvitado()
+            }
         }
     }
 
@@ -49,7 +54,6 @@ fun SesionGuard(
                 CircularProgressIndicator()
             }
         }
-
         else -> {
             content(usuario!!)
         }

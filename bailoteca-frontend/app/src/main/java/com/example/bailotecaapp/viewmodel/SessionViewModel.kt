@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import com.example.bailotecaapp.model.enums.Rol
 
 /**
  * ViewModel que gestiona el estado de sesión de la aplicación, incluyendo:

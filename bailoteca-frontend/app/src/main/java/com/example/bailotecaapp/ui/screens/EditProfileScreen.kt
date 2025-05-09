@@ -6,7 +6,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -56,6 +58,8 @@ fun EditProfileScreen(
     var direccion by remember { mutableStateOf(usuario!!.direccion ?: "") }
     var fechaNacimiento by remember { mutableStateOf(usuario!!.fechaNacimiento ?: "") }
     var genero by remember { mutableStateOf(usuario!!.genero ?: "") }
+    // No se ve el boton por lo cual que se pueda scrollear
+    val scrollState = rememberScrollState()
 
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
 
@@ -76,7 +80,8 @@ fun EditProfileScreen(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -153,9 +158,15 @@ fun EditProfileScreen(
                         }
                     )
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
-                Text("Guardar cambios")
+                Text("Guardar cambios", style = MaterialTheme.typography.labelLarge)
             }
 
             if (showErrorDialog) {
