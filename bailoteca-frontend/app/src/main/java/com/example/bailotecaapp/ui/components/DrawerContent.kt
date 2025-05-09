@@ -79,6 +79,10 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
+        Rol.INVITADO -> listOf(
+            DrawerDestination.Home,
+            DrawerDestination.Clases
+        )
         else -> listOf(DrawerDestination.Home)
     }
 

@@ -11,8 +11,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import coil.compose.rememberAsyncImagePainter
+import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
@@ -23,8 +25,8 @@ import kotlinx.coroutines.tasks.await
 import androidx.hilt.navigation.compose.hiltViewModel
 
 /**
- * Pantalla de detalle para mostrar información completa de una clase,
- * y permitir desinscribirse si el usuario está apuntado.
+ * Pantalla de detalle de clase, con renderizado adaptado al rol del usuario.
+ * Los invitados pueden ver el contenido, pero no pueden inscribirse ni cancelar.
  */
 @Composable
 fun ClaseDetailScreen(
@@ -33,111 +35,106 @@ fun ClaseDetailScreen(
     claseViewModel: ClaseViewModel = hiltViewModel(),
     sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
-    val clase by claseViewModel.claseSeleccionada.collectAsState()
-    val usuario by sesionViewModel.usuario.collectAsState()
-    val inscripciones by sesionViewModel.inscripciones.collectAsState()
-    val uriHandler = LocalUriHandler.current
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
+    SesionGuard(sesionViewModel) { usuario ->
 
-    /**
-     * Obtener la clase al entrar, y actualizar usuario e inscripciones.
-     */
-    LaunchedEffect(claseId) {
-        delay(150)
-        claseViewModel.cargarClase(claseId)
-    }
+        val clase by claseViewModel.claseSeleccionada.collectAsState()
+        val inscripciones by sesionViewModel.inscripciones.collectAsState()
+        val uriHandler = LocalUriHandler.current
+        val context = LocalContext.current
+        val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        claseViewModel.cargarClase(claseId)
-    }
+        val esInvitado = usuario.rol == Rol.INVITADO
 
-    LaunchedEffect(usuario?.id) {
-        if (usuario != null) {
-            sesionViewModel.cargarMisInscripciones()
+        // Cargar clase al entrar
+        LaunchedEffect(claseId) {
+            delay(150)
+            claseViewModel.cargarClase(claseId)
         }
-    }
 
-    // Estado: buscamos si está inscrito
-    val inscripcionActual = inscripciones.find { it.clase.id == claseId }
-    val estaInscrito = inscripcionActual != null
-
-    /**
-     * Eliminar la inscripción de esta clase.
-     */
-    fun desinscribirse(inscripcionId: Long) {
-        coroutineScope.launch {
-            try {
-                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val response = claseViewModel.eliminarInscripcion(token, inscripcionId)
-
-                if (response.isSuccessful) {
-                    Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
-                    sesionViewModel.cargarMisInscripciones()
-                } else {
-                    Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+        // Solo si no es invitado, cargar sus inscripciones
+        LaunchedEffect(usuario.id) {
+            if (!esInvitado) {
+                sesionViewModel.cargarMisInscripciones()
             }
         }
-    }
 
-    /**
-     * UI de detalle de la clase.
-     */
-    Scaffold { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            clase?.let { c ->
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Text(c.nombre, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-                    Text(c.descripcion, style = MaterialTheme.typography.bodyMedium)
+        // Inscripción actual si existe
+        val inscripcionActual = inscripciones.find { it.clase.id == claseId }
+        val estaInscrito = inscripcionActual != null
 
-                    Divider()
+        fun desinscribirse(inscripcionId: Long) {
+            coroutineScope.launch {
+                try {
+                    val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                    val response = claseViewModel.eliminarInscripcion(token, inscripcionId)
 
-                    Text("📍 Ubicación: ${c.ubicacion}")
-                    Text("🎯 Dificultad: ${c.dificultad.name.lowercase().replaceFirstChar { it.uppercaseChar() }}")
-                    Text("👨‍🏫 Profesor: ${c.profesor.nombre}")
-
-                    if (c.videoPresentacion.isNotBlank()) {
-                        ClickableText(
-                            text = AnnotatedString("🎥 Ver video de presentación"),
-                            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
-                            onClick = { uriHandler.openUri(c.videoPresentacion) }
-                        )
+                    if (response.isSuccessful) {
+                        Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
+                        sesionViewModel.cargarMisInscripciones()
+                    } else {
+                        Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
 
-                    Divider()
-                    Text("🕒 Horarios:", style = MaterialTheme.typography.titleSmall)
-                    c.horarioClases.forEach { horario ->
-                        Text("• ${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}")
-                    }
+        // UI de clase
+        Scaffold { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(16.dp)
+            ) {
+                clase?.let { c ->
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Text(c.nombre, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(c.descripcion, style = MaterialTheme.typography.bodyMedium)
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                        Divider()
 
-                    if (estaInscrito && inscripcionActual != null) {
-                        Button(
-                            onClick = { desinscribirse(inscripcionActual.id) },
-                            modifier = Modifier.align(Alignment.CenterHorizontally),
-                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                        Text("📍 Ubicación: ${c.ubicacion}")
+                        Text("🎯 Dificultad: ${c.dificultad.name.lowercase().replaceFirstChar { it.uppercaseChar() }}")
+                        Text("👨‍🏫 Profesor: ${c.profesor.nombre}")
+
+                        if (c.videoPresentacion.isNotBlank()) {
+                            ClickableText(
+                                text = AnnotatedString("🎥 Ver video de presentación"),
+                                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
+                                onClick = { uriHandler.openUri(c.videoPresentacion) }
+                            )
+                        }
+
+                        Divider()
+                        Text("🕒 Horarios:", style = MaterialTheme.typography.titleSmall)
+                        c.horarioClases.forEach { horario ->
+                            Text("• ${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}")
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Solo si es usuario normal o profesor, no invitado
+                        if (!esInvitado && estaInscrito && inscripcionActual != null) {
+                            Button(
+                                onClick = { desinscribirse(inscripcionActual.id) },
+                                modifier = Modifier.align(Alignment.CenterHorizontally),
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Cancelar inscripción")
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { navController.popBackStack() },
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
-                            Text("Cancelar inscripción")
+                            Text("Volver")
                         }
                     }
-
-                    OutlinedButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    ) {
-                        Text("Volver")
-                    }
-                }
-            } ?: CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                } ?: CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            }
         }
     }
 }

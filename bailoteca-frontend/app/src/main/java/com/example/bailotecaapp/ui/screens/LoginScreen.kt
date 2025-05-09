@@ -116,6 +116,21 @@ fun LoginScreen(
             TextButton(onClick = { navController.navigate(Screens.Register.route) }) {
                 Text("¿No tienes cuenta? Regístrate aquí")
             }
+
+            /**
+             * Entrar como inivtado, claramente sin los privilegios de un USUARIO
+             */
+            TextButton(
+                onClick = {
+                    sesionViewModel.entrarComoInvitado()
+                    navController.navigate(Screens.Home.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text("Entrar como invitado")
+            }
         }
     }
 }

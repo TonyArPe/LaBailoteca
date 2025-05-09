@@ -22,7 +22,7 @@ import javax.inject.Inject
  * - Lista de inscripciones del usuario.
  * - Estado de carga y errores.
  *
- * Utilizado por componentes como SesionGuard, DrawerContent, ProfileScreen, etc.
+ * Utilizado por componentes como SesionGuard y tal
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
@@ -151,6 +151,26 @@ class SesionViewModel @Inject constructor(
             }
         }
     }
+
+    fun entrarComoInvitado() {
+        _usuario.value = Usuario(
+            id = -1,
+            nombre = "Invitado",
+            correo = "invitado@bailoteca.com",
+            rol = Rol.INVITADO,
+            activo = false,
+            pagado = false,
+            contrasenna = "",
+            direccion = null,
+            telefono = null,
+            dni = null,
+            fotoPerfil = null,
+            genero = null,
+            fechaNacimiento = null,
+            fechaRegistro = null
+        )
+    }
+
 
     /**
      * Permite establecer el usuario desde fuera (por ejemplo, tras login).
