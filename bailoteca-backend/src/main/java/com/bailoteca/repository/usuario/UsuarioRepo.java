@@ -1,21 +1,37 @@
 package com.bailoteca.repository.usuario;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import com.bailoteca.models.usuario.Usuario;
 
 /**
  * Repositorio para la entidad Usuario.
- * Proporciona métodos para realizar operaciones CRUD y consultas personalizadas.
- * Extiende JpaRepository para heredar funcionalidades básicas de acceso a datos.
+ * Proporciona métodos para realizar operaciones CRUD y consultas
+ * personalizadas.
+ * Extiende JpaRepository para heredar funcionalidades básicas de acceso a
+ * datos.
  */
 @Repository
-public interface UsuarioRepo extends JpaRepository<Usuario, Long >{
+public interface UsuarioRepo extends JpaRepository<Usuario, Long> {
     Optional<Usuario> findByCorreo(String correo);
+
     Usuario findByDni(String dni);
+
     Usuario findByTelefono(String telefono);
+
     Usuario findByNombre(String nombre);
+
+    @Query("""
+                SELECT DISTINCT u FROM Usuario u
+                JOIN Inscripcion i ON u.id = i.usuario.id
+                JOIN Clase c ON i.clase.id = c.id
+                WHERE c.profesor.id = :profesorId
+            """)
+    List<Usuario> findAlumnosPorProfesor(Long profesorId);
+
 }

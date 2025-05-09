@@ -30,7 +30,7 @@ public class UsuarioController {
     /**
      * Obtiene todos los usuarios del sistema (solo ADMIN).
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
     @GetMapping
     public List<Usuario> getUsuarios() {
         return usuarioRepo.findAll();
@@ -135,4 +135,21 @@ public class UsuarioController {
             return null;
         }
     }
+
+    @PreAuthorize("hasRole('PROFESOR')")
+    @GetMapping("/mis-alumnos")
+    public ResponseEntity<List<Usuario>> getAlumnosInscritos() {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        if (actual.getRol().name().equals("PROFESOR")) {
+            List<Usuario> alumnos = usuarioRepo.findAlumnosPorProfesor(actual.getId());
+            return ResponseEntity.ok(alumnos);
+        }
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    }
+
+    
 }

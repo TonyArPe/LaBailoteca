@@ -79,4 +79,9 @@ interface ApiService {
         @Path("id") id: Long
     ): Response<Void>
 
+    @GET("api/usuarios/mis-alumnos")
+    suspend fun getMisAlumnos(
+        @Header("Authorization") token: String
+    ): Response<List<Usuario>>
+    
 }
