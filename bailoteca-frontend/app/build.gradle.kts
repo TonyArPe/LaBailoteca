@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.hilt)
+    id("kotlin-kapt")
 }
 
 android {
@@ -28,14 +29,12 @@ android {
         }
     }
 
-    // Soporte para Jetpack Compose
     buildFeatures {
         compose = true
     }
 
-    // Versión del compilador de Kotlin para Compose
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.7.8"
+        kotlinCompilerExtensionVersion = "1.5.13"
     }
 
     compileOptions {
@@ -46,43 +45,60 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
+    hilt {
+        enableAggregatingTask = false
+    }
 }
 
 dependencies {
-
     // AndroidX básicos
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // Activity para Compose
-    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation(libs.androidx.activity.compose.v182)
 
-    // Jetpack Compose (versión 1.7.8)
+    // Jetpack Compose
     implementation("androidx.compose.ui:ui:1.7.8")
     implementation("androidx.compose.material3:material3:1.2.1")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
+    implementation(libs.androidx.foundation.layout.android)
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
-
-    // Navigation con Compose
     implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // Coroutines
+    implementation(libs.kotlinx.coroutines.android)
 
     // Testing
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
+    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
-    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation(libs.firebase.auth.ktx)
 
-    // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    // Retrofit y Gson
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
 
-    // Conversor Gson para parsear JSON automáticamente
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    // OkHttp Logging
+    implementation(libs.logging.interceptor)
 
-    // OkHttp para logging (opcional pero muy útil para depurar)
-    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.11")
+    // Hilt
+    implementation(libs.hilt.android)
+    kapt(libs.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+}
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.squareup" && requested.name == "javapoet") {
+            useVersion("1.13.0")
+        }
+    }
 }
 
 apply(plugin = "com.google.gms.google-services")

@@ -101,7 +101,129 @@ Se utilizan endpoints como:
 - El backend valida el token y devuelve datos solo si es válido
 - Se usa `Authorization: Bearer <idToken>`
 
+### Inscripción de usuarios a clases
+
+El backend expone un endpoint:
+
+- **POST** `/api/inscripciones?claseId={id}`: Permite registrar la inscripción del usuario autenticado en una clase.
+- También permite obtener inscripciones por usuario o por clase.
+
+El modelo **Inscripcion** relaciona:
+
+- **Usuario**: Información del usuario inscrito.
+- **Clase**: Detalles de la clase.
+- **Fecha**: Representada como `LocalDate`.
+- **Estado**: Representado por `EstadoInscripcion`.
+
+En el frontend (Jetpack Compose):
+
+- Se accede a las inscripciones del usuario para controlar el estado de la UI (botón "Inscribirme").
+- Si el usuario ya está inscrito:
+  - Se oculta el botón.
+  - Se muestra el mensaje: **"Ya estás inscrito"**.
+- Desde la pantalla de detalle, se permite cancelar la inscripción.
+
+Se corrigieron problemas de mapeo asegurando que los modelos de Kotlin reflejen correctamente la estructura anidada del backend:
+
+- **usuario**: Representado por el modelo `Usuario`.
+- **clase**: Representada por el modelo `Clase`.
+
 ---
+
+## Navegación general y estructura principal
+
+Se ha implementado una estructura de navegación global basada en **Scaffold** de Jetpack Compose, que incluye:
+
+- **TopAppBar**: Barra superior con el título de la app y botón de menú lateral.
+- **Drawer lateral**: Implementado con `ModalNavigationDrawer`, mostrando las rutas disponibles según el rol del usuario.
+- **Sistema de navegación central**: `AppNavigation` conectado dentro del Scaffold para permitir el cambio de pantallas de forma fluida.
+- **Correcto manejo del padding**: Evita solapamiento con la TopAppBar.
+
+### Archivos relevantes
+
+- **MainScaffold.kt**: Contenedor principal de la app con barra superior y drawer.
+- **DrawerContent.kt**: Lista de rutas del menú lateral.
+- **AppNavigation.kt**: Rutas navegables dentro de la aplicación.
+
+### Apuntes personales
+
+#### ¿Qué es Scaffold?
+
+- Es una estructura base en Jetpack Compose que permite colocar de forma ordenada elementos como barras superiores, barras inferiores, menús laterales y el contenido principal.
+- El Scaffold tiene un bloque `padding -> {}` que hay que respetar para evitar que el contenido se solape con otros elementos visuales (como la barra superior).
+
+#### ¿Cómo se ha montado la navegación?
+
+1. Se usa `ModalNavigationDrawer` para el menú lateral.
+2. Dentro del drawer, se utiliza una función `DrawerContent()` personalizada que llama a `navController.navigate(destino)` al pulsar una opción.
+3. El contenido principal del Scaffold llama a `AppNavigation`, que contiene todas las rutas (LoginScreen, HomeScreen, etc.).
+4. Se usa `rememberCoroutineScope()` para abrir/cerrar el drawer animadamente con `drawerState.open()` y `drawerState.close()`.
+
+### Navegación y menú lateral
+
+La aplicación móvil usa un sistema de navegación centralizado basado en Jetpack Compose Navigation.
+
+#### Componentes clave:
+- `MainScaffold.kt`: define el layout principal con AppBar, Drawer y Navigation.
+- `DrawerContent.kt`: menú lateral dinámico basado en el rol del usuario.
+- `DrawerDestinations.kt`: enum sellado que define las rutas disponibles para cada tipo de usuario.
+- `SesionViewModel.kt`: mantiene el estado del usuario autenticado de forma reactiva.
+
+#### Roles soportados:
+- `ADMIN`: acceso completo a usuarios, clases, perfil y logout.
+- `PROFESOR`: acceso a clases, perfil y logout.
+- `USUARIO`: acceso a clases, perfil y logout.
+
+#### Comportamiento:
+- El menú se muestra como un `ModalNavigationDrawer` con un ancho fijo (`280.dp`).
+- El contenido se adapta automáticamente cuando el drawer está abierto.
+- La sesión permanece activa hasta que el usuario cierra sesión explícitamente.
+
+### SesionGuard: Componente protector de sesión
+
+Para garantizar que todas las pantallas o componentes que requieren un usuario autenticado
+trabajan con la sesión correctamente cargada, se ha implementado el componente `SesionGuard`.
+
+Este componente:
+- Verifica si el usuario está presente en Firebase.
+- Si el usuario aún no está cargado desde el backend (`SesionViewModel.usuario == null`), lanza automáticamente la petición para recuperarlo.
+- Muestra un `CircularProgressIndicator` mientras tanto.
+- Expone el `Usuario` ya cargado al contenido hijo mediante una función lambda.
+
+#### Ubicación del archivo
+`ui/components/SesionGuard.kt`
+
+#### Ejemplo
+
+```kotlin
+SesionGuard { usuario ->
+    Text("Hola, ${usuario.nombre}")
+}
+```
+
+### Ventaja
+
+Centraliza el control de sesión, evitando repetir if (usuario != null) en cada pantalla.
+Ideal para componentes como el DrawerContent, pantallas de perfil, ajustes, etc.
+
+### 🔐 AppNavigation con protección de sesión
+
+El archivo `AppNavigation.kt` contiene la definición de rutas de la aplicación, diferenciando entre:
+- **Rutas públicas**: accesibles sin autenticación (`/login`, `/register`).
+- **Rutas protegidas**: requieren que el usuario esté autenticado y cargado desde el backend.
+
+Estas rutas sensibles se protegen usando el componente `SesionGuard`, que impide que se renderice la pantalla si no se ha recuperado aún la sesión del usuario desde Firebase y el backend.
+
+Ejemplo de protección:
+
+```kotlin
+composable(Screens.Home.route) {
+    SesionGuard { usuario ->
+        HomeScreen(navController)
+    }
+}
+```
+
 
 ## Próximos pasos
 

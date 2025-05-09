@@ -8,18 +8,25 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.components.UsuarioCard
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 
 @Composable
-fun UserListScreen(viewModel: UsuarioViewModel = viewModel()) {
+fun UserListScreen(navController: NavController,
+                   viewModel: UsuarioViewModel = viewModel()) {
 
     // Observamos el estado desde el ViewModel
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
+    val sesionViewModel: SesionViewModel = hiltViewModel()
+    val usuario by sesionViewModel.usuario.collectAsState()
+
 
     // Lanzamos la carga solo una vez cuando se abre esta pantalla
     LaunchedEffect(Unit) {

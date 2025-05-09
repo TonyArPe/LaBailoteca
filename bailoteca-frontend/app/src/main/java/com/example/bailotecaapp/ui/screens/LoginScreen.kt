@@ -11,19 +11,36 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
-fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewModel()) {
-
-    // Estos son los estados
+fun LoginScreen(
+    navController: NavHostController,
+    viewModel: LoginViewModel = viewModel(),
+    sesionViewModel: SesionViewModel = hiltViewModel()
+) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val sesionCargando by sesionViewModel.isLoading.collectAsState()
+
+    // Navegamos solo cuando el usuario ya ha sido cargado
+    LaunchedEffect(usuario, sesionCargando) {
+        if (usuario != null && !sesionCargando) {
+            navController.navigate(Screens.Home.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
 
     Scaffold { padding ->
         Column(
@@ -34,7 +51,6 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Título de la app
             Text(
                 text = "La Bailoteca",
                 style = MaterialTheme.typography.headlineLarge,
@@ -43,49 +59,40 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Campo de email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 label = { Text("Correo electrónico") },
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Campo de contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
                 label = { Text("Contraseña") },
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done
-                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 modifier = Modifier.fillMaxWidth()
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón de login
             Button(
                 onClick = {
                     isLoading = true
                     errorMessage = null
-
                     viewModel.login(
                         email,
                         password,
-                        onSuccess = { token ->
+                        onSuccess = {
+                            sesionViewModel.obtenerUsuarioActual()
+                            sesionViewModel.cargarMisInscripciones()
                             isLoading = false
-                            navController.navigate(Screens.Home.route)
                         },
                         onError = { error ->
                             isLoading = false
@@ -94,30 +101,35 @@ fun LoginScreen(navController: NavController, viewModel: LoginViewModel = viewMo
                     )
                 },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading
+                enabled = !isLoading && !sesionCargando
             ) {
-                Text(
-                    text = if (isLoading) "Cargando..." else "Iniciar sesión",
-                    style = MaterialTheme.typography.titleMedium
-                )
+                Text(text = if (isLoading || sesionCargando) "Cargando..." else "Iniciar sesión")
             }
 
-            // Mostrar mensaje de error si existe
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = it,
-                    color = Color.Red,
-                    style = MaterialTheme.typography.bodyMedium
-                )
+                Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodyMedium)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            TextButton(onClick = {
-                navController.navigate("register") // o Screens.Register.route si lo tienes así
-            }) {
+            TextButton(onClick = { navController.navigate(Screens.Register.route) }) {
                 Text("¿No tienes cuenta? Regístrate aquí")
+            }
+
+            /**
+             * Entrar como inivtado, claramente sin los privilegios de un USUARIO
+             */
+            TextButton(
+                onClick = {
+                    sesionViewModel.entrarComoInvitado()
+                    navController.navigate(Screens.Home.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                modifier = Modifier.padding(top = 16.dp)
+            ) {
+                Text("Entrar como invitado")
             }
         }
     }
