@@ -1,11 +1,14 @@
 package com.bailoteca.security;
 
+import com.bailoteca.models.usuario.Usuario;
+import com.bailoteca.repository.usuario.UsuarioRepo;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseToken;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,14 +21,15 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Filtro personalizado que intercepta cada petición entrante y valida el token
- * JWT emitido por Firebase.
- * Si el token es válido, se establece la autenticación en el contexto de
- * seguridad de Spring.
+ * Filtro que valida tokens Firebase y configura el contexto de seguridad.
+ * Asigna por defecto ROLE_USER si no hay rol explícito en el token.
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class FirebaseJwtFilter extends OncePerRequestFilter {
+
+    private final UsuarioRepo usuarioRepo;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -33,23 +37,17 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
                                     FilterChain filterChain)
             throws ServletException, IOException {
 
-        log.info("🚨 Entrando al filtro FirebaseJwtFilter...");
-
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            log.warn("⚠️  No hay token en el header Authorization o no comienza con 'Bearer '");
             filterChain.doFilter(request, response);
             return;
         }
 
         try {
             String token = authHeader.substring(7);
-            log.info("🟡 Token recibido: {}...", token.substring(0, Math.min(token.length(), 30)));
-
             FirebaseToken firebaseToken = FirebaseAuth.getInstance().verifyIdToken(token);
             String email = firebaseToken.getEmail();
-            String customRole = (String) firebaseToken.getClaims().get("role");
 
             if (email == null || email.isBlank()) {
                 log.error("❌ El token no contiene un email válido");
@@ -57,29 +55,28 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
                 return;
             }
 
-            log.info("📧 Email del token: {}", email);
-            log.info("🛡️ Rol recibido (si existe): {}", customRole);
+            Usuario usuario = usuarioRepo.findByCorreo(email).orElse(null);
+            if (usuario == null) {
+                log.error("❌ Usuario no encontrado en la base de datos");
+                filterChain.doFilter(request, response);
+                return;
+            }
 
-            // Se construyen las autoridades desde el rol o se asigna ROLE_USER por defecto
             List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority(customRole != null ? "ROLE_" + customRole : "ROLE_USER")
+                    new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())
             );
 
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    email, null, authorities
-            );
-
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(email, null, authorities);
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-            log.info("Antes de setAuthentication: contexto = {}", SecurityContextHolder.getContext().getAuthentication());
             SecurityContextHolder.getContext().setAuthentication(authentication);
-            log.info("Después de setAuthentication: autenticado = {}", SecurityContextHolder.getContext().getAuthentication().getName());
+
+            log.info("✅ Usuario autenticado: {} con rol {}", email, usuario.getRol());
 
         } catch (Exception ex) {
             log.error("❌ Error verificando el token Firebase: {}", ex.getMessage());
         }
 
-        log.info("✅ Saliendo del filtro FirebaseJwtFilter...");
         filterChain.doFilter(request, response);
     }
 }

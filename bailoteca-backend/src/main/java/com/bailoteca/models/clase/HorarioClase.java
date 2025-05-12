@@ -5,6 +5,8 @@ import lombok.*;
 
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -22,6 +24,6 @@ public class HorarioClase {
 
     @ManyToOne
     @JoinColumn(name = "clase_id")
+    @JsonIgnore
     private Clase clase;
 }
-

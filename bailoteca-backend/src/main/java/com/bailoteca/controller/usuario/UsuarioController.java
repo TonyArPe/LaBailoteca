@@ -4,7 +4,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,10 +30,22 @@ public class UsuarioController {
      * Obtiene todos los usuarios del sistema (solo ADMIN).
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
-    @GetMapping
-    public List<Usuario> getUsuarios() {
-        return usuarioRepo.findAll();
+@GetMapping
+public ResponseEntity<List<Usuario>> getUsuarios() {
+    Usuario actual = getUsuarioAutenticado();
+    if (actual == null) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
+
+    if (actual.getRol().name().equals("ADMIN")) {
+        return ResponseEntity.ok(usuarioRepo.findAll());
+    }
+
+    if (actual.getRol().name().equals("PROFESOR")) {
+        return ResponseEntity.ok(usuarioRepo.findAlumnosPorProfesor(actual.getId()));
+    }
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+}
 
     /**
      * Crea un nuevo usuario en el sistema. La contraseña se codifica
