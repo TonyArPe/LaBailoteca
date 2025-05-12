@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1038077385094",
+    "project_id": "bailoteca-ff9de",
+    "storage_bucket": "bailoteca-ff9de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038077385094:android:e62db292430fa57901b407",
+        "android_client_info": {
+          "package_name": "com.example.bailotecaapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9amvFSdgMULK47rsFc1Ml-t1wj0g3s7c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

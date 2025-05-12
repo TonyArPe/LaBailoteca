@@ -18,7 +18,7 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
 fun UserListScreen(navController: NavController,
-                   viewModel: UsuarioViewModel = viewModel()) {
+                   viewModel: UsuarioViewModel = hiltViewModel()) {
 
     // Observamos el estado desde el ViewModel
     val usuarios by viewModel.usuarios.collectAsState()
@@ -42,7 +42,7 @@ fun UserListScreen(navController: NavController,
         ) {
             when {
                 isLoading -> {
-                    // Cargando
+                    // Animacion Cargando
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
 

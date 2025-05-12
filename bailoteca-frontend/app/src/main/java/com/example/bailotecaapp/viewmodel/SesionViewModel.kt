@@ -65,12 +65,13 @@ class SesionViewModel @Inject constructor(
                 }
 
                 val response = api.getUsuarioActual("Bearer $token")
-                if (response.isSuccessful) {
+                if (response.isSuccessful && response.body() != null) {
                     _usuario.value = response.body()
                     Log.d("SesionViewModel", "Usuario cargado correctamente: ${_usuario.value?.correo}")
                 } else {
-                    _error.value = "Error al obtener perfil: ${response.code()}"
-                    Log.e("SesionViewModel", "Error HTTP: ${response.code()}")
+                    val mensaje = "Error HTTP ${response.code()}: ${response.message()}"
+                    _error.value = mensaje
+                    Log.e("SesionViewModel", mensaje)
                 }
             } catch (e: Exception) {
                 _error.value = "Error de red al obtener usuario: ${e.localizedMessage}"

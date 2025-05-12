@@ -1,10 +1,14 @@
 package com.example.bailotecaapp.ui.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.model.Usuario
@@ -32,29 +36,38 @@ fun SesionGuard(
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
+    val error by sesionViewModel.error.collectAsState()
 
     LaunchedEffect(usuario) {
         val authUser = FirebaseAuth.getInstance().currentUser
-        if (usuario == null) {
-            if (authUser != null) {
-                sesionViewModel.obtenerUsuarioActual()
-            } else {
-                // Si no hay usuario en Firebase, nos da el rol invitado
-                sesionViewModel.entrarComoInvitado()
-            }
+        if (usuario == null && authUser != null) {
+            sesionViewModel.obtenerUsuarioActual()
+        } else if (authUser == null) {
+            sesionViewModel.entrarComoInvitado()
         }
     }
 
     when {
-        isLoading || usuario == null -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
+        isLoading -> {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
-        else -> {
+        error != null -> {
+            // Mostramos error
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("Error al cargar sesión: $error", color = MaterialTheme.colorScheme.error)
+                    Spacer(Modifier.height(8.dp))
+                    Button(onClick = {
+                        sesionViewModel.cerrarSesion()
+                    }) {
+                        Text("Cerrar sesión")
+                    }
+                }
+            }
+        }
+        usuario != null -> {
             content(usuario!!)
         }
     }

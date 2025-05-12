@@ -4,25 +4,25 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 
 /**
- * Configuración de seguridad para la aplicación La Bailoteca.
- * Usa autenticación basada en JWT y control de acceso por roles.
+ * Configuración de seguridad para La Bailoteca.
+ * Se valida cada petición usando tokens de Firebase, sin JWT generados por el backend.
  */
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthFilter;
+    private final FirebaseAuthenticationFilter firebaseAuthenticationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -30,7 +30,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                // Públicos (sin autenticación)
+                // Endpoints públicos sin autenticación
                 .requestMatchers(
                     "/", 
                     "/index.html", 
@@ -40,17 +40,17 @@ public class SecurityConfig {
                     "/ws/**",
                     "/api/auth/**"
                 ).permitAll()
-
-                // Protegidos: el resto de endpoints requiere autenticación
+                // Todos los demás requieren autenticación con token Firebase
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            // Añade el filtro de Firebase antes del filtro de autenticación por defecto
+            .addFilterBefore(firebaseAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
     /**
-     * Codificador de contraseñas usando BCrypt.
+     * Codificador de contraseñas para almacenar usuarios locales si se usan.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -58,7 +58,7 @@ public class SecurityConfig {
     }
 
     /**
-     * Proporciona el AuthenticationManager a partir de la configuración.
+     * Proporciona el AuthenticationManager de Spring para autenticaciones locales si se necesitan.
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
