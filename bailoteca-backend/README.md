@@ -107,7 +107,7 @@ Consulta los endpoints y modelos detallados en `docs/` o via Swagger si lo habil
 | `USUARIO` | ❌ No                         | —                                |
 | `INVITADO`| ❌ No                         | —                                |
 
-### 🔐 Seguridad y autenticación
+### Seguridad y autenticación
 
 - **Autenticación con Firebase JWT**
 - **Validación de token** en todos los endpoints
@@ -116,7 +116,7 @@ Consulta los endpoints y modelos detallados en `docs/` o via Swagger si lo habil
 
 ---
 
-### 📦 Endpoints disponibles
+### Endpoints disponibles
 
 | Método | Ruta                          | Descripción                              | Acceso            |
 |--------|-------------------------------|------------------------------------------|-------------------|
@@ -130,7 +130,7 @@ Consulta los endpoints y modelos detallados en `docs/` o via Swagger si lo habil
 
 ---
 
-### 📘 Ejemplo de lógica de protección personalizada
+### Ejemplo de lógica de protección personalizada
 
 ```java
 if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
@@ -141,7 +141,7 @@ return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 
 ---
 
-### 🔧 Repositorio personalizado
+### Repositorio personalizado
 
 En `UsuarioRepo` se ha añadido una query específica:
 
