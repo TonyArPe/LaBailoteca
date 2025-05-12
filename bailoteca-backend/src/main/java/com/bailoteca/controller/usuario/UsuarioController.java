@@ -116,8 +116,12 @@ public class UsuarioController {
      * Devuelve el perfil del usuario autenticado.
      */
     @GetMapping("/me")
-    public Usuario getMiPerfil() {
-        return getUsuarioAutenticado();
+    public ResponseEntity<Usuario> getMiPerfil() {
+        Usuario usuario = getUsuarioAutenticado();
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(usuario);
     }
 
     /**
@@ -125,11 +129,11 @@ public class UsuarioController {
      */
     private Usuario getUsuarioAutenticado() {
         try {
-            String correo = ((UserDetails) SecurityContextHolder
+            String correo = SecurityContextHolder
                     .getContext()
                     .getAuthentication()
-                    .getPrincipal()).getUsername();
-
+                    .getPrincipal()
+                    .toString();
             return usuarioRepo.findByCorreo(correo).orElse(null);
         } catch (Exception e) {
             return null;
