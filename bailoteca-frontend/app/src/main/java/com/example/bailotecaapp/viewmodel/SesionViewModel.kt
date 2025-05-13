@@ -169,7 +169,7 @@ class SesionViewModel @Inject constructor(
             fotoPerfil = null,
             genero = null,
             fechaNacimiento = null,
-            fechaRegistro = null
+            fechaRegistro = null.toString()
         )
     }
 

@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
     id("kotlin-kapt")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
 }
 
 android {
@@ -58,6 +59,11 @@ dependencies {
 
     // Activity para Compose
     implementation(libs.androidx.activity.compose.v182)
+
+    // Hacer Serializables
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.8.0")
+
 
     // Jetpack Compose
     implementation("androidx.compose.ui:ui:1.7.8")

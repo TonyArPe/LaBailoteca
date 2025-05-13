@@ -1,5 +1,8 @@
 package com.example.bailotecaapp.model
 
+import kotlinx.serialization.Serializable
+
+@Serializable
 data class HorarioClase(
     val id: Long,
     val diaSemana: String,

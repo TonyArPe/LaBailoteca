@@ -1,7 +1,9 @@
 package com.example.bailotecaapp.model
 
 import com.example.bailotecaapp.model.enums.Dificultad
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Clase(
     val id: Long,
     val nombre: String,

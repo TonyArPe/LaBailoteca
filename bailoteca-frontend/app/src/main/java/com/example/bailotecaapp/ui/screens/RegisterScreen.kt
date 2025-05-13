@@ -112,7 +112,9 @@ fun RegisterScreen(
                                         contrasenna = password,
                                         rol = Rol.USUARIO,
                                         activo = true,
-                                        pagado = false
+                                        pagado = false,
+                                        fechaRegistro = "2023-01-01",
+                                        id = 0
                                     )
 
                                     coroutineScope.launch {
