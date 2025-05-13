@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.viewmodel
 
+import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -16,6 +17,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import com.example.bailotecaapp.model.enums.Rol
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
  * ViewModel que gestiona el estado de sesión de la aplicación, incluyendo:
@@ -67,7 +71,10 @@ class SesionViewModel @Inject constructor(
                 val response = api.getUsuarioActual("Bearer $token")
                 if (response.isSuccessful && response.body() != null) {
                     _usuario.value = response.body()
-                    Log.d("SesionViewModel", "Usuario cargado correctamente: ${_usuario.value?.correo}")
+                    Log.d(
+                        "SesionViewModel",
+                        "Usuario cargado correctamente: ${_usuario.value?.correo}"
+                    )
                 } else {
                     val mensaje = "Error HTTP ${response.code()}: ${response.message()}"
                     _error.value = mensaje
@@ -88,7 +95,8 @@ class SesionViewModel @Inject constructor(
     fun cargarMisInscripciones() {
         viewModelScope.launch {
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val token =
+                    Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
                 val usuarioId = _usuario.value?.id ?: return@launch
 
                 val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
@@ -97,7 +105,10 @@ class SesionViewModel @Inject constructor(
                     Log.d("SesionViewModel", "Inscripciones cargadas correctamente.")
                 } else {
                     _error.value = "Error al obtener inscripciones: ${response.code()}"
-                    Log.e("SesionViewModel", "Error HTTP al obtener inscripciones: ${response.code()}")
+                    Log.e(
+                        "SesionViewModel",
+                        "Error HTTP al obtener inscripciones: ${response.code()}"
+                    )
                 }
             } catch (e: Exception) {
                 _error.value = "Error al cargar inscripciones: ${e.localizedMessage}"
@@ -132,7 +143,8 @@ class SesionViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
+                val token =
+                    Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
                 val userId = _usuario.value?.id ?: return@launch
 
                 val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
@@ -155,29 +167,41 @@ class SesionViewModel @Inject constructor(
     }
 
     fun entrarComoInvitado() {
-        _usuario.value = Usuario(
-            id = -1,
-            nombre = "Invitado",
-            correo = "invitado@bailoteca.com",
-            rol = Rol.INVITADO,
-            activo = false,
-            pagado = false,
-            contrasenna = "",
-            direccion = null,
-            telefono = null,
-            dni = null,
-            fotoPerfil = null,
-            genero = null,
-            fechaNacimiento = null,
-            fechaRegistro = null.toString()
-        )
-    }
+        val fechaRegistro = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            java.time.LocalDate.now().toString()
+        } else {
+            SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        }
 
+        fun entrarComoInvitado() {
+            _usuario.value = Usuario(
+                id = -1,
+                nombre = "Invitado",
+                apellido = "Invitado",
+                correo = "invitado@bailoteca.com",
+                rol = Rol.INVITADO,
+                activo = false,
+                pagado = false,
+                contrasenna = "",
 
-    /**
-     * Permite establecer el usuario desde fuera (por ejemplo, tras login).
-     */
-    fun setUsuario(usuario: Usuario) {
-        _usuario.value = usuario
+                // Campos opcionales
+                direccion = "",
+                telefono = "",
+                dni = "",
+                fotoPerfil = "",
+                genero = "",
+                fechaNacimiento = "",
+
+                // Fecha de registro simulada como actual
+                fechaRegistro = fechaRegistro
+            )
+        }
+
+        /**
+         * Permite establecer el usuario desde fuera.
+         */
+        fun setUsuario(usuario: Usuario) {
+            _usuario.value = usuario
+        }
     }
 }
