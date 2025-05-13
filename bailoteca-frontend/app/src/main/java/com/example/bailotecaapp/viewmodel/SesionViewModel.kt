@@ -18,6 +18,7 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import com.example.bailotecaapp.model.enums.Rol
 import java.text.SimpleDateFormat
+import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 
@@ -173,35 +174,32 @@ class SesionViewModel @Inject constructor(
             SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         }
 
-        fun entrarComoInvitado() {
-            _usuario.value = Usuario(
-                id = -1,
-                nombre = "Invitado",
-                apellido = "Invitado",
-                correo = "invitado@bailoteca.com",
-                rol = Rol.INVITADO,
-                activo = false,
-                pagado = false,
-                contrasenna = "",
+        val invitado = Usuario(
+            id = -1L,
+            nombre = "Invitado",
+            apellido = "Invitado",
+            correo = "invitado@bailoteca.com",
+            contrasenna = "",
+            rol = Rol.INVITADO,
+            direccion = "",
+            telefono = "",
+            dni = "",
+            fotoPerfil = "",
+            genero = "",
+            fechaNacimiento = "",
+            fechaRegistro = fechaRegistro,
+            activo = false,
+            pagado = false
+        )
 
-                // Campos opcionales
-                direccion = "",
-                telefono = "",
-                dni = "",
-                fotoPerfil = "",
-                genero = "",
-                fechaNacimiento = "",
+        Log.d("SesionViewModel", "Usuario invitado cargado correctamente: $invitado")
+        _usuario.value = invitado
+    }
 
-                // Fecha de registro simulada como actual
-                fechaRegistro = fechaRegistro
-            )
-        }
-
-        /**
+    /**
          * Permite establecer el usuario desde fuera.
          */
         fun setUsuario(usuario: Usuario) {
             _usuario.value = usuario
         }
     }
-}

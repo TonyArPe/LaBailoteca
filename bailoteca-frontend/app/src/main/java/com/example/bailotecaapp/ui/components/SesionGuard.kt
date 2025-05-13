@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,23 +39,30 @@ fun SesionGuard(
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
 
-    LaunchedEffect(usuario) {
+    Log.d("SesionGuard", "usuario=$usuario, isLoading=$isLoading, error=$error")
+
+    LaunchedEffect(usuario == null && !isLoading && error == null) {
         val authUser = FirebaseAuth.getInstance().currentUser
-        if (usuario == null && authUser != null) {
+        Log.d("SesionGuard", "FirebaseAuth currentUser=$authUser")
+
+        if (authUser != null) {
+            Log.d("SesionGuard", "Lanzando obtenerUsuarioActual()")
             sesionViewModel.obtenerUsuarioActual()
-        } else if (authUser == null) {
+        } else {
+            Log.d("SesionGuard", "Lanzando entrarComoInvitado()")
             sesionViewModel.entrarComoInvitado()
         }
     }
 
     when {
         isLoading -> {
+            Log.d("SesionGuard", "Cargando sesión...")
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
         error != null -> {
-            // Mostramos error
+            Log.e("SesionGuard", "Error en la sesión: $error")
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("Error al cargar sesión: $error", color = MaterialTheme.colorScheme.error)
@@ -68,7 +76,20 @@ fun SesionGuard(
             }
         }
         usuario != null -> {
+            Log.d("SesionGuard", "Sesión cargada correctamente con: ${usuario!!.correo}")
             content(usuario!!)
+        }
+        else -> {
+            Log.w("SesionGuard", "Estado no esperado: usuario == null, isLoading == false, error == null")
+
+            // Refuerzo: Si currentUser sigue siendo null y aún no se ha llamado explícitamente, forzamos modo invitado
+            LaunchedEffect(Unit) {
+                val authUser = FirebaseAuth.getInstance().currentUser
+                if (authUser == null && usuario == null) {
+                    Log.d("SesionGuard", "Forzando entrarComoInvitado por fallback en else")
+                    sesionViewModel.entrarComoInvitado()
+                }
+            }
         }
     }
 }

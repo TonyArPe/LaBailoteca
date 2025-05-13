@@ -11,19 +11,19 @@ import kotlinx.serialization.Serializable
 data class Usuario(
     val id: Long,
     val nombre: String,
-    val apellido: String? = null,
+    val apellido: String = "",
     val correo: String,
-    val contrasenna: String? = null,
+    val contrasenna: String = "",
 
     val rol: Rol,
 
-    val fotoPerfil: String? = null,
-    val telefono: String? = null,
-    val direccion: String? = null,
-    val fechaNacimiento: String? = null,
-    val genero: String? = null,
-    val dni: String? = null,
-    val fechaRegistro: String,
+    val fotoPerfil: String = "",
+    val telefono: String = "",
+    val direccion: String = "",
+    val fechaNacimiento: String = "",
+    val genero: String = "",
+    val dni: String = "",
+    val fechaRegistro: String = "",
     val activo: Boolean,
     val pagado: Boolean
 )

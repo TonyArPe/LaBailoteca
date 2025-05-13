@@ -18,22 +18,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             BailotecaAppTheme {
                 val navController = rememberNavController()
-                val currentBackStackEntry = navController.currentBackStackEntryAsState().value
-                val currentRoute = currentBackStackEntry?.destination?.route
-
-                val showScaffold = when (currentRoute) {
-                    Screens.Login.route,
-                    Screens.Register.route -> false
-                    else -> true
-                }
-
-                if (showScaffold) {
-                    MainScaffold(navController)
-                } else {
-                    AppNavigation(navController)
-                }
+                MainScaffold(navController = navController)
             }
         }
-
     }
 }
