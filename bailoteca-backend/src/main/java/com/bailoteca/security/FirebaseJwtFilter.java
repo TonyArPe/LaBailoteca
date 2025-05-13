@@ -10,15 +10,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.io.IOException;
-import java.util.List;
 
 /**
  * Filtro que valida tokens Firebase y configura el contexto de seguridad.
@@ -29,12 +29,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class FirebaseJwtFilter extends OncePerRequestFilter {
 
-    private final UsuarioRepo usuarioRepo;
+    @Autowired
+    private UsuarioRepo usuarioRepo; // ← Añade esta dependencia
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         final String authHeader = request.getHeader("Authorization");
@@ -50,31 +51,30 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
             String email = firebaseToken.getEmail();
 
             if (email == null || email.isBlank()) {
-                log.error("❌ El token no contiene un email válido");
                 filterChain.doFilter(request, response);
                 return;
             }
 
+            // 🟡 Cargamos el usuario de la BD
             Usuario usuario = usuarioRepo.findByCorreo(email).orElse(null);
             if (usuario == null) {
-                log.error("❌ Usuario no encontrado en la base de datos");
+                log.warn("El usuario con correo {} no existe en la base de datos.", email);
                 filterChain.doFilter(request, response);
                 return;
             }
 
-            List<SimpleGrantedAuthority> authorities = List.of(
-                    new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())
-            );
+            // ✅ Crea el UsuarioDetails con los authorities correctos
+            UsuarioDetails usuarioDetails = new UsuarioDetails(usuario);
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(email, null, authorities);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(usuarioDetails,
+                    null, usuarioDetails.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            log.info("✅ Usuario autenticado: {} con rol {}", email, usuario.getRol());
+            log.info("Usuario autenticado correctamente: {}", email);
 
-        } catch (Exception ex) {
-            log.error("❌ Error verificando el token Firebase: {}", ex.getMessage());
+        } catch (Exception e) {
+            log.error("Error al verificar token: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);

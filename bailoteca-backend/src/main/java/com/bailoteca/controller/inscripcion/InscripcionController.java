@@ -5,6 +5,7 @@ import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.models.enums.EstadoInscripcion;
 import com.bailoteca.repository.inscripcion.InscripcionRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
+import com.bailoteca.security.UsuarioDetails;
 import com.bailoteca.repository.clase.ClaseRepo;
 
 import lombok.RequiredArgsConstructor;
@@ -65,7 +66,8 @@ public class InscripcionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         var clase = claseRepo.findById(claseId).orElse(null);
-        if (clase == null) return ResponseEntity.notFound().build();
+        if (clase == null)
+            return ResponseEntity.notFound().build();
 
         if (actual.getRol().name().equals("ADMIN") || clase.getProfesor().getId().equals(actual.getId())) {
             return ResponseEntity.ok(inscripcionRepo.findByClaseId(claseId));
@@ -80,7 +82,8 @@ public class InscripcionController {
     @PostMapping
     public ResponseEntity<Inscripcion> create(@RequestParam Long claseId) {
         Usuario actual = getUsuarioAutenticado();
-        if (actual == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         if (!claseRepo.existsById(claseId)) {
             return ResponseEntity.notFound().build();
@@ -103,22 +106,22 @@ public class InscripcionController {
     }
 
     /**
-     * Elimina una inscripción si el usuario es el propietario, ADMIN o profesor dueño de la clase.
+     * Elimina una inscripción si el usuario es el propietario, ADMIN o profesor
+     * dueño de la clase.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
         Usuario actual = getUsuarioAutenticado();
-        if (actual == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         return inscripcionRepo.findById(id).map(inscripcion -> {
             Long usuarioId = inscripcion.getUsuario().getId();
             Long profesorId = inscripcion.getClase().getProfesor().getId();
 
-            if (
-                actual.getId().equals(usuarioId) ||
-                actual.getId().equals(profesorId) ||
-                actual.getRol().name().equals("ADMIN")
-            ) {
+            if (actual.getId().equals(usuarioId) ||
+                    actual.getId().equals(profesorId) ||
+                    actual.getRol().name().equals("ADMIN")) {
                 inscripcionRepo.deleteById(id);
                 return ResponseEntity.ok().build();
             }
@@ -132,11 +135,12 @@ public class InscripcionController {
      */
     private Usuario getUsuarioAutenticado() {
         try {
-            String correo = ((UserDetails) SecurityContextHolder
+            UsuarioDetails details = (UsuarioDetails) SecurityContextHolder
                     .getContext()
                     .getAuthentication()
-                    .getPrincipal()).getUsername();
-            return usuarioRepo.findByCorreo(correo).orElse(null);
+                    .getPrincipal();
+
+            return details.getUsuario();
         } catch (Exception e) {
             return null;
         }

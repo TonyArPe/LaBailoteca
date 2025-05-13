@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
+import com.bailoteca.security.UsuarioDetails;
 
 import lombok.RequiredArgsConstructor;
 
@@ -30,22 +31,22 @@ public class UsuarioController {
      * Obtiene todos los usuarios del sistema (solo ADMIN).
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
-@GetMapping
-public ResponseEntity<List<Usuario>> getUsuarios() {
-    Usuario actual = getUsuarioAutenticado();
-    if (actual == null) {
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-    }
+    @GetMapping
+    public ResponseEntity<List<Usuario>> getUsuarios() {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-    if (actual.getRol().name().equals("ADMIN")) {
-        return ResponseEntity.ok(usuarioRepo.findAll());
-    }
+        if (actual.getRol().name().equals("ADMIN")) {
+            return ResponseEntity.ok(usuarioRepo.findAll());
+        }
 
-    if (actual.getRol().name().equals("PROFESOR")) {
-        return ResponseEntity.ok(usuarioRepo.findAlumnosPorProfesor(actual.getId()));
+        if (actual.getRol().name().equals("PROFESOR")) {
+            return ResponseEntity.ok(usuarioRepo.findAlumnosPorProfesor(actual.getId()));
+        }
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
-    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-}
 
     /**
      * Crea un nuevo usuario en el sistema. La contraseña se codifica
@@ -140,12 +141,12 @@ public ResponseEntity<List<Usuario>> getUsuarios() {
      */
     private Usuario getUsuarioAutenticado() {
         try {
-            String correo = SecurityContextHolder
+            UsuarioDetails details = (UsuarioDetails) SecurityContextHolder
                     .getContext()
                     .getAuthentication()
-                    .getPrincipal()
-                    .toString();
-            return usuarioRepo.findByCorreo(correo).orElse(null);
+                    .getPrincipal();
+
+            return details.getUsuario();
         } catch (Exception e) {
             return null;
         }
