@@ -1,6 +1,5 @@
 package com.example.bailotecaapp.ui.screens
 
-import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.InscripcionRequest
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
@@ -40,23 +40,19 @@ fun ClaseListScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    /**
-     * Cargar el usuario y las inscripciones al montar la pantalla.
-     */
-    var haCargado by remember { mutableStateOf(false) }
+    val esInvitado = usuario?.rol == Rol.INVITADO
 
     LaunchedEffect(usuario) {
-        if (usuario == null) {
-            sesionViewModel.obtenerUsuarioActual()
-        } else {
+        if (usuario != null) {
             viewModel.obtenerClases()
-            sesionViewModel.cargarMisInscripciones()
+            if (!esInvitado) {
+                sesionViewModel.cargarMisInscripciones()
+            }
+        } else {
+            sesionViewModel.obtenerUsuarioActual()
         }
     }
 
-    /**
-     * Función que realiza la inscripción a una clase y actualiza las inscripciones del ViewModel.
-     */
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
         val request = InscripcionRequest(usuarioId = userId, claseId = claseId)
@@ -68,8 +64,7 @@ fun ClaseListScreen(
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
-                    sesionViewModel.cargarMisInscripciones() // 🔄 actualizar lista
-                    Log.d("ClaseListScreen", "Inscripciones recargadas tras inscribirse")
+                    sesionViewModel.cargarMisInscripciones()
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }
@@ -79,9 +74,6 @@ fun ClaseListScreen(
         }
     }
 
-    /**
-     * Interfaz visual.
-     */
     Scaffold { padding ->
         Box(
             modifier = Modifier
@@ -96,9 +88,7 @@ fun ClaseListScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.Center)
                 )
-
                 usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(clases, key = { it.id }) { clase ->
                         val yaInscrito = remember(inscripciones) {
@@ -110,7 +100,7 @@ fun ClaseListScreen(
                             usuarioActual = usuario,
                             inscripciones = inscripciones,
                             yaInscrito = yaInscrito,
-                            onInscribirse = { claseId -> inscribirseAClase(claseId) },
+                            onInscribirse = if (!esInvitado) { { claseId -> inscribirseAClase(claseId) } } else null,
                             onVerDetalle = { claseId -> navController.navigate(Screens.ClaseDetail.createRoute(claseId)) }
                         )
                     }

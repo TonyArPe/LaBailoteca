@@ -14,11 +14,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.R
-import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -30,9 +28,8 @@ import com.google.firebase.auth.auth
  *
  * @param onItemSelected Callback para cambiar la pantalla según el destino seleccionado.
  * @param navController Controlador de navegación.
- * @param usuario Usuario actualmente autenticado.
  * @param onCloseDrawer Función para cerrar el drawer.
- * @param sesionViewModel ViewModel de sesión (por defecto se obtiene con viewModel()).
+ * @param sesionViewModel ViewModel de sesión (por defecto se obtiene con hiltViewModel()).
  */
 @Composable
 fun DrawerContent(
@@ -107,7 +104,7 @@ fun DrawerContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                val painter = if (usuario.fotoPerfil.isNullOrEmpty()) {
+                val painter = if (usuario.fotoPerfil.isEmpty()) {
                     painterResource(id = R.drawable.default_profile)
                 } else {
                     rememberAsyncImagePainter(usuario.fotoPerfil)
@@ -161,6 +158,19 @@ fun DrawerContent(
                             onItemSelected(item.route)
                         }
                         onCloseDrawer()
+                    },
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+
+            if (rol == Rol.INVITADO) {
+                NavigationDrawerItem(
+                    label = { Text("Volver al login") },
+                    selected = false,
+                    onClick = {
+                        navController.navigate(Screens.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )

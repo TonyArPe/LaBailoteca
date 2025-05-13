@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             BailotecaAppTheme {
                 val navController = rememberNavController()
-                MainScaffold(navController = navController)
+                MainScaffold(navController)
             }
         }
     }

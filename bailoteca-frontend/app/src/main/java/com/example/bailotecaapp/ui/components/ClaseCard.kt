@@ -14,6 +14,7 @@ import com.example.bailotecaapp.model.Clase
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
+import androidx.core.net.toUri
 
 /**
  * Componente visual que muestra una tarjeta con la información básica de una clase.
@@ -34,7 +35,7 @@ fun ClaseCard(
     usuarioActual: Usuario?,
     inscripciones: List<Inscripcion>,
     yaInscrito: Boolean,
-    onInscribirse: (Long) -> Unit,
+    onInscribirse: ((Long) -> Unit)? = null,
     onVerDetalle: (Long) -> Unit
 ) {
     val context = LocalContext.current
@@ -73,7 +74,7 @@ fun ClaseCard(
                     Rol.INVITADO -> {
                         Button(onClick = {
                             val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = Uri.parse("mailto:${clase.profesor.correo}")
+                                data = "mailto:${clase.profesor.correo}".toUri()
                                 putExtra(Intent.EXTRA_SUBJECT, "Interesado en ${clase.nombre}")
                                 putExtra(Intent.EXTRA_TEXT, "Hola, estoy interesado en la clase '${clase.nombre}'. ¿Podrías darme más información?")
                             }
@@ -83,9 +84,9 @@ fun ClaseCard(
                         }
                     }
                     else -> {
-                        if (!yaInscrito) {
+                        if (onInscribirse != null && !yaInscrito) {
                             Button(onClick = { onInscribirse(clase.id) }) {
-                                Text("Inscribirme")
+                                Text("Inscribirse")
                             }
                         } else {
                             Text("Ya estás inscrito", style = MaterialTheme.typography.labelMedium)

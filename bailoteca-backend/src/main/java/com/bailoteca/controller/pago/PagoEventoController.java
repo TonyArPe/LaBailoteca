@@ -1,6 +1,5 @@
 package com.bailoteca.controller.pago;
 
-import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.pago.PagoEvento;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.evento.EventoRepo;

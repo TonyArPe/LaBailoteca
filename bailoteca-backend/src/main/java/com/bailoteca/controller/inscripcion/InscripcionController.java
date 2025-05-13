@@ -4,7 +4,6 @@ import com.bailoteca.models.inscripcion.Inscripcion;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.models.enums.EstadoInscripcion;
 import com.bailoteca.repository.inscripcion.InscripcionRepo;
-import com.bailoteca.repository.usuario.UsuarioRepo;
 import com.bailoteca.security.UsuarioDetails;
 import com.bailoteca.repository.clase.ClaseRepo;
 
@@ -13,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,7 +23,6 @@ import java.util.List;
 public class InscripcionController {
 
     private final InscripcionRepo inscripcionRepo;
-    private final UsuarioRepo usuarioRepo;
     private final ClaseRepo claseRepo;
 
     /**

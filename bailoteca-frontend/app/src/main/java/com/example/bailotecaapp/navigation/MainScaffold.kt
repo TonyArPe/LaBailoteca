@@ -28,69 +28,80 @@ fun MainScaffold(
     navController: NavHostController,
     sessionViewModel: SesionViewModel = hiltViewModel()
 ) {
-    val scope = rememberCoroutineScope()
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentDestination = currentBackStackEntry?.destination
+    val currentRoute = currentBackStackEntry?.destination?.route
 
-    val esPantallaPrincipal = currentDestination?.route in listOf(
+    val rutasConScaffold = listOf(
         Screens.Home.route,
         Screens.Clases.route,
-        Screens.Usuarios.route
+        Screens.Usuarios.route,
+        Screens.Perfil.route,
+        Screens.EditProfile.route,
+        Screens.ClaseDetail.route
     )
 
-    // Proteger el contenido del Drawer con SesionGuard
-    SesionGuard(sessionViewModel) {
+    if (currentRoute in rutasConScaffold) {
+        // Mostrar drawer solo en rutas protegidas
+        val scope = rememberCoroutineScope()
+        val drawerState = rememberDrawerState(DrawerValue.Closed)
+        val esPantallaPrincipal = currentRoute in listOf(
+            Screens.Home.route,
+            Screens.Clases.route,
+            Screens.Usuarios.route
+        )
 
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            drawerContent = {
-                DrawerContent(
-                    onItemSelected = { ruta ->
-                        navController.navigate(ruta) {
-                            popUpTo(navController.graph.startDestinationId) {
-                                inclusive = false
+        SesionGuard(sessionViewModel) {
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    DrawerContent(
+                        onItemSelected = { ruta ->
+                            navController.navigate(ruta) {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                launchSingleTop = true
                             }
-                            launchSingleTop = true
-                        }
-                        scope.launch { drawerState.close() }
-                    },
-                    navController = navController,
-                    onCloseDrawer = { scope.launch { drawerState.close() } },
-                    sesionViewModel = sessionViewModel
-                )
-            }
-        ) {
-            Scaffold(
-                topBar = {
-                    TopAppBar(
-                        title = { Text("La Bailoteca") },
-                        navigationIcon = {
-                            if (esPantallaPrincipal) {
-                                IconButton(onClick = {
-                                    scope.launch { drawerState.open() }
-                                }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menú")
-                                }
-                            } else {
-                                IconButton(onClick = {
-                                    navController.navigate(Screens.Home.route) {
-                                        popUpTo(Screens.Home.route) { inclusive = false }
-                                        launchSingleTop = true
-                                    }
-                                }) {
-                                    Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
-                                }
-                            }
-                        }
+                            scope.launch { drawerState.close() }
+                        },
+                        navController = navController,
+                        onCloseDrawer = { scope.launch { drawerState.close() } },
+                        sesionViewModel = sessionViewModel
                     )
                 }
-            ) { innerPadding ->
-                AppNavigation(
-                    navController = navController,
-                    modifier = Modifier.padding(innerPadding)
-                )
+            ) {
+                Scaffold(
+                    topBar = {
+                        TopAppBar(
+                            title = { Text("La Bailoteca") },
+                            navigationIcon = {
+                                if (esPantallaPrincipal) {
+                                    IconButton(onClick = {
+                                        scope.launch { drawerState.open() }
+                                    }) {
+                                        Icon(Icons.Default.Menu, contentDescription = "Menú")
+                                    }
+                                } else {
+                                    IconButton(onClick = {
+                                        navController.navigate(Screens.Home.route) {
+                                            popUpTo(Screens.Home.route) { inclusive = false }
+                                            launchSingleTop = true
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                                    }
+                                }
+                            }
+                        )
+                    }
+                ) { innerPadding ->
+                    AppNavigation(
+                        navController = navController,
+                        modifier = Modifier.padding(innerPadding)
+                    )
+                }
             }
         }
+    } else {
+        // Rutas públicas: sin drawer ni topbar
+        AppNavigation(navController = navController)
     }
 }
