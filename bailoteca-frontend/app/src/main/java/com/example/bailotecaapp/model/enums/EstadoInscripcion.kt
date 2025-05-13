@@ -5,10 +5,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class EstadoInscripcion {
-    @SerialName("ACTIVADA")
+    @SerialName("ACTIVA")
     ACTIVA,
+
     @SerialName("CANCELADA")
     CANCELADA,
+
     @SerialName("FINALIZADA")
     FINALIZADA
 }

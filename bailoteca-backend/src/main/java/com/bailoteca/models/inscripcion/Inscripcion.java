@@ -32,6 +32,7 @@ public class Inscripcion {
     @ManyToOne
     @JoinColumn(name = "clase_id", nullable = false)
     private Clase clase;
+    
     private LocalDate fechaInscripcion;
 
     @Enumerated(EnumType.STRING)

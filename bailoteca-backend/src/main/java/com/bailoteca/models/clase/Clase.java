@@ -40,9 +40,12 @@ public class Clase {
     @Enumerated(EnumType.STRING)
     private Dificultad dificultad;
 
+    private String ubicacion;
+
     @ManyToOne
     @JoinColumn(name = "profesor_id", nullable = false)
     private Usuario profesor;
+
     private String videoPresentacion;
 
     @OneToMany(mappedBy = "clase", cascade = CascadeType.ALL)

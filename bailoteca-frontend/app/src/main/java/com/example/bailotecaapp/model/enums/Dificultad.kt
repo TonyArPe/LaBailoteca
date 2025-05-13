@@ -5,10 +5,10 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 enum class Dificultad {
-    @SerialName("FACIL")
-    FACIL,
-    @SerialName("MEDIA")
-    MEDIA,
-    @SerialName("DIFICIL")
-    DIFICIL
+    @SerialName("PRINCIPIANTE")
+    PRINCIPIANTE,
+    @SerialName("INTERMEDIO")
+    INTERMEDIO,
+    @SerialName("AVANZADO")
+    AVANZADO
 }

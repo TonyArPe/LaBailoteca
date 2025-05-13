@@ -38,7 +38,9 @@ public class Usuario {
     @Column(unique = true)
     private String correo;
     private String contrasenna;
+
     private Rol rol;
+    
     private String fotoPerfil;
     private String telefono;
     private String direccion;
