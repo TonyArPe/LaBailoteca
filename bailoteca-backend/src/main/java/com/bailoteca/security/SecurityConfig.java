@@ -30,8 +30,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/", "/index.html", "/chat.html", "/chat-privado.html", "/notificaciones.html",
-                                "/ws/**", "/api/auth/**")
+                                "/",
+                                "/index.html",
+                                "/chat.html",
+                                "/chat-privado.html",
+                                "/notificaciones.html",
+                                "/ws/**",
+                                "/api/auth/**",
+                                "/api/usuarios/firebase")
                         .permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class);

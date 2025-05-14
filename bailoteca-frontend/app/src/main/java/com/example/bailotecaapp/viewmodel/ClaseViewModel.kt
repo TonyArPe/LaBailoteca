@@ -47,13 +47,18 @@ class ClaseViewModel @Inject constructor(
             _errorMessage.value = null
 
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                val response = api.getClasesDisponibles("Bearer $token")
+                val firebaseUser = Firebase.auth.currentUser
+                val token = firebaseUser?.getIdToken(true)?.await()?.token
+
+                val authHeader = token?.let { "Bearer $it" } ?: "" // vacío si null
+
+                val response = api.getClasesDisponibles(authHeader)
+
                 if (response.isSuccessful && response.body() != null) {
                     _clases.value = response.body()!!
                 } else {
                     _errorMessage.value = "Error: ${response.code()}"
-                    Log.e("ClaseViewModel", "Error: ${response.errorBody()?.string()}")
+                    Log.e("ClaseViewModel", "Error al obtener clases: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "Excepción: ${e.message}"

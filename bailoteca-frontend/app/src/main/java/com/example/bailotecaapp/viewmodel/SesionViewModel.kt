@@ -66,16 +66,14 @@ class SesionViewModel @Inject constructor(
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
                 if (token.isNullOrEmpty()) {
                     _error.value = "Token de autenticación vacío"
+                    Log.e("SesionViewModel", "Token vacío al obtener usuario.")
                     return@launch
                 }
 
                 val response = api.getUsuarioActual("Bearer $token")
                 if (response.isSuccessful && response.body() != null) {
                     _usuario.value = response.body()
-                    Log.d(
-                        "SesionViewModel",
-                        "Usuario cargado correctamente: ${_usuario.value?.correo}"
-                    )
+                    Log.d("SesionViewModel", "Usuario cargado correctamente: ${_usuario.value?.correo}")
                 } else {
                     val mensaje = "Error HTTP ${response.code()}: ${response.message()}"
                     _error.value = mensaje
@@ -86,6 +84,7 @@ class SesionViewModel @Inject constructor(
                 Log.e("SesionViewModel", "Excepción al obtener usuario", e)
             } finally {
                 _isLoading.value = false
+                Log.d("SesionViewModel", "Finalizó la carga del usuario.")
             }
         }
     }

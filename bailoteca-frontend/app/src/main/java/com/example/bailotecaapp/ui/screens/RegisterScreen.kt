@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.UsuarioRequest
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
@@ -31,6 +33,7 @@ fun RegisterScreen(
     registerViewModel: RegisterViewModel = hiltViewModel()
 ) {
     var name by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -55,6 +58,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Campo Nombre
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -66,6 +70,19 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Campo Apellido
+            OutlinedTextField(
+                value = lastName,
+                onValueChange = { lastName = it },
+                label = { Text("Apellido") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions.Default,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Campo Correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -80,6 +97,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Campo Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -95,6 +113,7 @@ fun RegisterScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            // Botón de Registro
             Button(
                 onClick = {
                     isLoading = true
@@ -107,16 +126,17 @@ fun RegisterScreen(
                                 ?.addOnSuccessListener {
                                     val usuario = Usuario(
                                         nombre = name,
-                                        apellido = "Prueba",
+                                        apellido = lastName,
                                         correo = email,
                                         contrasenna = password,
                                         rol = Rol.USUARIO,
                                         activo = true,
                                         pagado = false,
                                         fechaRegistro = "2023-01-01",
-                                        id = 0
+                                        id = 0,
                                     )
 
+                                    Log.d("RegisterScreen", "Usuario creado en Firebase, enviando al backend.")
                                     coroutineScope.launch {
                                         registerViewModel.registrarUsuarioBackend(usuario) { response ->
                                             isLoading = false
@@ -125,18 +145,22 @@ fun RegisterScreen(
                                                 navController.navigate(Screens.Home.route) {
                                                     popUpTo(0) { inclusive = true }
                                                 }
+                                                Log.d("RegisterScreen", "Usuario registrado en el backend y redirigiendo.")
                                             } else {
                                                 errorMessage = "Error backend: ${response.code()}"
+                                                Log.e("RegisterScreen", "Error al registrar en el backend: ${response.code()}")
                                             }
                                         }
                                     }
                                 }?.addOnFailureListener {
                                     errorMessage = "Error al obtener token: ${it.message}"
+                                    Log.e("RegisterScreen", "Error al obtener el token de Firebase: ${it.message}")
                                     isLoading = false
                                 }
                         }
                         .addOnFailureListener {
                             errorMessage = "Error en Firebase: ${it.message}"
+                            Log.e("RegisterScreen", "Error en Firebase al crear el usuario: ${it.message}")
                             isLoading = false
                         }
                 },
@@ -146,6 +170,7 @@ fun RegisterScreen(
                 Text(text = if (isLoading) "Creando..." else "Crear cuenta")
             }
 
+            // Errores
             errorMessage?.let {
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodyMedium)

@@ -7,11 +7,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import com.bailoteca.models.dtos.UsuarioRequest;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
 import com.bailoteca.security.UsuarioDetails;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -19,6 +21,8 @@ import java.util.List;
 /**
  * Controlador REST para gestionar Usuarios.
  */
+
+@Slf4j
 @RestController
 @RequestMapping("/api/usuarios")
 @RequiredArgsConstructor
@@ -167,4 +171,33 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
+    @PostMapping("/firebase")
+    public ResponseEntity<Usuario> registrarDesdeFirebase(@RequestBody UsuarioRequest request) {
+        // Verificar si el usuario ya existe
+        if (usuarioRepo.findByCorreo(request.getCorreo()).isPresent()) {
+            log.warn("El usuario con correo {} ya existe.", request.getCorreo());
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+
+        // Crear el nuevo usuario
+        Usuario nuevo = Usuario.builder()
+                .nombre(request.getNombre())
+                .apellido(request.getApellido())
+                .correo(request.getCorreo())
+                .contrasenna(passwordEncoder.encode(request.getContrasenna()))
+                .rol(request.getRol())
+                .telefono(request.getTelefono())
+                .direccion(request.getDireccion())
+                .fechaNacimiento(request.getFechaNacimiento())
+                .fechaRegistro(LocalDate.now())
+                .activo(true)
+                .pagado(false)
+                .build();
+
+        log.info("Creando nuevo usuario: {}", nuevo);
+        // Guardar el usuario en la base de datos
+        Usuario guardado = usuarioRepo.save(nuevo);
+        log.info("Usuario guardado en la base de datos: {}", guardado);
+        return ResponseEntity.status(HttpStatus.CREATED).body(guardado);
+    }
 }

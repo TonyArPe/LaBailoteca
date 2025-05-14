@@ -5,6 +5,8 @@ import android.net.Uri
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -65,31 +67,41 @@ fun ClaseCard(
                 Text("Horarios no disponibles", style = MaterialTheme.typography.labelSmall)
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            Log.d("ClaseCard", "yaInscrito=$yaInscrito, claseId=${clase.id}, inscripciones=${inscripciones.map { it.clase.id }}")
-
-            if (usuarioActual != null) {
-                when (usuarioActual.rol) {
-                    Rol.INVITADO -> {
-                        Button(onClick = {
-                            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                data = "mailto:${clase.profesor.correo}".toUri()
-                                putExtra(Intent.EXTRA_SUBJECT, "Interesado en ${clase.nombre}")
-                                putExtra(Intent.EXTRA_TEXT, "Hola, estoy interesado en la clase '${clase.nombre}'. ¿Podrías darme más información?")
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                if (usuarioActual != null) {
+                    when (usuarioActual.rol) {
+                        Rol.INVITADO -> {
+                            IconButton(onClick = {
+                                val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                    data = "mailto:${clase.profesor.correo}".toUri()
+                                    putExtra(Intent.EXTRA_SUBJECT, "Interesado en ${clase.nombre}")
+                                    putExtra(
+                                        Intent.EXTRA_TEXT,
+                                        "Hola ${clase.profesor.nombre},\n\nEstoy interesado en la clase '${clase.nombre}'. ¿Podrías darme más información?\n\nGracias."
+                                    )
+                                }
+                                context.startActivity(intent)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Email,
+                                    contentDescription = "Enviar correo",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
-                            context.startActivity(intent)
-                        }) {
-                            Text("Contactar por email")
                         }
-                    }
-                    else -> {
-                        if (onInscribirse != null && !yaInscrito) {
-                            Button(onClick = { onInscribirse(clase.id) }) {
-                                Text("Inscribirse")
+                        else -> {
+                            if (onInscribirse != null && !yaInscrito) {
+                                Button(onClick = { onInscribirse(clase.id) }) {
+                                    Text("Inscribirse")
+                                }
+                            } else {
+                                Text("Ya estás inscrito", style = MaterialTheme.typography.labelMedium)
                             }
-                        } else {
-                            Text("Ya estás inscrito", style = MaterialTheme.typography.labelMedium)
                         }
                     }
                 }

@@ -21,10 +21,12 @@ import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.core.net.toUri
+import androidx.compose.runtime.saveable.rememberSaveable
+import android.util.Log
 
 @Composable
 fun ClaseDetailScreen(
@@ -40,17 +42,22 @@ fun ClaseDetailScreen(
         val uriHandler = LocalUriHandler.current
         val context = LocalContext.current
         val coroutineScope = rememberCoroutineScope()
-
         val esInvitado = usuario.rol == Rol.INVITADO
 
-        LaunchedEffect(claseId) {
-            delay(150)
-            claseViewModel.cargarClase(claseId)
-        }
+        val claseYaCargada = rememberSaveable { mutableStateOf(false) }
+        val inscripcionesYaCargadas = rememberSaveable { mutableStateOf(false) }
 
-        LaunchedEffect(usuario.id) {
-            if (!esInvitado) {
+        LaunchedEffect(claseYaCargada.value, inscripcionesYaCargadas.value) {
+            Log.d("ClaseDetailScreen", "LaunchedEffect triggered - clase: ${claseYaCargada.value}, inscripciones: ${inscripcionesYaCargadas.value}")
+            if (!claseYaCargada.value) {
+                Log.d("ClaseDetailScreen", "Cargando clase con id: $claseId")
+                claseViewModel.cargarClase(claseId)
+                claseYaCargada.value = true
+            }
+            if (!esInvitado && !inscripcionesYaCargadas.value) {
+                Log.d("ClaseDetailScreen", "Cargando inscripciones para usuario: ${usuario.id}")
                 sesionViewModel.cargarMisInscripciones()
+                inscripcionesYaCargadas.value = true
             }
         }
 
@@ -65,7 +72,7 @@ fun ClaseDetailScreen(
 
                     if (response.isSuccessful) {
                         Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
-                        sesionViewModel.cargarMisInscripciones()
+                        inscripcionesYaCargadas.value = false // Forzar recarga controlada
                     } else {
                         Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
@@ -89,20 +96,20 @@ fun ClaseDetailScreen(
 
                         Divider()
 
-                        Text("📍 Ubicación: ${c.ubicacion}")
-                        Text("🎯 Dificultad: ${c.dificultad.name.lowercase().replaceFirstChar { it.uppercaseChar() }}")
-                        Text("👨‍🏫 Profesor: ${c.profesor.nombre}")
+                        Text("\uD83D\uDCCD Ubicación: ${c.ubicacion}")
+                        Text("\uD83C\uDFAF Dificultad: ${c.dificultad.name.lowercase().replaceFirstChar { it.uppercaseChar() }}")
+                        Text("\uD83D\uDC68‍\uD83C\uDFA8 Profesor: ${c.profesor.nombre}")
 
                         if (!esInvitado && c.videoPresentacion.isNotBlank()) {
                             ClickableText(
-                                text = AnnotatedString("🎥 Ver video de presentación"),
+                                text = AnnotatedString("\uD83C\uDFA5 Ver video de presentación"),
                                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
                                 onClick = { uriHandler.openUri(c.videoPresentacion) }
                             )
                         }
 
                         Divider()
-                        Text("🕒 Horarios:", style = MaterialTheme.typography.titleSmall)
+                        Text("\uD83D\uDD52 Horarios:", style = MaterialTheme.typography.titleSmall)
                         c.horarioClases.forEach { horario ->
                             Text("• ${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}")
                         }
@@ -124,13 +131,13 @@ fun ClaseDetailScreen(
                                 onClick = {
                                     val asunto = Uri.encode("Consulta sobre la clase: ${c.nombre}")
                                     val mensaje = Uri.encode("Hola ${c.profesor.nombre},\n\nEstoy interesado en tu clase '${c.nombre}'. ¿Podrías darme más información?\n\nGracias.")
-                                    val correo = Uri.parse("mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje")
+                                    val correo = "mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
                                     val intent = Intent(Intent.ACTION_SENDTO).apply { data = correo }
                                     context.startActivity(intent)
                                 },
                                 modifier = Modifier.align(Alignment.CenterHorizontally)
                             ) {
-                                Text("Contactar al profesor")
+                                Text("Contactar con el profesor")
                             }
                         }
 

@@ -3,6 +3,7 @@ package com.bailoteca.models.usuario;
 import java.time.LocalDate;
 
 import com.bailoteca.models.enums.Rol;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,6 +15,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
  * Entidad que representa a un usuario del sistema.
@@ -27,6 +29,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonInclude(Include.NON_NULL)
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,8 +43,9 @@ public class Usuario {
     private String contrasenna;
 
     private Rol rol;
-    
-    private String fotoPerfil;
+
+    private String fotoPerfil = "";
+
     private String telefono;
     private String direccion;
     private LocalDate fechaNacimiento;
