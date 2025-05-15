@@ -6,11 +6,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.firstOrNull
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.bailotecaapp.datastore.TokenPreferences
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.model.Usuario
-import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.launch
 
 /**
  * Composable protector que garantiza que el usuario autenticado esté completamente cargado
@@ -37,36 +40,24 @@ fun SesionGuard(
     val usuario by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
-
-    // Bandera que asegura que la carga se lanza solo una vez
     var llamadaIniciada by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
 
-    Log.d("SesionGuard", "usuario=$usuario, isLoading=$isLoading, error=$error")
 
     LaunchedEffect(Unit) {
         if (!llamadaIniciada && !isLoading && usuario == null && error == null) {
             llamadaIniciada = true
-
-            val authUser = FirebaseAuth.getInstance().currentUser
-            Log.d("SesionGuard", "FirebaseAuth currentUser=$authUser")
-
-            if (authUser != null) {
-                Log.d("SesionGuard", "Lanzando obtenerUsuarioActual()")
-                sesionViewModel.obtenerUsuarioActual()
-            } else {
-                Log.d("SesionGuard", "Lanzando entrarComoInvitado()")
-                sesionViewModel.entrarComoInvitado()
-            }
+            sesionViewModel.inicializarSesion()
         }
     }
 
     when {
         isLoading -> {
-            Log.d("SesionGuard", "Cargando sesión...")
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
         }
+
         error != null -> {
             Log.e("SesionGuard", "Error en la sesión: $error")
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -74,18 +65,21 @@ fun SesionGuard(
                     Text("Error al cargar sesión: $error", color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = {
-                        llamadaIniciada = false
-                        sesionViewModel.cerrarSesion()
+                        scope.launch {
+                            sesionViewModel.cerrarSesion()
+                        }
                     }) {
                         Text("Cerrar sesión")
                     }
                 }
             }
         }
+
         usuario != null -> {
             Log.d("SesionGuard", "Sesión cargada correctamente con: ${usuario!!.correo}")
             content(usuario!!)
         }
+
         else -> {
             Log.w("SesionGuard", "Estado no esperado: usuario == null, isLoading == false, error == null")
         }

@@ -21,16 +21,22 @@ import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.launch
 
 /**
- * Componente DrawerContent que muestra el menú lateral de navegación personalizado según el rol.
+ * Componente que representa el contenido del menú lateral (Drawer) adaptado al rol del usuario.
  *
- * @param onItemSelected Callback para cambiar la pantalla según el destino seleccionado.
- * @param navController Controlador de navegación.
- * @param onCloseDrawer Función para cerrar el drawer.
- * @param sesionViewModel ViewModel de sesión (por defecto se obtiene con hiltViewModel()).
+ * Se actualiza dinámicamente en función del rol (ADMIN, PROFESOR, USUARIO, INVITADO).
+ * También permite cerrar sesión o volver al login.
+ *
+ * @param onItemSelected Callback ejecutado cuando se selecciona una opción.
+ * @param navController Controlador de navegación para redirigir pantallas.
+ * @param onCloseDrawer Función para cerrar el drawer tras la selección.
+ * @param sesionViewModel ViewModel que maneja la sesión (inyectado por Hilt).
  */
+
 @Composable
 fun DrawerContent(
     onItemSelected: (String) -> Unit,
@@ -39,15 +45,16 @@ fun DrawerContent(
     sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val usuarioState by sesionViewModel.usuario.collectAsState()
+    val scope = rememberCoroutineScope()
 
-    // Para que se cargue el usuario solo la primera vez que se abre el drawer
+    // Intenta obtener el usuario actual si no se ha cargado aún
     LaunchedEffect(usuarioState) {
-        if (usuarioState == null && Firebase.auth.currentUser != null) {
+        if (usuarioState == null && FirebaseAuth.getInstance().currentUser != null) {
             sesionViewModel.obtenerUsuarioActual()
         }
     }
 
-    // Mostrar cargando si aún no hay usuario
+    // Muestra un spinner mientras se carga el usuario
     if (usuarioState == null) {
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -59,7 +66,7 @@ fun DrawerContent(
     }
 
     val usuario = usuarioState!!
-    val rol = usuario.rol ?: Rol.INVITADO
+    val rol = usuario.rol
     Log.d("DrawerContent", "ROL: $rol")
 
     val opciones = when (rol) {
@@ -89,7 +96,7 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Header con datos del usuario
+        // Encabezado del drawer con datos del usuario
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -148,28 +155,37 @@ fun DrawerContent(
                     label = { Text(item.label) },
                     selected = false,
                     onClick = {
-                        if (item == DrawerDestination.Logout) {
-                            sesionViewModel.cerrarSesion()
-                            Firebase.auth.signOut()
-                            navController.navigate(Screens.Login.route) {
-                                popUpTo(0) { inclusive = true }
+                        scope.launch {
+                            if (item == DrawerDestination.Logout) {
+                                scope.launch {
+                                    sesionViewModel.cerrarSesion()
+                                    navController.navigate(Screens.Login.route) {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            } else {
+                                onItemSelected(item.route)
                             }
-                        } else {
-                            onItemSelected(item.route)
+                            onCloseDrawer()
                         }
-                        onCloseDrawer()
                     },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }
 
+            // Botón para INVITADOS que quieran volver al login
             if (rol == Rol.INVITADO) {
                 NavigationDrawerItem(
                     label = { Text("Volver al login") },
                     selected = false,
                     onClick = {
-                        navController.navigate(Screens.Login.route) {
-                            popUpTo(0) { inclusive = true }
+                        scope.launch {
+                            sesionViewModel.cerrarSesion()
+                            FirebaseAuth.getInstance().signOut()
+                            navController.navigate(Screens.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                            onCloseDrawer()
                         }
                     },
                     modifier = Modifier.padding(vertical = 4.dp)

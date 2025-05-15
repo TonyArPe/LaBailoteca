@@ -4,6 +4,7 @@ import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bailotecaapp.datastore.TokenPreferences
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
@@ -16,9 +17,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
+import kotlinx.coroutines.flow.firstOrNull
 import com.example.bailotecaapp.model.enums.Rol
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.util.Date
 import java.util.Locale
 
@@ -32,7 +33,8 @@ import java.util.Locale
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
-    private val api: ApiService
+    private val api: ApiService,
+    private val tokenPreferences: TokenPreferences
 ) : ViewModel() {
 
     private val _usuario = MutableStateFlow<Usuario?>(null)
@@ -53,6 +55,21 @@ class SesionViewModel @Inject constructor(
     init {
         if (_usuario.value == null && Firebase.auth.currentUser != null) {
             obtenerUsuarioActual()
+        }
+    }
+
+    fun inicializarSesion() {
+        viewModelScope.launch {
+            val token = tokenPreferences.getToken().firstOrNull()
+            Log.d("SesionViewModel", "Token leído de DataStore: $token")
+
+            if (!token.isNullOrBlank()) {
+                Log.d("SesionViewModel", "Token válido, lanzando obtenerUsuarioActual()")
+                obtenerUsuarioActual()
+            } else {
+                Log.d("SesionViewModel", "Token no encontrado, entrando como invitado.")
+                entrarComoInvitado()
+            }
         }
     }
 
@@ -120,13 +137,20 @@ class SesionViewModel @Inject constructor(
     /**
      * Cierra la sesión actual y limpia todos los estados del ViewModel.
      */
-    fun cerrarSesion() {
+    suspend fun cerrarSesion() {
+        // Cerrar sesión en Firebase
         Firebase.auth.signOut()
+
+        // Resetear el estado de sesión en el ViewModel
         _usuario.value = null
         _inscripciones.value = emptyList()
         _error.value = null
         _isLoading.value = false
-        Log.d("SesionViewModel", "Sesión cerrada y estado reiniciado.")
+
+        // Borrar el token guardado
+        tokenPreferences.clearToken()
+
+        Log.d("SesionViewModel", "Sesión cerrada correctamente y token eliminado.")
     }
 
     /**
