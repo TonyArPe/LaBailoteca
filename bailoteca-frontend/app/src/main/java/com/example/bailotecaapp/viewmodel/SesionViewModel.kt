@@ -138,16 +138,16 @@ class SesionViewModel @Inject constructor(
      * Cierra la sesión actual y limpia todos los estados del ViewModel.
      */
     suspend fun cerrarSesion() {
-        // Cerrar sesión en Firebase
+        // Firebase fuera primero
         Firebase.auth.signOut()
 
-        // Resetear el estado de sesión en el ViewModel
+        // Resetear ViewModel
         _usuario.value = null
         _inscripciones.value = emptyList()
         _error.value = null
         _isLoading.value = false
 
-        // Borrar el token guardado
+        // Borrar token de DataStore
         tokenPreferences.clearToken()
 
         Log.d("SesionViewModel", "Sesión cerrada correctamente y token eliminado.")

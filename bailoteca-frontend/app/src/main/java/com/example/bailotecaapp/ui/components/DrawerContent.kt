@@ -23,6 +23,7 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.auth
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 /**
@@ -46,6 +47,7 @@ fun DrawerContent(
 ) {
     val usuarioState by sesionViewModel.usuario.collectAsState()
     val scope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope()
 
     // Intenta obtener el usuario actual si no se ha cargado aún
     LaunchedEffect(usuarioState) {
@@ -155,20 +157,15 @@ fun DrawerContent(
                     label = { Text(item.label) },
                     selected = false,
                     onClick = {
-                        scope.launch {
-                            if (item == DrawerDestination.Logout) {
-                                scope.launch {
-                                    sesionViewModel.cerrarSesion()
-                                    navController.navigate(Screens.Login.route) {
-                                        popUpTo(0) { inclusive = true }
-                                    }
-                                }
-                            } else {
-                                onItemSelected(item.route)
+                        coroutineScope.launch {
+                            sesionViewModel.cerrarSesion()
+                            Firebase.auth.signOut()
+                            navController.navigate(Screens.Login.route) {
+                                popUpTo(0) { inclusive = true }
                             }
-                            onCloseDrawer()
                         }
-                    },
+                        onCloseDrawer()
+            },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )
             }

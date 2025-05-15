@@ -13,7 +13,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bailotecaapp.datastore.TokenPreferences
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.model.Usuario
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
  * Composable protector que garantiza que el usuario autenticado esté completamente cargado
@@ -47,7 +50,22 @@ fun SesionGuard(
     LaunchedEffect(Unit) {
         if (!llamadaIniciada && !isLoading && usuario == null && error == null) {
             llamadaIniciada = true
-            sesionViewModel.inicializarSesion()
+
+            // Si Firebase tiene usuario, obtener token de Firebase (no del DataStore)
+            val firebaseUser = Firebase.auth.currentUser
+            if (firebaseUser != null) {
+                val token = firebaseUser.getIdToken(true).await().token
+                if (!token.isNullOrBlank()) {
+                    Log.d("SesionGuard", "Token leído desde Firebase")
+                    sesionViewModel.obtenerUsuarioActual()
+                } else {
+                    Log.d("SesionGuard", "Token Firebase vacío, entrando como invitado")
+                    sesionViewModel.entrarComoInvitado()
+                }
+            } else {
+                Log.d("SesionGuard", "Firebase sin usuario, entrando como invitado")
+                sesionViewModel.entrarComoInvitado()
+            }
         }
     }
 
