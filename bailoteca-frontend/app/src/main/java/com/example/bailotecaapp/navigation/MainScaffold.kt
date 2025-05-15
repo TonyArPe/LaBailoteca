@@ -30,6 +30,8 @@ fun MainScaffold(
 ) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
+    val scope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
     val rutasConScaffold = listOf(
         Screens.Home.route,
@@ -41,16 +43,13 @@ fun MainScaffold(
     )
 
     if (currentRoute in rutasConScaffold) {
-        // Mostrar drawer solo en rutas protegidas
-        val scope = rememberCoroutineScope()
-        val drawerState = rememberDrawerState(DrawerValue.Closed)
         val esPantallaPrincipal = currentRoute in listOf(
             Screens.Home.route,
             Screens.Clases.route,
             Screens.Usuarios.route
         )
 
-        SesionGuard(sessionViewModel) {
+        SesionGuard(navController = navController, sesionViewModel = sessionViewModel) { usuario ->
             ModalNavigationDrawer(
                 drawerState = drawerState,
                 drawerContent = {

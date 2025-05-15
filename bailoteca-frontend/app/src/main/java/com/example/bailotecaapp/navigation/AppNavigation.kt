@@ -10,8 +10,9 @@ import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
 
 /**
- * Define la navegación principal de la aplicación, incluyendo rutas públicas
- * (como Login o Registro) y rutas protegidas que requieren sesión activa y cargada.
+ * Define las rutas y pantallas de la app.
+ * Las rutas públicas son accesibles sin sesión activa.
+ * Las rutas privadas están protegidas por el componente [SesionGuard].
  */
 @Composable
 fun AppNavigation(
@@ -23,7 +24,7 @@ fun AppNavigation(
         modifier = modifier,
         startDestination = Screens.Login.route
     ) {
-        // Rutas públicas (sin necesidad de sesión cargada)
+        // Rutas públicas
         composable(Screens.Login.route) {
             LoginScreen(navController)
         }
@@ -31,21 +32,21 @@ fun AppNavigation(
             RegisterScreen(navController)
         }
 
-        // Rutas protegidas con SesionGuard
+        // Rutas protegidas
         composable(Screens.Home.route) {
-            SesionGuard { usuario ->
+            SesionGuard(navController = navController) { usuario ->
                 HomeScreen(navController)
             }
         }
 
         composable(Screens.Clases.route) {
-            SesionGuard { usuario ->
+            SesionGuard(navController = navController) { usuario ->
                 ClaseListScreen(navController)
             }
         }
 
         composable(Screens.Usuarios.route) {
-            SesionGuard { usuario ->
+            SesionGuard(navController = navController) { usuario ->
                 UserListScreen(navController)
             }
         }
@@ -55,19 +56,19 @@ fun AppNavigation(
             arguments = listOf(navArgument("claseId") { defaultValue = -1L })
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: -1L
-            SesionGuard { usuario ->
+            SesionGuard(navController = navController) { usuario ->
                 ClaseDetailScreen(navController, claseId)
             }
         }
 
         composable(Screens.Perfil.route) {
-            SesionGuard { usuario ->
+            SesionGuard(navController = navController) { usuario ->
                 ProfileScreen(navController)
             }
         }
 
         composable(Screens.EditProfile.route) {
-            SesionGuard { usuario ->
+            SesionGuard(navController = navController) { usuario ->
                 EditProfileScreen(navController)
             }
         }

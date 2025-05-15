@@ -6,64 +6,68 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.flow.firstOrNull
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.bailotecaapp.datastore.TokenPreferences
-import com.example.bailotecaapp.viewmodel.SesionViewModel
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
- * Composable protector que garantiza que el usuario autenticado esté completamente cargado
- * desde Firebase y sincronizado con el backend antes de renderizar contenido sensible.
+ * Composable que actúa como protector de sesión.
+ * Comprueba si el usuario está autenticado y cargado correctamente desde Firebase + Backend.
+ * Si no hay sesión, actúa como invitado. Si hay error, permite cerrar sesión.
+ * Redirige al login automáticamente si detecta evento de logout.
  *
- * Este componente se utiliza para envolver otras composables que requieren acceso al `Usuario`
- * ya autenticado, como `DrawerContent`, `ProfileScreen`, etc.
- *
- * Internamente, comprueba si `SesionViewModel.usuario` es null y, en caso de que haya un
- * usuario autenticado en Firebase, lanza automáticamente la carga con `obtenerUsuarioActual()`.
- * Si no hay usuario en Firebase, accede en modo invitado.
- *
- * Este código está protegido contra recomposiciones infinitas gracias al uso de una variable
- * `remember` que asegura que la llamada a la API se realice una única vez.
- *
+ * @param navController El controlador de navegación para redirecciones.
  * @param sesionViewModel ViewModel de sesión inyectado por Hilt.
- * @param content Contenido que se renderiza una vez que el usuario ha sido cargado con éxito.
+ * @param content Contenido protegido a renderizar si la sesión está correctamente cargada.
  */
 @Composable
 fun SesionGuard(
+    navController: NavHostController,
     sesionViewModel: SesionViewModel = hiltViewModel(),
     content: @Composable (Usuario) -> Unit
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
+    val logoutEvent by sesionViewModel.logoutEvent.collectAsState()
+
     var llamadaIniciada by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
+    // Redirige al login si se ha cerrado sesión
+    LaunchedEffect(logoutEvent) {
+        if (logoutEvent) {
+            navController.navigate(Screens.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+            sesionViewModel.resetLogoutEvent()
+        }
+    }
 
+    // Inicializa sesión si es necesario
     LaunchedEffect(Unit) {
         if (!llamadaIniciada && !isLoading && usuario == null && error == null) {
             llamadaIniciada = true
 
-            // Si Firebase tiene usuario, obtener token de Firebase (no del DataStore)
             val firebaseUser = Firebase.auth.currentUser
             if (firebaseUser != null) {
                 val token = firebaseUser.getIdToken(true).await().token
                 if (!token.isNullOrBlank()) {
-                    Log.d("SesionGuard", "Token leído desde Firebase")
+                    Log.d("SesionGuard", "Token Firebase válido, obteniendo usuario...")
                     sesionViewModel.obtenerUsuarioActual()
                 } else {
-                    Log.d("SesionGuard", "Token Firebase vacío, entrando como invitado")
+                    Log.d("SesionGuard", "Token vacío, entrando como invitado")
                     sesionViewModel.entrarComoInvitado()
                 }
             } else {
-                Log.d("SesionGuard", "Firebase sin usuario, entrando como invitado")
+                Log.d("SesionGuard", "No hay usuario Firebase, entrando como invitado")
                 sesionViewModel.entrarComoInvitado()
             }
         }
@@ -99,7 +103,28 @@ fun SesionGuard(
         }
 
         else -> {
-            Log.w("SesionGuard", "Estado no esperado: usuario == null, isLoading == false, error == null")
+            Log.w(
+                "SesionGuard",
+                "Estado no definido: usuario == null, error == null, isLoading == false"
+            )
+
+            // Intentamos detectar si Firebase tiene sesión
+            val firebaseUser = Firebase.auth.currentUser
+            if (firebaseUser == null) {
+                // Firebase cerrado => navegar al Login
+                LaunchedEffect(Unit) {
+                    navController.navigate(Screens.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                    sesionViewModel.resetLogoutEvent()
+                }
+            } else {
+                // Si tiene usuario en Firebase pero no se ha hecho fetch
+                LaunchedEffect(Unit) {
+                    Log.d("SesionGuard", "Token Firebase válido, obteniendo usuario...")
+                    sesionViewModel.obtenerUsuarioActual()
+                }
+            }
         }
     }
 }

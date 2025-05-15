@@ -49,6 +49,10 @@ class SesionViewModel @Inject constructor(
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
+    private val _logoutEvent = MutableStateFlow(false)
+    val logoutEvent: StateFlow<Boolean> = _logoutEvent
+
+
     /**
      * Inicializa la carga del usuario si existe una sesión en Firebase.
      */
@@ -150,8 +154,15 @@ class SesionViewModel @Inject constructor(
         // Borrar token de DataStore
         tokenPreferences.clearToken()
 
+        // Nos lleva de vuelta al login
+        _logoutEvent.value = true
         Log.d("SesionViewModel", "Sesión cerrada correctamente y token eliminado.")
     }
+
+    fun resetLogoutEvent() {
+        _logoutEvent.value = false
+    }
+
 
     /**
      * Actualiza el perfil del usuario autenticado.

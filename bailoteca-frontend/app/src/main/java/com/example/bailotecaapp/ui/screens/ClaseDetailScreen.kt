@@ -2,17 +2,21 @@ package com.example.bailotecaapp.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.model.enums.Rol
@@ -23,10 +27,6 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.core.net.toUri
-import androidx.compose.runtime.saveable.rememberSaveable
-import android.util.Log
 
 @Composable
 fun ClaseDetailScreen(
@@ -35,7 +35,7 @@ fun ClaseDetailScreen(
     claseViewModel: ClaseViewModel = hiltViewModel(),
     sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
-    SesionGuard(sesionViewModel) { usuario ->
+    SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
 
         val clase by claseViewModel.claseSeleccionada.collectAsState()
         val inscripciones by sesionViewModel.inscripciones.collectAsState()
