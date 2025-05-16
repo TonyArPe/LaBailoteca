@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.ui.screens
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +19,7 @@ import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -46,10 +48,22 @@ fun ClaseListScreen(
         if (usuario != null) {
             viewModel.obtenerClases()
             if (!esInvitado) {
-                sesionViewModel.cargarMisInscripciones()
+                sesionViewModel.obtenerInscripciones()
             }
         } else {
-            sesionViewModel.obtenerUsuarioActual()
+            val firebaseUser = FirebaseAuth.getInstance().currentUser
+            if (firebaseUser != null) {
+                try {
+                    val token = firebaseUser.getIdToken(true).await().token
+                    if (!token.isNullOrBlank()) {
+                        sesionViewModel.obtenerUsuarioActualConToken(token)
+                    } else {
+                        Log.w("ClaseListScreen", "Token vacío. No se puede obtener usuario.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("ClaseListScreen", "Error al obtener token JWT", e)
+                }
+            }
         }
     }
 
@@ -64,7 +78,7 @@ fun ClaseListScreen(
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
-                    sesionViewModel.cargarMisInscripciones()
+                    sesionViewModel.obtenerInscripciones()
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                 }

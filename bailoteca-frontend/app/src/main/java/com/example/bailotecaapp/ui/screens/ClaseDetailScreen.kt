@@ -56,7 +56,7 @@ fun ClaseDetailScreen(
             }
             if (!esInvitado && !inscripcionesYaCargadas.value) {
                 Log.d("ClaseDetailScreen", "Cargando inscripciones para usuario: ${usuario.id}")
-                sesionViewModel.cargarMisInscripciones()
+                sesionViewModel.obtenerInscripciones()
                 inscripcionesYaCargadas.value = true
             }
         }

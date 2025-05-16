@@ -17,6 +17,7 @@ import androidx.navigation.NavHostController
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -31,8 +32,9 @@ fun LoginScreen(
 
     val usuario by sesionViewModel.usuario.collectAsState()
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
-    // Navegamos solo cuando el usuario ya ha sido cargado
+    // Redirigir a Home si ya está autenticado
     LaunchedEffect(usuario, sesionCargando) {
         if (usuario != null && !sesionCargando) {
             navController.navigate(Screens.Home.route) {
@@ -84,21 +86,27 @@ fun LoginScreen(
 
             Button(
                 onClick = {
-                    isLoading = true
-                    errorMessage = null
-                    viewModel.login(
-                        email,
-                        password,
-                        onSuccess = {
-                            sesionViewModel.obtenerUsuarioActual()
-                            sesionViewModel.cargarMisInscripciones()
-                            isLoading = false
-                        },
-                        onError = { error ->
-                            isLoading = false
-                            errorMessage = error
-                        }
-                    )
+                    coroutineScope.launch {
+                        errorMessage = null
+                        isLoading = true
+
+                        viewModel.login(
+                            email,
+                            password,
+                            onSuccess = { token ->
+                                // Evita doble carga de usuario
+                                if (!sesionViewModel.usuarioYaCargado()) {
+                                    sesionViewModel.obtenerUsuarioActualConToken(token)
+                                }
+                                sesionViewModel.obtenerInscripciones()
+                                isLoading = false
+                            },
+                            onError = { error ->
+                                isLoading = false
+                                errorMessage = error
+                            }
+                        )
+                    }
                 },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !isLoading && !sesionCargando
@@ -117,14 +125,12 @@ fun LoginScreen(
                 Text("¿No tienes cuenta? Regístrate aquí")
             }
 
-            /**
-             * Entrar como inivtado, claramente sin los privilegios de un USUARIO
-             */
             TextButton(
                 onClick = {
                     sesionViewModel.entrarComoInvitado()
                     navController.navigate(Screens.Home.route) {
                         popUpTo(0) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
                 modifier = Modifier.padding(top = 16.dp)

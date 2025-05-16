@@ -4,11 +4,14 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.datastore.UsuarioPreferences
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -38,10 +41,11 @@ fun SesionGuard(
     val error by sesionViewModel.error.collectAsState()
     val logoutEvent by sesionViewModel.logoutEvent.collectAsState()
 
-    var llamadaIniciada by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    var usuarioYaCargado by rememberSaveable { mutableStateOf(false) }
 
-    // Redirige al login si se ha cerrado sesión
+    // Redirección tras logout
     LaunchedEffect(logoutEvent) {
         if (logoutEvent) {
             navController.navigate(Screens.Login.route) {
@@ -51,28 +55,7 @@ fun SesionGuard(
         }
     }
 
-    // Inicializa sesión si es necesario
-    LaunchedEffect(Unit) {
-        if (!llamadaIniciada && !isLoading && usuario == null && error == null) {
-            llamadaIniciada = true
-
-            val firebaseUser = Firebase.auth.currentUser
-            if (firebaseUser != null) {
-                val token = firebaseUser.getIdToken(true).await().token
-                if (!token.isNullOrBlank()) {
-                    Log.d("SesionGuard", "Token Firebase válido, obteniendo usuario...")
-                    sesionViewModel.obtenerUsuarioActual()
-                } else {
-                    Log.d("SesionGuard", "Token vacío, entrando como invitado")
-                    sesionViewModel.entrarComoInvitado()
-                }
-            } else {
-                Log.d("SesionGuard", "No hay usuario Firebase, entrando como invitado")
-                sesionViewModel.entrarComoInvitado()
-            }
-        }
-    }
-
+    // Vista según estado
     when {
         isLoading -> {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -81,15 +64,12 @@ fun SesionGuard(
         }
 
         error != null -> {
-            Log.e("SesionGuard", "Error en la sesión: $error")
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Error al cargar sesión: $error", color = MaterialTheme.colorScheme.error)
+                    Text("Error: $error", color = MaterialTheme.colorScheme.error)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = {
-                        scope.launch {
-                            sesionViewModel.cerrarSesion()
-                        }
+                        scope.launch { sesionViewModel.cerrarSesion() }
                     }) {
                         Text("Cerrar sesión")
                     }
@@ -98,32 +78,12 @@ fun SesionGuard(
         }
 
         usuario != null -> {
-            Log.d("SesionGuard", "Sesión cargada correctamente con: ${usuario!!.correo}")
             content(usuario!!)
         }
 
         else -> {
-            Log.w(
-                "SesionGuard",
-                "Estado no definido: usuario == null, error == null, isLoading == false"
-            )
-
-            // Intentamos detectar si Firebase tiene sesión
-            val firebaseUser = Firebase.auth.currentUser
-            if (firebaseUser == null) {
-                // Firebase cerrado => navegar al Login
-                LaunchedEffect(Unit) {
-                    navController.navigate(Screens.Login.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                    sesionViewModel.resetLogoutEvent()
-                }
-            } else {
-                // Si tiene usuario en Firebase pero no se ha hecho fetch
-                LaunchedEffect(Unit) {
-                    Log.d("SesionGuard", "Token Firebase válido, obteniendo usuario...")
-                    sesionViewModel.obtenerUsuarioActual()
-                }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
         }
     }

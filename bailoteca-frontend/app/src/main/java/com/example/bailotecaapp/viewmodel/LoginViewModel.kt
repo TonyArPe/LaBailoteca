@@ -22,7 +22,7 @@ class LoginViewModel : ViewModel() {
      * @param onSuccess Acción a ejecutar si el login es exitoso (por ejemplo, navegar)
      * @param onError Acción a ejecutar si ocurre un error (muestra mensaje)
      */
-    fun login(
+    suspend fun login(
         email: String,
         password: String,
         onSuccess: (String) -> Unit,

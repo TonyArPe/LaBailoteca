@@ -21,9 +21,11 @@ import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.RegisterViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun RegisterScreen(
@@ -140,15 +142,25 @@ fun RegisterScreen(
                                     coroutineScope.launch {
                                         registerViewModel.registrarUsuarioBackend(usuario) { response ->
                                             isLoading = false
+
                                             if (response.isSuccessful) {
-                                                sesionViewModel.obtenerUsuarioActual()
-                                                navController.navigate(Screens.Home.route) {
-                                                    popUpTo(0) { inclusive = true }
+                                                launch {
+                                                    val token = FirebaseAuth.getInstance().currentUser
+                                                        ?.getIdToken(false)
+                                                        ?.await()
+                                                        ?.token
+
+                                                    if (!token.isNullOrEmpty()) {
+                                                        sesionViewModel.obtenerUsuarioActualConToken(token)
+                                                    }
+
+                                                    navController.navigate(Screens.Home.route) {
+                                                        popUpTo(0) { inclusive = true }
+                                                        launchSingleTop = true
+                                                    }
                                                 }
-                                                Log.d("RegisterScreen", "Usuario registrado en el backend y redirigiendo.")
                                             } else {
-                                                errorMessage = "Error backend: ${response.code()}"
-                                                Log.e("RegisterScreen", "Error al registrar en el backend: ${response.code()}")
+                                                errorMessage = "No se pudo registrar en el backend"
                                             }
                                         }
                                     }
