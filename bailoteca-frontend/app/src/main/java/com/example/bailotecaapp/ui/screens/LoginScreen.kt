@@ -90,8 +90,10 @@ fun LoginScreen(
                         email,
                         password,
                         onSuccess = {
-                            sesionViewModel.obtenerUsuarioActual()
-                            sesionViewModel.cargarMisInscripciones()
+                            if (!sesionViewModel.usuarioYaCargado()) {
+                                sesionViewModel.obtenerUsuarioActual()
+                                sesionViewModel.cargarMisInscripciones()
+                            }
                             isLoading = false
                         },
                         onError = { error ->

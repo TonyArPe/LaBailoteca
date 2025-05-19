@@ -172,6 +172,11 @@ class SesionViewModel @Inject constructor(
         )
     }
 
+    fun usuarioYaCargado(): Boolean {
+        return usuario.value != null && usuario.value?.rol != Rol.INVITADO
+    }
+
+
 
     /**
      * Permite establecer el usuario desde fuera (por ejemplo, tras login).
