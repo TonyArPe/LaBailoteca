@@ -115,9 +115,11 @@ fun ClaseListScreen(
                 usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(clases, key = { it.id }) { clase ->
-                        // Comprobamos si el usuario ya está inscrito en esta clase
-                        val yaInscrito = inscripciones.any { it.clase.id == clase.id }
+                    items(
+                        clases,
+                        key = { clase -> "${clase.id}-${inscripciones.any { it.clase?.id == clase.id }}" }
+                    ) { clase ->
+                        val yaInscrito = inscripciones.any { it.clase?.id == clase.id }
 
                         ClaseCard(
                             clase = clase,

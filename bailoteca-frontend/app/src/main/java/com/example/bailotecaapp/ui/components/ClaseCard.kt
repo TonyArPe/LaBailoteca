@@ -8,6 +8,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -39,6 +42,12 @@ fun ClaseCard(
     onVerDetalle: (Long) -> Unit
 ) {
     val context = LocalContext.current
+    val yaInscrito by remember(inscripciones) {
+        derivedStateOf {
+            inscripciones.any { it.clase.id == clase.id }
+        }
+    }
+
 
     Card(
         modifier = Modifier
