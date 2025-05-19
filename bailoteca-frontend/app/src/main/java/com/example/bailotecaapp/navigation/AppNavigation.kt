@@ -8,6 +8,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
+import androidx.compose.runtime.*
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.example.bailotecaapp.ui.components.SesionGuard
+import com.example.bailotecaapp.ui.screens.*
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
  * Define la navegación principal de la aplicación, incluyendo rutas públicas
@@ -18,6 +26,19 @@ fun AppNavigation(
     navController: NavHostController,
     modifier: Modifier = Modifier
 ) {
+
+    val sessionViewModel: SesionViewModel = hiltViewModel()
+    val sesionCerrada by sessionViewModel.sesionCerrada.collectAsState()
+
+    // Si se cierra la sesión, navega automáticamente al Login y limpia el backstack
+    LaunchedEffect(sesionCerrada) {
+        if (sesionCerrada) {
+            navController.navigate(Screens.Login.route) {
+                popUpTo(0) { inclusive = true } // limpia el backstack
+            }
+            sessionViewModel.reiniciarEstadoSesion() // reseteamos el flag para futuros cierres
+        }
+    }
     NavHost(
         navController = navController,
         modifier = modifier,

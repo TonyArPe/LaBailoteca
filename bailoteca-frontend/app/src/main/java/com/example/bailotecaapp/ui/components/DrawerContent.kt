@@ -44,8 +44,8 @@ fun DrawerContent(
     val usuarioState by sesionViewModel.usuario.collectAsState()
 
     // Para que se cargue el usuario solo la primera vez que se abre el drawer
-    LaunchedEffect(usuarioState) {
-        if (usuarioState == null && Firebase.auth.currentUser != null) {
+    LaunchedEffect(Unit) {
+        if (usuarioState == null) {
             sesionViewModel.obtenerUsuarioActual()
         }
     }

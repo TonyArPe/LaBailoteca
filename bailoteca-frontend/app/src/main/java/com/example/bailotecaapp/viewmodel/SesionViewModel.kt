@@ -48,6 +48,20 @@ class SesionViewModel @Inject constructor(
     private var _inscripcionesCargadas = false
     fun inscripcionesYaCargadas(): Boolean = _inscripcionesCargadas
 
+    private val _versionClases = MutableStateFlow(0)
+    val versionClases: StateFlow<Int> = _versionClases
+
+    private val _sesionCerrada = MutableStateFlow(false)
+    val sesionCerrada: StateFlow<Boolean> = _sesionCerrada
+
+    private val _modoInvitadoForzado = MutableStateFlow(false)
+    val modoInvitadoForzado: StateFlow<Boolean> = _modoInvitadoForzado
+
+    fun marcarClasesComoActualizadas() {
+        _versionClases.value += 1
+    }
+
+
     /**
      * Inicializa la sesión restaurando usuario/token si existen en DataStore o usa Firebase.
      */
@@ -57,7 +71,6 @@ class SesionViewModel @Inject constructor(
             val tokenGuardado = TokenPreferences.obtenerToken(context)
 
             if (usuarioGuardado != null && tokenGuardado != null) {
-                Log.d("SesionViewModel", "Restaurando sesión desde preferencias")
                 _usuario.value = Usuario(
                     id = usuarioGuardado.id,
                     nombre = usuarioGuardado.nombre,
@@ -74,8 +87,8 @@ class SesionViewModel @Inject constructor(
                     fechaNacimiento = null,
                     fechaRegistro = null
                 )
-                cargarMisInscripciones()
-            } else if (Firebase.auth.currentUser != null) {
+
+                // Para que actualice el perfil
                 obtenerUsuarioActual()
             }
         }
@@ -168,6 +181,9 @@ class SesionViewModel @Inject constructor(
             _isLoading.value = false
             _inscripcionesCargadas = false
 
+            // Indicamos que se ha cerrado sesión
+            _sesionCerrada.value = true
+
             Log.d("SesionViewModel", "Sesión cerrada y datos persistentes borrados.")
         }
     }
@@ -218,6 +234,7 @@ class SesionViewModel @Inject constructor(
             fechaNacimiento = null,
             fechaRegistro = null
         )
+        _modoInvitadoForzado.value = true
     }
 
     fun usuarioYaCargado(): Boolean {
@@ -227,4 +244,15 @@ class SesionViewModel @Inject constructor(
     fun setUsuario(usuario: Usuario) {
         _usuario.value = usuario
     }
+
+    /**
+     * Indica si la sesión activa está asociada a un usuario no invitado.
+     */
+    val sesionActiva: Boolean
+        get() = _usuario.value != null && _usuario.value?.rol != Rol.INVITADO
+
+    fun reiniciarEstadoSesion() {
+        _sesionCerrada.value = false
+    }
+
 }

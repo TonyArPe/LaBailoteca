@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.bailotecaapp.model.InscripcionRequest
+import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
@@ -24,7 +24,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 /**
- * Pantalla que muestra el listado de clases disponibles para inscribirse.
+ * Pantalla principal que muestra el listado de clases disponibles para el usuario.
+ * Permite inscribirse, ver detalles y muestra el estado actual de las inscripciones.
+ *
+ * @param navController controlador de navegación.
+ * @param viewModel ViewModel encargado de las clases.
+ * @param sesionViewModel ViewModel encargado de la sesión.
  */
 @Composable
 fun ClaseListScreen(
@@ -37,14 +42,21 @@ fun ClaseListScreen(
     val error by viewModel.errorMessage.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
     val inscripciones by sesionViewModel.inscripciones.collectAsState()
+    val versionClases by sesionViewModel.versionClases.collectAsState()
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     /**
-     * Cargar el usuario y las inscripciones al montar la pantalla.
+     * Efecto que recarga las clases cuando cambia la versión.
      */
-    var haCargado by remember { mutableStateOf(false) }
+    LaunchedEffect(versionClases) {
+        viewModel.obtenerClases()
+    }
 
+    /**
+     * Efecto inicial que asegura que se haya cargado el usuario y sus inscripciones.
+     */
     LaunchedEffect(usuario) {
         if (usuario == null) {
             sesionViewModel.obtenerUsuarioActual()
@@ -55,7 +67,8 @@ fun ClaseListScreen(
     }
 
     /**
-     * Función que realiza la inscripción a una clase y actualiza las inscripciones del ViewModel.
+     * Función que gestiona la inscripción a una clase concreta por ID.
+     * Recupera el token, llama al ViewModel, muestra mensaje y recarga datos.
      */
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
@@ -68,19 +81,22 @@ fun ClaseListScreen(
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
-                    sesionViewModel.cargarMisInscripciones() // 🔄 actualizar lista
-                    Log.d("ClaseListScreen", "Inscripciones recargadas tras inscribirse")
+                    sesionViewModel.cargarMisInscripciones()
+                    sesionViewModel.marcarClasesComoActualizadas()
+                    Log.d("ClaseListScreen", "Inscripciones y clases recargadas tras inscribirse")
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    Log.e("ClaseListScreen", "Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "Error al inscribirse: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ClaseListScreen", "Excepción: ${e.localizedMessage}")
             }
         }
     }
 
     /**
-     * Interfaz visual.
+     * UI principal
      */
     Scaffold { padding ->
         Box(
@@ -96,14 +112,12 @@ fun ClaseListScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.Center)
                 )
-
                 usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(clases, key = { it.id }) { clase ->
-                        val yaInscrito = remember(inscripciones) {
-                            inscripciones.any { it.clase.id == clase.id }
-                        }
+                        // Comprobamos si el usuario ya está inscrito en esta clase
+                        val yaInscrito = inscripciones.any { it.clase.id == clase.id }
 
                         ClaseCard(
                             clase = clase,

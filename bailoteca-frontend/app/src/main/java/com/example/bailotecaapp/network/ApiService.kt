@@ -1,6 +1,7 @@
 package com.example.bailotecaapp.network
 
 import com.example.bailotecaapp.model.*
+import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import retrofit2.http.*
 import retrofit2.Response
@@ -79,17 +80,18 @@ interface ApiService {
     // INSCRIPCIONES
 
     /**
-     * Inscribe al usuario autenticado en una clase específica.
+     * Realiza una inscripción del usuario a una clase.
      *
-     * @param token Token JWT de autorización.
-     * @param inscripcionRequest Objeto con los IDs del usuario y de la clase.
-     * @return Respuesta HTTP con la inscripción creada o un error.
+     * @param authorization Header con el token JWT.
+     * @param request Objeto que contiene el usuario y la clase a inscribirse.
+     * @return Respuesta HTTP 200 si éxito o 400/500 si hay error.
      */
-    @POST("api/inscripciones")
-    suspend fun inscribirseClase(
-        @Header("Authorization") token: String,
-        @Body inscripcionRequest: InscripcionRequest
-    ): Response<Inscripcion>
+    @POST("/api/inscripciones")
+    suspend fun inscribirse(
+        @Header("Authorization") authorization: String,
+        @Body request: InscripcionRequest
+    ): Response<Void>
+
 
     /**
      * Obtiene las inscripciones del usuario autenticado.
@@ -116,4 +118,5 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Long
     ): Response<Void>
+
 }
