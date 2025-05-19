@@ -1,11 +1,16 @@
 package com.example.bailotecaapp.viewmodel
 
+import android.app.Application
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bailotecaapp.datastore.TokenPreferences
+import com.example.bailotecaapp.datastore.UsuarioPersistente
+import com.example.bailotecaapp.datastore.UsuarioPreferences
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.ApiService
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -15,20 +20,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
-import com.example.bailotecaapp.model.enums.Rol
 
 /**
- * ViewModel que gestiona el estado de sesión de la aplicación, incluyendo:
- * - Usuario autenticado y cargado desde el backend.
- * - Lista de inscripciones del usuario.
- * - Estado de carga y errores.
- *
- * Utilizado por componentes como SesionGuard y tal
+ * ViewModel que gestiona el estado de sesión de la aplicación,
+ * incluyendo usuario autenticado, inscripciones, errores y persistencia.
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
+    application: Application,
     private val api: ApiService
-) : ViewModel() {
+) : AndroidViewModel(application) {
+
+    private val context = getApplication<Application>().applicationContext
 
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario
@@ -42,17 +45,44 @@ class SesionViewModel @Inject constructor(
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
+    private var _inscripcionesCargadas = false
+    fun inscripcionesYaCargadas(): Boolean = _inscripcionesCargadas
+
     /**
-     * Inicializa la carga del usuario si existe una sesión en Firebase.
+     * Inicializa la sesión restaurando usuario/token si existen en DataStore o usa Firebase.
      */
     init {
-        if (_usuario.value == null && Firebase.auth.currentUser != null) {
-            obtenerUsuarioActual()
+        viewModelScope.launch {
+            val usuarioGuardado = UsuarioPreferences.obtenerUsuario(context)
+            val tokenGuardado = TokenPreferences.obtenerToken(context)
+
+            if (usuarioGuardado != null && tokenGuardado != null) {
+                Log.d("SesionViewModel", "Restaurando sesión desde preferencias")
+                _usuario.value = Usuario(
+                    id = usuarioGuardado.id,
+                    nombre = usuarioGuardado.nombre,
+                    correo = usuarioGuardado.correo,
+                    rol = usuarioGuardado.rol,
+                    activo = true,
+                    pagado = false,
+                    contrasenna = "",
+                    direccion = null,
+                    telefono = null,
+                    dni = null,
+                    fotoPerfil = null,
+                    genero = null,
+                    fechaNacimiento = null,
+                    fechaRegistro = null
+                )
+                cargarMisInscripciones()
+            } else if (Firebase.auth.currentUser != null) {
+                obtenerUsuarioActual()
+            }
         }
     }
 
     /**
-     * Obtiene el perfil del usuario autenticado desde el backend usando el token de Firebase.
+     * Obtiene el usuario autenticado desde el backend usando Firebase Auth.
      */
     fun obtenerUsuarioActual() {
         viewModelScope.launch {
@@ -66,14 +96,29 @@ class SesionViewModel @Inject constructor(
 
                 val response = api.getUsuarioActual("Bearer $token")
                 if (response.isSuccessful) {
-                    _usuario.value = response.body()
-                    Log.d("SesionViewModel", "Usuario cargado correctamente: ${_usuario.value?.correo}")
+                    val user = response.body()
+                    if (user != null) {
+                        _usuario.value = user
+
+                        UsuarioPreferences.guardarUsuario(
+                            context,
+                            UsuarioPersistente(
+                                id = user.id!!,
+                                nombre = user.nombre,
+                                correo = user.correo,
+                                rol = user.rol
+                            )
+                        )
+                        TokenPreferences.guardarToken(context, token)
+                        cargarMisInscripciones()
+                        Log.d("SesionViewModel", "Usuario y token guardados correctamente")
+                    }
                 } else {
                     _error.value = "Error al obtener perfil: ${response.code()}"
                     Log.e("SesionViewModel", "Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _error.value = "Error de red al obtener usuario: ${e.localizedMessage}"
+                _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
                 Log.e("SesionViewModel", "Excepción al obtener usuario", e)
             } finally {
                 _isLoading.value = false
@@ -82,17 +127,23 @@ class SesionViewModel @Inject constructor(
     }
 
     /**
-     * Carga las inscripciones del usuario actual.
+     * Carga las inscripciones del usuario actual (una vez por sesión).
      */
     fun cargarMisInscripciones() {
+        if (_inscripcionesCargadas) return
+
         viewModelScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val usuarioId = _usuario.value?.id ?: return@launch
+                val usuarioId = _usuario.value?.id ?: run {
+                    _error.value = "ID del usuario es nulo"
+                    return@launch
+                }
 
                 val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     _inscripciones.value = response.body() ?: emptyList()
+                    _inscripcionesCargadas = true
                     Log.d("SesionViewModel", "Inscripciones cargadas correctamente.")
                 } else {
                     _error.value = "Error al obtener inscripciones: ${response.code()}"
@@ -105,25 +156,22 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Cierra la sesión actual y limpia todos los estados del ViewModel.
-     */
     fun cerrarSesion() {
-        Firebase.auth.signOut()
-        _usuario.value = null
-        _inscripciones.value = emptyList()
-        _error.value = null
-        _isLoading.value = false
-        Log.d("SesionViewModel", "Sesión cerrada y estado reiniciado.")
+        viewModelScope.launch {
+            Firebase.auth.signOut()
+            UsuarioPreferences.borrarUsuario(context)
+            TokenPreferences.borrarToken(context)
+
+            _usuario.value = null
+            _inscripciones.value = emptyList()
+            _error.value = null
+            _isLoading.value = false
+            _inscripcionesCargadas = false
+
+            Log.d("SesionViewModel", "Sesión cerrada y datos persistentes borrados.")
+        }
     }
 
-    /**
-     * Actualiza el perfil del usuario autenticado.
-     *
-     * @param usuarioActualizado DTO con los datos actualizados.
-     * @param onSuccess Callback si la operación fue exitosa.
-     * @param onError Callback con mensaje si hubo error.
-     */
     fun actualizarPerfil(
         usuarioActualizado: UsuarioUpdateRequest,
         onSuccess: () -> Unit,
@@ -136,7 +184,7 @@ class SesionViewModel @Inject constructor(
 
                 val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
                 if (response.isSuccessful) {
-                    obtenerUsuarioActual() // refrescar
+                    obtenerUsuarioActual()
                     onSuccess()
                 } else {
                     val mensaje = "Error ${response.code()}: ${response.message()}"
@@ -176,11 +224,6 @@ class SesionViewModel @Inject constructor(
         return usuario.value != null && usuario.value?.rol != Rol.INVITADO
     }
 
-
-
-    /**
-     * Permite establecer el usuario desde fuera (por ejemplo, tras login).
-     */
     fun setUsuario(usuario: Usuario) {
         _usuario.value = usuario
     }

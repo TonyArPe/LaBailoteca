@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
+
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
     id("kotlin-kapt")
 }
 
@@ -79,6 +81,12 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation(libs.firebase.auth.ktx)
+
+    // Jetpack DataStore (Preferences)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // kotlinx.serialization (para guardar el usuario como JSON)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // Retrofit y Gson
     implementation(libs.retrofit)

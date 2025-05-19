@@ -2,6 +2,7 @@ package com.example.bailotecaapp.ui.screens
 
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.ClickableText
@@ -13,18 +14,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
+import androidx.core.net.toUri
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
+import com.example.bailotecaapp.model.enums.Dificultad
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun ClaseDetailScreen(
@@ -37,19 +38,27 @@ fun ClaseDetailScreen(
 
         val clase by claseViewModel.claseSeleccionada.collectAsState()
         val inscripciones by sesionViewModel.inscripciones.collectAsState()
-        val uriHandler = LocalUriHandler.current
         val context = LocalContext.current
+        val uriHandler = LocalUriHandler.current
         val coroutineScope = rememberCoroutineScope()
 
         val esInvitado = usuario.rol == Rol.INVITADO
 
+        val claseYaCargada = remember { mutableStateOf(false) }
+        val inscripcionesYaCargadas = remember { mutableStateOf(false) }
+
         LaunchedEffect(claseId) {
-            delay(150)
-            claseViewModel.cargarClase(claseId)
+            if (!claseYaCargada.value) {
+                Log.d("ClaseDetailScreen", "Cargando clase con ID: $claseId")
+                claseYaCargada.value = true
+                claseViewModel.cargarClase(claseId)
+            }
         }
 
         LaunchedEffect(usuario.id) {
-            if (!esInvitado) {
+            if (!esInvitado && !inscripcionesYaCargadas.value) {
+                Log.d("ClaseDetailScreen", "Cargando inscripciones del usuario ID: ${usuario.id}")
+                inscripcionesYaCargadas.value = true
                 sesionViewModel.cargarMisInscripciones()
             }
         }
@@ -71,6 +80,7 @@ fun ClaseDetailScreen(
                     }
                 } catch (e: Exception) {
                     Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Log.e("ClaseDetailScreen", "Error al desinscribirse", e)
                 }
             }
         }
@@ -83,6 +93,8 @@ fun ClaseDetailScreen(
                     .padding(16.dp)
             ) {
                 clase?.let { c ->
+                    Log.d("ClaseDetailScreen", "Clase cargada: ${c.nombre}, dificultad: ${c.dificultad}")
+
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(c.nombre, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
                         Text(c.descripcion, style = MaterialTheme.typography.bodyMedium)
@@ -90,14 +102,24 @@ fun ClaseDetailScreen(
                         Divider()
 
                         Text("📍 Ubicación: ${c.ubicacion}")
-                        Text("🎯 Dificultad: ${c.dificultad.name.lowercase().replaceFirstChar { it.uppercaseChar() }}")
+                        val dificultadTexto = when (c.dificultad) {
+                            null -> "Sin especificar"
+                            Dificultad.INICIAL -> "Inicial"
+                            Dificultad.INTERMEDIO -> "Intermedio"
+                            Dificultad.AVANZADO -> "Avanzado"
+                        }
+                        Text("🎯 Dificultad: $dificultadTexto")
+
                         Text("👨‍🏫 Profesor: ${c.profesor.nombre}")
 
                         if (!esInvitado && c.videoPresentacion.isNotBlank()) {
                             ClickableText(
                                 text = AnnotatedString("🎥 Ver video de presentación"),
                                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
-                                onClick = { uriHandler.openUri(c.videoPresentacion) }
+                                onClick = {
+                                    Log.d("ClaseDetailScreen", "Abriendo video presentación: ${c.videoPresentacion}")
+                                    uriHandler.openUri(c.videoPresentacion)
+                                }
                             )
                         }
 
@@ -109,7 +131,7 @@ fun ClaseDetailScreen(
 
                         Spacer(modifier = Modifier.height(20.dp))
 
-                        if (!esInvitado && estaInscrito && inscripcionActual != null) {
+                        if (usuario.rol == Rol.USUARIO && estaInscrito && inscripcionActual != null) {
                             Button(
                                 onClick = { desinscribirse(inscripcionActual.id) },
                                 modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -124,8 +146,9 @@ fun ClaseDetailScreen(
                                 onClick = {
                                     val asunto = Uri.encode("Consulta sobre la clase: ${c.nombre}")
                                     val mensaje = Uri.encode("Hola ${c.profesor.nombre},\n\nEstoy interesado en tu clase '${c.nombre}'. ¿Podrías darme más información?\n\nGracias.")
-                                    val correo = Uri.parse("mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje")
+                                    val correo = "mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
                                     val intent = Intent(Intent.ACTION_SENDTO).apply { data = correo }
+                                    Log.d("ClaseDetailScreen", "Intentando contactar al profesor: ${c.profesor.correo}")
                                     context.startActivity(intent)
                                 },
                                 modifier = Modifier.align(Alignment.CenterHorizontally)
