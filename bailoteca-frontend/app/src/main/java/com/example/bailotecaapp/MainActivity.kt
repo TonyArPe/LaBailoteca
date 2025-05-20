@@ -21,6 +21,8 @@ class MainActivity : ComponentActivity() {
                 val currentBackStackEntry = navController.currentBackStackEntryAsState().value
                 val currentRoute = currentBackStackEntry?.destination?.route
 
+                AppNavigation(navController)
+
                 val showScaffold = when (currentRoute) {
                     Screens.Login.route,
                     Screens.Register.route -> false

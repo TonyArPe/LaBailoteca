@@ -40,8 +40,10 @@ fun MainScaffold(
     )
 
     // Proteger el contenido del Drawer con SesionGuard
-    SesionGuard(sessionViewModel) {
-
+    SesionGuard(
+        navController = navController,
+        sesionViewModel = sessionViewModel
+    ) { usuario ->
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {

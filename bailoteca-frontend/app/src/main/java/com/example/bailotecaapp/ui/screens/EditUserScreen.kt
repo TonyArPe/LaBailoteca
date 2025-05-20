@@ -2,6 +2,9 @@ package com.example.bailotecaapp.ui.screens
 
 import android.util.Log
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -66,7 +69,15 @@ fun EditUserScreen(
     usuario?.let {
         Scaffold(
             topBar = {
-                TopAppBar(title = { Text("Editar Usuario") })
+                TopAppBar(
+                    title = { Text("Editar Usuario") },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Atrás")
+                        }
+                    }
+                )
+
             }
         ) { padding ->
             Column(
@@ -113,8 +124,8 @@ fun EditUserScreen(
                                 )
                                 val success = viewModel.actualizarUsuario(token, usuarioId, actualizado)
                                 if (success) {
-                                    navController.navigate("lista_usuarios") {
-                                        popUpTo("lista_usuarios") { inclusive = true }
+                                    navController.navigate("usuarios") {
+                                        popUpTo("editar_usuario/{$usuarioId}") { inclusive = true }
                                     }
                                 } else {
                                     Log.e("EditUserScreen", "Error al guardar cambios")

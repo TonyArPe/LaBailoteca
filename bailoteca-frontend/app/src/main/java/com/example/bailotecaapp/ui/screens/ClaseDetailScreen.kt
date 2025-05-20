@@ -17,8 +17,11 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import com.example.bailotecaapp.model.enums.Dificultad
 import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -27,17 +30,24 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+/**
+ * Pantalla de detalle de una clase. Muestra toda la información de la clase,
+ * horarios, profesor y acciones dependiendo del rol del usuario.
+ *
+ * Protegida mediante [SesionGuard].
+ */
 @Composable
 fun ClaseDetailScreen(
     navController: NavHostController,
     claseId: Long,
-    claseViewModel: ClaseViewModel = hiltViewModel(),
-    sesionViewModel: SesionViewModel = hiltViewModel()
+    claseViewModel: ClaseViewModel = hiltViewModel()
 ) {
-    SesionGuard(sesionViewModel) { usuario ->
+    SesionGuard(navController = navController) { usuario ->
+
+        val sessionViewModel: SesionViewModel = hiltViewModel()
 
         val clase by claseViewModel.claseSeleccionada.collectAsState()
-        val inscripciones by sesionViewModel.inscripciones.collectAsState()
+        val inscripciones by sessionViewModel.inscripciones.collectAsState()
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
         val coroutineScope = rememberCoroutineScope()
@@ -46,6 +56,15 @@ fun ClaseDetailScreen(
 
         val claseYaCargada = remember { mutableStateOf(false) }
         val inscripcionesYaCargadas = remember { mutableStateOf(false) }
+
+        NavHost(
+            navController = navController,
+            startDestination = Screens.Login.route
+        ) {
+            composable(Screens.Login.route) {
+                LoginScreen(navController)
+            }
+        }
 
         LaunchedEffect(claseId) {
             if (!claseYaCargada.value) {
@@ -59,7 +78,7 @@ fun ClaseDetailScreen(
             if (!esInvitado && !inscripcionesYaCargadas.value) {
                 Log.d("ClaseDetailScreen", "Cargando inscripciones del usuario ID: ${usuario.id}")
                 inscripcionesYaCargadas.value = true
-                sesionViewModel.cargarMisInscripciones()
+                sessionViewModel.cargarMisInscripciones()
             }
         }
 
@@ -74,7 +93,7 @@ fun ClaseDetailScreen(
 
                     if (response.isSuccessful) {
                         Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
-                        sesionViewModel.cargarMisInscripciones()
+                        sessionViewModel.cargarMisInscripciones()
                     } else {
                         Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
