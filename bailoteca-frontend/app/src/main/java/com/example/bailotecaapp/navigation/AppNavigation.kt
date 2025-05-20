@@ -10,6 +10,7 @@ import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
@@ -91,6 +92,14 @@ fun AppNavigation(
             SesionGuard { usuario ->
                 EditProfileScreen(navController)
             }
+        }
+
+        composable(
+            route = "editar_usuario/{usuarioId}",
+            arguments = listOf(navArgument("usuarioId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val usuarioId = backStackEntry.arguments?.getLong("usuarioId") ?: 0L
+            EditUserScreen(usuarioId = usuarioId, navController = navController)
         }
     }
 }

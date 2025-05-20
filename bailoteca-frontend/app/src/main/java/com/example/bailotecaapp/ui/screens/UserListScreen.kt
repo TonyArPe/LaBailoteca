@@ -9,58 +9,87 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.components.UsuarioCard
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
-
+/**
+ * Pantalla que muestra la lista de usuarios.
+ * Solo accesible por usuarios ADMIN o PROFESOR.
+ * ADMIN puede ver y gestionar todos los usuarios.
+ * PROFESOR solo puede ver y editar el estado 'pagado' de los usuarios de sus clases.
+ *
+ * @param navController controlador de navegación
+ * @param viewModel ViewModel de usuarios inyectado con Hilt
+ */
 @Composable
-fun UserListScreen(navController: NavController,
-                   viewModel: UsuarioViewModel = viewModel()) {
-
-    // Observamos el estado desde el ViewModel
+fun UserListScreen(
+    navController: NavController,
+    viewModel: UsuarioViewModel = hiltViewModel()
+) {
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val sesionViewModel: SesionViewModel = hiltViewModel()
-    val usuario by sesionViewModel.usuario.collectAsState()
+    val usuarioActual by sesionViewModel.usuario.collectAsState()
 
+    var usuarioAEliminar by remember { mutableStateOf<Usuario?>(null) }
 
-    // Lanzamos la carga solo una vez cuando se abre esta pantalla
     LaunchedEffect(Unit) {
         viewModel.obtenerUsuarios()
     }
 
     Scaffold { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .padding(padding)
+            .padding(16.dp)
         ) {
             when {
-                isLoading -> {
-                    // Cargando
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                }
-
-                error != null -> {
-                    // Error
-                    Text(
-                        text = error ?: "Error desconocido",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
-
+                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                error != null -> Text(error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
                 else -> {
-                    // Lista de usuarios
                     LazyColumn {
                         items(usuarios) { usuario ->
-                            UsuarioCard(usuario)
+                            UsuarioCard(
+                                usuario = usuario,
+                                rolActual = usuarioActual?.rol?.name ?: "",
+                                navController = navController,
+                                onEditar = { user ->
+                                    navController.navigate("editar_usuario/${user.id}")
+                                },
+                                onEliminar = { user ->
+                                    usuarioAEliminar = user
+                                },
+                                onModificarPagado = { user ->
+                                    viewModel.togglePagado(user)
+                                }
+                            )
                         }
+                    }
+
+                    // Confirmación de eliminación
+                    usuarioAEliminar?.let { user ->
+                        AlertDialog(
+                            onDismissRequest = { usuarioAEliminar = null },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    viewModel.eliminarUsuario(user.id!!)
+                                    usuarioAEliminar = null
+                                }) {
+                                    Text("Confirmar")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { usuarioAEliminar = null }) {
+                                    Text("Cancelar")
+                                }
+                            },
+                            title = { Text("¿Estás seguro?") },
+                            text = { Text("Esta acción eliminará a ${user.nombre} permanentemente.") }
+                        )
                     }
                 }
             }

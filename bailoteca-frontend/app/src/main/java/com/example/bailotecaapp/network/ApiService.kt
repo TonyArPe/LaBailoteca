@@ -58,6 +58,19 @@ interface ApiService {
         @Body usuario: UsuarioUpdateRequest
     ): Response<Usuario>
 
+    @DELETE("/api/usuarios/{id}")
+    suspend fun eliminarUsuario(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long
+    ): Response<Void>
+
+    @PUT("/api/usuarios/{id}")
+    suspend fun actualizarUsuario(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long,
+        @Body usuario: Usuario
+    ): Response<Usuario>
+
     // CLASES
 
     /**
