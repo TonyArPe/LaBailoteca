@@ -1,10 +1,14 @@
 package com.bailoteca.repository.usuario;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.bailoteca.dto.UsuarioDTO;
 import com.bailoteca.models.usuario.Usuario;
 
 /**
@@ -18,4 +22,8 @@ public interface UsuarioRepo extends JpaRepository<Usuario, Long >{
     Usuario findByDni(String dni);
     Usuario findByTelefono(String telefono);
     Usuario findByNombre(String nombre);
+
+    @Query("SELECT new com.bailoteca.dto.UsuarioDTO(u.id, u.nombre, u.apellido, u.correo) FROM Inscripcion i JOIN i.usuario u WHERE i.clase.profesor.id = :idProfesor")
+    List<UsuarioDTO> findAlumnosPorProfesorId(@Param("idProfesor") Long idProfesor);
+
 }

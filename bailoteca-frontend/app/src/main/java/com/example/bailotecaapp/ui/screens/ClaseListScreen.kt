@@ -23,14 +23,6 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * Pantalla principal que muestra el listado de clases disponibles para el usuario.
- * Permite inscribirse, ver detalles y muestra el estado actual de las inscripciones.
- *
- * @param navController controlador de navegación.
- * @param viewModel ViewModel encargado de las clases.
- * @param sesionViewModel ViewModel encargado de la sesión.
- */
 @Composable
 fun ClaseListScreen(
     navController: NavHostController,
@@ -47,29 +39,11 @@ fun ClaseListScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    /**
-     * Efecto que recarga las clases cuando cambia la versión.
-     */
     LaunchedEffect(versionClases) {
         viewModel.obtenerClases()
+        sesionViewModel.cargarMisInscripciones()
     }
 
-    /**
-     * Efecto inicial que asegura que se haya cargado el usuario y sus inscripciones.
-     */
-    LaunchedEffect(usuario) {
-        if (usuario == null) {
-            sesionViewModel.obtenerUsuarioActual()
-        } else {
-            viewModel.obtenerClases()
-            sesionViewModel.cargarMisInscripciones()
-        }
-    }
-
-    /**
-     * Función que gestiona la inscripción a una clase concreta por ID.
-     * Recupera el token, llama al ViewModel, muestra mensaje y recarga datos.
-     */
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
         val request = InscripcionRequest(usuarioId = userId, claseId = claseId)
@@ -83,7 +57,6 @@ fun ClaseListScreen(
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
                     sesionViewModel.cargarMisInscripciones()
                     sesionViewModel.marcarClasesComoActualizadas()
-                    Log.d("ClaseListScreen", "Inscripciones y clases recargadas tras inscribirse")
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     Log.e("ClaseListScreen", "Error HTTP: ${response.code()}")
@@ -95,9 +68,6 @@ fun ClaseListScreen(
         }
     }
 
-    /**
-     * UI principal
-     */
     Scaffold { padding ->
         Box(
             modifier = Modifier
@@ -113,12 +83,8 @@ fun ClaseListScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
                 usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    items(
-                        clases,
-                        key = { clase -> "${clase.id}-${inscripciones.any { it.clase?.id == clase.id }}" }
-                    ) { clase ->
+                    items(clases, key = { it.id }) { clase ->
                         val yaInscrito = inscripciones.any { it.clase?.id == clase.id }
 
                         ClaseCard(
@@ -126,8 +92,8 @@ fun ClaseListScreen(
                             usuarioActual = usuario,
                             inscripciones = inscripciones,
                             yaInscrito = yaInscrito,
-                            onInscribirse = { claseId -> inscribirseAClase(claseId) },
-                            onVerDetalle = { claseId -> navController.navigate(Screens.ClaseDetail.createRoute(claseId)) }
+                            onInscribirse = { inscribirseAClase(it) },
+                            onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) }
                         )
                     }
                 }

@@ -8,16 +8,18 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import com.bailoteca.dto.UsuarioDTO;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
 
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 /**
- * Controlador REST para gestionar Usuarios.
+ * Controlador REST para gestionar Usuarios en el sistema.
  */
 @RestController
 @RequestMapping("/api/usuarios")
@@ -37,13 +39,12 @@ public class UsuarioController {
     }
 
     /**
-     * Crea un nuevo usuario en el sistema. La contraseña se codifica
-     * automáticamente.
+     * Crea un nuevo usuario en el sistema. La contraseña se codifica automáticamente.
      */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
         usuario.setFechaRegistro(LocalDate.now());
-        usuario.setActivo(true); // Activamos el usuario directamente para pruebas
+        usuario.setActivo(true);
         usuario.setPagado(false);
         usuario.setContrasenna(passwordEncoder.encode(usuario.getContrasenna()));
         return usuarioRepo.save(usuario);
@@ -101,12 +102,10 @@ public class UsuarioController {
                         usuario.setFotoPerfil(updatedUsuario.getFotoPerfil());
                         usuario.setFechaNacimiento(updatedUsuario.getFechaNacimiento());
 
-                        // Solo puede modificarse este campo si eres ADMIN
                         if (actual.getRol().name().equals("ADMIN")) {
                             usuario.setActivo(updatedUsuario.isActivo());
                         }
 
-                        // Permite cambiar la contraseña:
                         if (updatedUsuario.getContrasenna() != null && !updatedUsuario.getContrasenna().isBlank()) {
                             usuario.setContrasenna(passwordEncoder.encode(updatedUsuario.getContrasenna()));
                         }
@@ -125,6 +124,22 @@ public class UsuarioController {
     @GetMapping("/me")
     public Usuario getMiPerfil() {
         return getUsuarioAutenticado();
+    }
+
+    /**
+     * Devuelve los alumnos inscritos en clases del profesor dado.
+     * Si no hay alumnos, se devuelve una lista vacía (HTTP 200).
+     */
+    @PreAuthorize("hasRole('PROFESOR')")
+    @GetMapping("/profesor/{id}/alumnos")
+    public ResponseEntity<?> getAlumnosPorProfesor(@PathVariable Long id) {
+        try {
+            List<UsuarioDTO> alumnos = usuarioRepo.findAlumnosPorProfesorId(id);
+            return ResponseEntity.ok(alumnos); // lista vacía si no hay inscripciones
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al obtener alumnos del profesor");
+        }
     }
 
     /**

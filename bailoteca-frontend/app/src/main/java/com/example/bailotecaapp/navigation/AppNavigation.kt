@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.navigation
 
+import LoginScreen
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -10,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
+import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
@@ -101,5 +103,10 @@ fun AppNavigation(
                 EditUserScreen(usuarioId = usuarioId, navController = navController)
             }
         }
+
+        composable("invitado_home") {
+            InvitadoHomeScreen()
+        }
+
     }
 }

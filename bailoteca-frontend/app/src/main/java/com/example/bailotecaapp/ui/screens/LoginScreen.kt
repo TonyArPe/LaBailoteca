@@ -1,5 +1,4 @@
-package com.example.bailotecaapp.ui.screens
-
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -14,9 +13,12 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 fun LoginScreen(
@@ -31,11 +33,24 @@ fun LoginScreen(
 
     val usuario by sesionViewModel.usuario.collectAsState()
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
+    val modoInvitado by sesionViewModel.modoInvitadoForzado.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
+    val invitado by sesionViewModel.modoInvitado.collectAsState()
 
-    // Navegamos solo cuando el usuario ya ha sido cargado
     LaunchedEffect(usuario, sesionCargando) {
-        if (usuario != null && !sesionCargando) {
+        if (usuario != null && usuario!!.rol != Rol.INVITADO && !sesionCargando) {
+            Log.d("LoginScreen", "Usuario autenticado normal, navegando a Home")
             navController.navigate(Screens.Home.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    LaunchedEffect(invitado, usuario) {
+        if (invitado && usuario?.rol == Rol.INVITADO) {
+            Log.d("LoginScreen", "Modo invitado detectado. Navegando a invitado_home")
+            navController.navigate("invitado_home") {
                 popUpTo(0) { inclusive = true }
                 launchSingleTop = true
             }
@@ -120,14 +135,12 @@ fun LoginScreen(
             }
 
             /**
-             * Entrar como inivtado, claramente sin los privilegios de un USUARIO
+             * Entrar como invitado
              */
             TextButton(
                 onClick = {
+                    Log.d("LoginScreen", "Botón invitado pulsado")
                     sesionViewModel.entrarComoInvitado()
-                    navController.navigate(Screens.Home.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
                 },
                 modifier = Modifier.padding(top = 16.dp)
             ) {

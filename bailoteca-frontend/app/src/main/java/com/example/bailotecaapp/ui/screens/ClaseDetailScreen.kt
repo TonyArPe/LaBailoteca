@@ -17,11 +17,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import com.example.bailotecaapp.model.enums.Dificultad
 import com.example.bailotecaapp.model.enums.Rol
-import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -30,12 +27,6 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * Pantalla de detalle de una clase. Muestra toda la información de la clase,
- * horarios, profesor y acciones dependiendo del rol del usuario.
- *
- * Protegida mediante [SesionGuard].
- */
 @Composable
 fun ClaseDetailScreen(
     navController: NavHostController,
@@ -45,7 +36,7 @@ fun ClaseDetailScreen(
     SesionGuard(navController = navController) { usuario ->
 
         val sessionViewModel: SesionViewModel = hiltViewModel()
-
+        val versionClases by sessionViewModel.versionClases.collectAsState()
         val clase by claseViewModel.claseSeleccionada.collectAsState()
         val inscripciones by sessionViewModel.inscripciones.collectAsState()
         val context = LocalContext.current
@@ -53,53 +44,62 @@ fun ClaseDetailScreen(
         val coroutineScope = rememberCoroutineScope()
 
         val esInvitado = usuario.rol == Rol.INVITADO
-
         val claseYaCargada = remember { mutableStateOf(false) }
-        val inscripcionesYaCargadas = remember { mutableStateOf(false) }
-
-        NavHost(
-            navController = navController,
-            startDestination = Screens.Login.route
-        ) {
-            composable(Screens.Login.route) {
-                LoginScreen(navController)
-            }
-        }
 
         LaunchedEffect(claseId) {
             if (!claseYaCargada.value) {
-                Log.d("ClaseDetailScreen", "Cargando clase con ID: $claseId")
+                Log.d("ClaseDetailScreen", "CARGANDO CLASE CON ID: $claseId")
                 claseYaCargada.value = true
                 claseViewModel.cargarClase(claseId)
             }
         }
 
-        LaunchedEffect(usuario.id) {
-            if (!esInvitado && !inscripcionesYaCargadas.value) {
-                Log.d("ClaseDetailScreen", "Cargando inscripciones del usuario ID: ${usuario.id}")
-                inscripcionesYaCargadas.value = true
+        LaunchedEffect(versionClases) {
+            if (!esInvitado) {
+                Log.d("ClaseDetailScreen", "DETONADA LA BOMBA DE INSCRIPCIONES")
                 sessionViewModel.cargarMisInscripciones()
             }
         }
 
-        val inscripcionActual = inscripciones.find { it.clase.id == claseId }
-        val estaInscrito = inscripcionActual != null
+        val inscripcionActual by remember(inscripciones, claseId) {
+            derivedStateOf {
+                val encontrada = inscripciones.find { it.clase.id == claseId }
+                Log.d("ClaseDetailScreen", "INSCRIPCION ACTUAL: ${encontrada?.id ?: "Ninguna"} para claseId=$claseId")
+                encontrada
+            }
+        }
+
+        val estaInscrito by remember(inscripcionActual) {
+            derivedStateOf {
+                val resultado = inscripcionActual != null
+                Log.d("ClaseDetailScreen", "¿ESTA INSCRITO? -> $resultado")
+                resultado
+            }
+        }
 
         fun desinscribirse(inscripcionId: Long) {
             coroutineScope.launch {
                 try {
-                    val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                    val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                    if (token == null) {
+                        Log.e("ClaseDetailScreen", "TOKEN JWTES NULL, CANCELANDO ACCION")
+                        return@launch
+                    }
+                    Log.d("ClaseDetailScreen", "ENVIANDO SOLICITUD PARA ELIMINAR INSCRIPCION CONId=$inscripcionId")
                     val response = claseViewModel.eliminarInscripcion(token, inscripcionId)
 
                     if (response.isSuccessful) {
                         Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
+                        Log.d("ClaseDetailScreen", "INSCRIPCION ELIMINADA CON EXITO")
                         sessionViewModel.cargarMisInscripciones()
+                        sessionViewModel.marcarClasesComoActualizadas()
                     } else {
+                        Log.e("ClaseDetailScreen", "ERROR HTP AL ELIMINAR LA INSCRIPCION: ${response.code()}")
                         Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
+                    Log.e("ClaseDetailScreen", "EXCEPCION AL DESESCRIBIRSE", e)
                     Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-                    Log.e("ClaseDetailScreen", "Error al desinscribirse", e)
                 }
             }
         }
@@ -112,7 +112,7 @@ fun ClaseDetailScreen(
                     .padding(16.dp)
             ) {
                 clase?.let { c ->
-                    Log.d("ClaseDetailScreen", "Clase cargada: ${c.nombre}, dificultad: ${c.dificultad}")
+                    Log.d("ClaseDetailScreen", "CLASE CARGADA: ${c.nombre}, dificultad: ${c.dificultad}")
 
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(c.nombre, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
@@ -136,7 +136,7 @@ fun ClaseDetailScreen(
                                 text = AnnotatedString("🎥 Ver video de presentación"),
                                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
                                 onClick = {
-                                    Log.d("ClaseDetailScreen", "Abriendo video presentación: ${c.videoPresentacion}")
+                                    Log.d("ClaseDetailScreen", "ABRIENDO VIDEO DE PRESENTACION: ${c.videoPresentacion}")
                                     uriHandler.openUri(c.videoPresentacion)
                                 }
                             )
@@ -151,8 +151,9 @@ fun ClaseDetailScreen(
                         Spacer(modifier = Modifier.height(20.dp))
 
                         if (usuario.rol == Rol.USUARIO && estaInscrito && inscripcionActual != null) {
+                            Log.d("ClaseDetailScreen", "MOSTRANDO BOTON PARA CANCELAR SUBSCRIPCION")
                             Button(
-                                onClick = { desinscribirse(inscripcionActual.id) },
+                                onClick = { desinscribirse(inscripcionActual!!.id) },
                                 modifier = Modifier.align(Alignment.CenterHorizontally),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
@@ -167,7 +168,7 @@ fun ClaseDetailScreen(
                                     val mensaje = Uri.encode("Hola ${c.profesor.nombre},\n\nEstoy interesado en tu clase '${c.nombre}'. ¿Podrías darme más información?\n\nGracias.")
                                     val correo = "mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
                                     val intent = Intent(Intent.ACTION_SENDTO).apply { data = correo }
-                                    Log.d("ClaseDetailScreen", "Intentando contactar al profesor: ${c.profesor.correo}")
+                                    Log.d("ClaseDetailScreen", "INTENTANDO CONTACTAR CON EL PROFESOR: ${c.profesor.correo}")
                                     context.startActivity(intent)
                                 },
                                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -177,7 +178,10 @@ fun ClaseDetailScreen(
                         }
 
                         OutlinedButton(
-                            onClick = { navController.popBackStack() },
+                            onClick = {
+                                Log.d("ClaseDetailScreen", "VOLVIENDO ATRAS")
+                                navController.popBackStack()
+                            },
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
                             Text("Volver")

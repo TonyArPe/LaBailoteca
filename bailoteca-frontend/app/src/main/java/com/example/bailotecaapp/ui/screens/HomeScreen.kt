@@ -26,7 +26,7 @@ fun HomeScreen(
 
     // Lógica para cargar usuario al entrar
     LaunchedEffect(Unit) {
-        if (usuarioState == null) {
+        if (usuarioState == null && !sesionViewModel.modoInvitadoForzado.value) {
             sesionViewModel.obtenerUsuarioActual()
         }
     }

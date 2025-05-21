@@ -21,10 +21,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
-/**
- * ViewModel que gestiona el estado de sesión de la aplicación,
- * incluyendo usuario autenticado, inscripciones, errores y persistencia.
- */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
     application: Application,
@@ -57,20 +53,19 @@ class SesionViewModel @Inject constructor(
     private val _modoInvitadoForzado = MutableStateFlow(false)
     val modoInvitadoForzado: StateFlow<Boolean> = _modoInvitadoForzado
 
+    private val _modoInvitado = MutableStateFlow(false)
+    val modoInvitado: StateFlow<Boolean> = _modoInvitado
+
     fun marcarClasesComoActualizadas() {
-        _versionClases.value += 1
+        _versionClases.value++
     }
 
-
-    /**
-     * Inicializa la sesión restaurando usuario/token si existen en DataStore o usa Firebase.
-     */
     init {
         viewModelScope.launch {
             val usuarioGuardado = UsuarioPreferences.obtenerUsuario(context)
             val tokenGuardado = TokenPreferences.obtenerToken(context)
 
-            if (usuarioGuardado != null && tokenGuardado != null) {
+            if (usuarioGuardado != null && tokenGuardado != null && usuarioGuardado.rol != Rol.INVITADO) {
                 _usuario.value = Usuario(
                     id = usuarioGuardado.id,
                     nombre = usuarioGuardado.nombre,
@@ -88,15 +83,11 @@ class SesionViewModel @Inject constructor(
                     fechaRegistro = null
                 )
 
-                // Para que actualice el perfil
                 obtenerUsuarioActual()
             }
         }
     }
 
-    /**
-     * Obtiene el usuario autenticado desde el backend usando Firebase Auth.
-     */
     fun obtenerUsuarioActual() {
         viewModelScope.launch {
             _isLoading.value = true
@@ -139,9 +130,36 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Carga las inscripciones del usuario actual (una vez por sesión).
-     */
+    fun obtenerUsuarioActualConToken(token: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val response = api.getUsuarioActual("Bearer $token")
+                if (response.isSuccessful) {
+                    val user = response.body()
+                    if (user != null) {
+                        _usuario.value = user
+                        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
+                        TokenPreferences.guardarToken(context, token)
+                        cargarMisInscripciones()
+                        Log.d("SesionViewModel", "Usuario y token guardados correctamente")
+                    }
+                } else if (response.code() == 403) {
+                    Log.w("SesionViewModel", "Usuario no encontrado en backend, iniciando como invitado")
+                    entrarComoInvitado()
+                } else {
+                    _error.value = "Error al obtener perfil: ${response.code()}"
+                    Log.e("SesionViewModel", "Error HTTP: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
+                Log.e("SesionViewModel", "Excepción al obtener usuario", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun cargarMisInscripciones() {
         if (_inscripcionesCargadas) return
 
@@ -180,8 +198,6 @@ class SesionViewModel @Inject constructor(
             _error.value = null
             _isLoading.value = false
             _inscripcionesCargadas = false
-
-            // Indicamos que se ha cerrado sesión
             _sesionCerrada.value = true
 
             Log.d("SesionViewModel", "Sesión cerrada y datos persistentes borrados.")
@@ -218,23 +234,25 @@ class SesionViewModel @Inject constructor(
     }
 
     fun entrarComoInvitado() {
+        Log.d("SesionViewModel", "Entrando como invitado...")
+        _modoInvitado.value = true
         _usuario.value = Usuario(
             id = -1,
             nombre = "Invitado",
+            apellido = "",
             correo = "invitado@bailoteca.com",
-            rol = Rol.INVITADO,
-            activo = false,
-            pagado = false,
             contrasenna = "",
-            direccion = null,
-            telefono = null,
-            dni = null,
+            rol = Rol.INVITADO,
             fotoPerfil = null,
-            genero = null,
+            telefono = null,
+            direccion = null,
             fechaNacimiento = null,
-            fechaRegistro = null
+            genero = null,
+            dni = null,
+            fechaRegistro = null,
+            activo = false,
+            pagado = false
         )
-        _modoInvitadoForzado.value = true
     }
 
     fun usuarioYaCargado(): Boolean {
@@ -245,14 +263,11 @@ class SesionViewModel @Inject constructor(
         _usuario.value = usuario
     }
 
-    /**
-     * Indica si la sesión activa está asociada a un usuario no invitado.
-     */
     val sesionActiva: Boolean
         get() = _usuario.value != null && _usuario.value?.rol != Rol.INVITADO
 
     fun reiniciarEstadoSesion() {
         _sesionCerrada.value = false
+        _modoInvitadoForzado.value = false
     }
-
 }

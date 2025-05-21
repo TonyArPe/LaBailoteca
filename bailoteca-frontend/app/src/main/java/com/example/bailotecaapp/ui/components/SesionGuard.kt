@@ -1,5 +1,8 @@
 package com.example.bailotecaapp.ui.components
 
+import android.R.attr.content
+import android.R.id.content
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
@@ -8,10 +11,8 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.example.bailotecaapp.model.Usuario
 import com.google.firebase.auth.FirebaseAuth
-import android.util.Log
-import kotlinx.coroutines.delay
+import kotlinx.serialization.json.JsonNull.content
 
 /**
  * Composable protector que garantiza que el usuario autenticado esté completamente cargado
@@ -25,20 +26,39 @@ import kotlinx.coroutines.delay
 fun SesionGuard(
     navController: NavController,
     sesionViewModel: SesionViewModel = hiltViewModel(),
-    content: @Composable (Usuario) -> Unit
+    content: @Composable () -> Unit
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val modoInvitadoForzado by sesionViewModel.modoInvitadoForzado.collectAsState()
+    val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
+    val invitado by sesionViewModel.modoInvitado.collectAsState()
 
-    LaunchedEffect(true) {
-        val authUser = FirebaseAuth.getInstance().currentUser
+    LaunchedEffect(sesionCerrada) {
+        if (sesionCerrada) {
+            Log.d("SesionGuard", "Sesión cerrada detectada. Redirigiendo a login...")
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
+            }
+            sesionViewModel.reiniciarEstadoSesion()
+        }
+    }
+
+    LaunchedEffect(usuario, modoInvitadoForzado) {
+        Log.d("SesionGuard", "Evaluando SesionGuard: usuario=$usuario, modoInvitado=$modoInvitadoForzado")
+
+        if (usuario == null && modoInvitadoForzado) {
+            Log.d("SesionGuard", "Esperando propagación del usuario invitado...")
+            return@LaunchedEffect
+        }
+
         if (usuario == null && !modoInvitadoForzado) {
+            val authUser = FirebaseAuth.getInstance().currentUser
             if (authUser != null) {
                 Log.d("SesionGuard", "Usuario autenticado en Firebase, obteniendo del backend...")
                 sesionViewModel.obtenerUsuarioActual()
             } else {
-                delay(100) // Previene crash por ViewModelStore
+                Log.d("SesionGuard", "No hay usuario ni sesión forzada, redirigiendo a login.")
                 navController.navigate("login") {
                     popUpTo(0) { inclusive = true }
                 }
@@ -46,17 +66,16 @@ fun SesionGuard(
         }
     }
 
-    when {
-        isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
-        usuario != null -> {
-            content(usuario!!)
+    // Mostrar contenido si ya estamos autenticados o en modo invitado
+    if (usuario != null || invitado) {
+        content()
+        return
+    }
+
+    // Mostrar spinner si está cargando
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
     }
 }
