@@ -36,6 +36,7 @@ fun LoginScreen(
     val modoInvitado by sesionViewModel.modoInvitadoForzado.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     val invitado by sesionViewModel.modoInvitado.collectAsState()
+    val modoInvitadoForzado by sesionViewModel.modoInvitadoForzado.collectAsState()
 
     LaunchedEffect(usuario, sesionCargando) {
         if (usuario != null && usuario!!.rol != Rol.INVITADO && !sesionCargando) {
@@ -140,7 +141,13 @@ fun LoginScreen(
             TextButton(
                 onClick = {
                     Log.d("LoginScreen", "Botón invitado pulsado")
-                    sesionViewModel.entrarComoInvitado()
+                    sesionViewModel.entrarComoInvitado {
+                        Log.d("LoginScreen", "Modo invitado propagado. Navegando a invitado_home")
+                        navController.navigate("invitado_home") {
+                            popUpTo(0) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    }
                 },
                 modifier = Modifier.padding(top = 16.dp)
             ) {

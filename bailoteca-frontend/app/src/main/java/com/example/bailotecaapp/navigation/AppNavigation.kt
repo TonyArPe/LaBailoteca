@@ -1,3 +1,7 @@
+/**
+ * Define la navegación principal de la aplicación.
+ * Incluye rutas protegidas mediante SesionGuard y rutas públicas como login o registro.
+ */
 package com.example.bailotecaapp.navigation
 
 import LoginScreen
@@ -15,11 +19,12 @@ import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
- * Define la navegación principal de la aplicación, incluyendo rutas públicas
- * (como Login o Registro) y rutas protegidas que requieren sesión activa y cargada.
+ * Componente que gestiona la navegación entre pantallas.
+ * Escucha cambios de sesión y redirige cuando corresponde.
+ * Define rutas públicas y protegidas, además de una ruta exclusiva para invitados.
  *
- * @param navController Controlador de navegación.
- * @param modifier Modificador opcional para la vista de navegación.
+ * @param navController Controlador de navegación global.
+ * @param modifier Modificador opcional para aplicar estilos al NavHost.
  */
 @Composable
 fun AppNavigation(
@@ -29,7 +34,7 @@ fun AppNavigation(
     val sessionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sessionViewModel.sesionCerrada.collectAsState()
 
-    // Redirige al login automáticamente si se ha cerrado la sesión
+    // Redirige al login si la sesión ha sido cerrada
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
             navController.navigate(Screens.Login.route) {
@@ -44,32 +49,27 @@ fun AppNavigation(
         modifier = modifier,
         startDestination = Screens.Login.route
     ) {
-        // Rutas públicas
+        // Ruta de Login (pública)
         composable(Screens.Login.route) {
             LoginScreen(navController)
         }
 
+        // Ruta de Registro (pública)
         composable(Screens.Register.route) {
             RegisterScreen(navController)
         }
 
-        // Rutas protegidas con SesionGuard
+        // Rutas protegidas mediante SesionGuard
         composable(Screens.Home.route) {
-            SesionGuard(navController = navController) { usuario ->
-                HomeScreen(navController)
-            }
+            SesionGuard(navController = navController) { HomeScreen(navController) }
         }
 
         composable(Screens.Clases.route) {
-            SesionGuard(navController = navController) { usuario ->
-                ClaseListScreen(navController)
-            }
+            SesionGuard(navController = navController) { ClaseListScreen(navController) }
         }
 
         composable(Screens.Usuarios.route) {
-            SesionGuard(navController = navController) { usuario ->
-                UserListScreen(navController)
-            }
+            SesionGuard(navController = navController) { UserListScreen(navController) }
         }
 
         composable(
@@ -77,21 +77,15 @@ fun AppNavigation(
             arguments = listOf(navArgument("claseId") { type = NavType.LongType })
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: -1L
-            SesionGuard(navController = navController) { usuario ->
-                ClaseDetailScreen(navController, claseId)
-            }
+            SesionGuard(navController = navController) { ClaseDetailScreen(navController, claseId) }
         }
 
         composable(Screens.Perfil.route) {
-            SesionGuard(navController = navController) { usuario ->
-                ProfileScreen(navController)
-            }
+            SesionGuard(navController = navController) { ProfileScreen(navController) }
         }
 
         composable(Screens.EditProfile.route) {
-            SesionGuard(navController = navController) { usuario ->
-                EditProfileScreen(navController)
-            }
+            SesionGuard(navController = navController) { EditProfileScreen(navController) }
         }
 
         composable(
@@ -99,14 +93,14 @@ fun AppNavigation(
             arguments = listOf(navArgument("usuarioId") { type = NavType.LongType })
         ) { backStackEntry ->
             val usuarioId = backStackEntry.arguments?.getLong("usuarioId") ?: 0L
-            SesionGuard(navController = navController) { usuario ->
+            SesionGuard(navController = navController) {
                 EditUserScreen(usuarioId = usuarioId, navController = navController)
             }
         }
 
+        // Ruta exclusiva para invitados (sin protección de SesionGuard)
         composable("invitado_home") {
             InvitadoHomeScreen()
         }
-
     }
 }

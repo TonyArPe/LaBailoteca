@@ -19,6 +19,6 @@ public class ClaseService {
      * @return Lista de clases visibles públicamente.
      */
     public List<Clase> obtenerTodasLasClasesVisiblesParaInvitados() {
-        return claseRepo.findAll();
+        return claseRepo.findByPublicaTrue();
     }
 }

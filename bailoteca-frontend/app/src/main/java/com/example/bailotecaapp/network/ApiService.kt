@@ -90,9 +90,14 @@ interface ApiService {
         @Path("id") claseId: Long
     ): Response<Clase>
 
-    @GET("/api/clases/publicas")
+    @GET("api/clases/publicas")
     suspend fun obtenerClases(): List<Clase>
 
+    /**
+     * Obtiene todos los eventos públicos.
+     */
+    @GET("/api/eventos/publicos")
+    suspend fun obtenerEventos(): List<Evento>
 
     // INSCRIPCIONES
 

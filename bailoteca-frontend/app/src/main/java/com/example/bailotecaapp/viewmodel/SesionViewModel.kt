@@ -15,12 +15,17 @@ import com.example.bailotecaapp.network.ApiService
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
+/**
+ * ViewModel responsable de manejar la sesión del usuario, ya sea autenticado o invitado.
+ * Gestiona el estado actual del usuario, la carga de inscripciones y el control de navegación.
+ */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
     application: Application,
@@ -56,10 +61,6 @@ class SesionViewModel @Inject constructor(
     private val _modoInvitado = MutableStateFlow(false)
     val modoInvitado: StateFlow<Boolean> = _modoInvitado
 
-    fun marcarClasesComoActualizadas() {
-        _versionClases.value++
-    }
-
     init {
         viewModelScope.launch {
             val usuarioGuardado = UsuarioPreferences.obtenerUsuario(context)
@@ -82,7 +83,6 @@ class SesionViewModel @Inject constructor(
                     fechaNacimiento = null,
                     fechaRegistro = null
                 )
-
                 obtenerUsuarioActual()
             }
         }
@@ -100,19 +100,9 @@ class SesionViewModel @Inject constructor(
 
                 val response = api.getUsuarioActual("Bearer $token")
                 if (response.isSuccessful) {
-                    val user = response.body()
-                    if (user != null) {
+                    response.body()?.let { user ->
                         _usuario.value = user
-
-                        UsuarioPreferences.guardarUsuario(
-                            context,
-                            UsuarioPersistente(
-                                id = user.id!!,
-                                nombre = user.nombre,
-                                correo = user.correo,
-                                rol = user.rol
-                            )
-                        )
+                        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
                         TokenPreferences.guardarToken(context, token)
                         cargarMisInscripciones()
                         Log.d("SesionViewModel", "Usuario y token guardados correctamente")
@@ -136,8 +126,7 @@ class SesionViewModel @Inject constructor(
             try {
                 val response = api.getUsuarioActual("Bearer $token")
                 if (response.isSuccessful) {
-                    val user = response.body()
-                    if (user != null) {
+                    response.body()?.let { user ->
                         _usuario.value = user
                         UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
                         TokenPreferences.guardarToken(context, token)
@@ -233,26 +222,40 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    fun entrarComoInvitado() {
-        Log.d("SesionViewModel", "Entrando como invitado...")
-        _modoInvitado.value = true
-        _usuario.value = Usuario(
-            id = -1,
-            nombre = "Invitado",
-            apellido = "",
-            correo = "invitado@bailoteca.com",
-            contrasenna = "",
-            rol = Rol.INVITADO,
-            fotoPerfil = null,
-            telefono = null,
-            direccion = null,
-            fechaNacimiento = null,
-            genero = null,
-            dni = null,
-            fechaRegistro = null,
-            activo = false,
-            pagado = false
-        )
+    /**
+     * Establece un usuario invitado genérico y activa el modo invitado para navegación limitada.
+     */
+    fun entrarComoInvitado(onPropagado: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            Log.d("SesionViewModel", "Entrando como invitado...")
+            _modoInvitado.value = true
+            _modoInvitadoForzado.value = true
+
+            _usuario.value = Usuario(
+                id = -1,
+                nombre = "Invitado",
+                apellido = "",
+                correo = "invitado@bailoteca.com",
+                contrasenna = "",
+                rol = Rol.INVITADO,
+                fotoPerfil = null,
+                telefono = null,
+                direccion = null,
+                fechaNacimiento = null,
+                genero = null,
+                dni = null,
+                fechaRegistro = null,
+                activo = false,
+                pagado = false
+            )
+
+            delay(100) // Aseguramos que el state se propague
+            onPropagado?.invoke()
+        }
+    }
+
+    fun marcarClasesComoActualizadas() {
+        _versionClases.value++
     }
 
     fun usuarioYaCargado(): Boolean {

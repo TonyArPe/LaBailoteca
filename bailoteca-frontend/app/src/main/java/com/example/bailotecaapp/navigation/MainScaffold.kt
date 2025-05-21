@@ -25,15 +25,14 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
-    navController: NavHostController,
-    sessionViewModel: SesionViewModel = hiltViewModel()
+    navController: NavHostController
 ) {
+    val sessionViewModel: SesionViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
-    val invitado by sesionViewModel.modoInvitado.collectAsState()
-
+    val invitado by sessionViewModel.modoInvitado.collectAsState()
 
     val esPantallaPrincipal = currentDestination?.route in listOf(
         Screens.Home.route,
@@ -45,7 +44,7 @@ fun MainScaffold(
     SesionGuard(
         navController = navController,
         sesionViewModel = sessionViewModel
-    ) { usuario ->
+    ) {
         ModalNavigationDrawer(
             drawerState = drawerState,
             drawerContent = {

@@ -27,6 +27,11 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+/**
+ * Pantalla que muestra el detalle completo de una clase.
+ * Incluye horarios, datos del profesor y posibilidad de inscripción/cancelación.
+ * Modo invitado permite contactar con el profesor por Gmail.
+ */
 @Composable
 fun ClaseDetailScreen(
     navController: NavHostController,
@@ -43,7 +48,7 @@ fun ClaseDetailScreen(
         val uriHandler = LocalUriHandler.current
         val coroutineScope = rememberCoroutineScope()
 
-        val esInvitado = usuario.rol == Rol.INVITADO
+        val esInvitado = (usuario as? com.example.bailotecaapp.model.Usuario)?.rol == Rol.INVITADO
         val claseYaCargada = remember { mutableStateOf(false) }
 
         LaunchedEffect(claseId) {
