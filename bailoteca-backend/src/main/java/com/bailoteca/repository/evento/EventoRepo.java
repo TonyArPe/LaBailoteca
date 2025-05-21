@@ -20,4 +20,5 @@ public interface EventoRepo extends JpaRepository<Evento, Long> {
 
     // Buscar eventos próximos
     List<Evento> findByFechaAfter(LocalDateTime fecha);
+    
 }

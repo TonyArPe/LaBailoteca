@@ -42,4 +42,7 @@ public class Clase {
     @JsonManagedReference
     @Builder.Default
     private List<HorarioClase> horarioClases = new ArrayList<>();
+
+    @Column(nullable = false)
+    private boolean publica = false;
 }

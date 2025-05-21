@@ -26,6 +26,10 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+/**
+ * Inicializador de datos de prueba para la aplicación.
+ * Crea usuarios, clases, eventos e inscripciones de ejemplo.
+ */
 @Component
 @RequiredArgsConstructor
 public class DataInitializer {
@@ -131,7 +135,7 @@ public class DataInitializer {
                 .build());
         crearUsuarioFirebaseSiNoExiste(javi.getCorreo(), javi.getContrasenna(), javi.getNombre() + " " + javi.getApellido());
 
-        // Usuario de prueba
+        // Usuario demo
         Usuario demoUser = usuarioRepo.save(Usuario.builder()
                 .nombre("Pedro")
                 .apellido("Martínez")
@@ -145,7 +149,7 @@ public class DataInitializer {
                 .build());
         crearUsuarioFirebaseSiNoExiste(demoUser.getCorreo(), demoUser.getContrasenna(), demoUser.getNombre() + " " + demoUser.getApellido());
 
-        // Clases
+        // Clases con campo publica
         Clase latino1 = Clase.builder()
                 .nombre("Latino Inicial 1")
                 .descripcion("Clases con Tomás - lunes y miércoles")
@@ -153,6 +157,7 @@ public class DataInitializer {
                 .ubicacion("Edificio Zentro, C. Olivo, 9, 30009 Murcia")
                 .dificultad(Dificultad.INICIAL)
                 .videoPresentacion("https://www.instagram.com/edificio.zentro/")
+                .publica(true)
                 .build();
 
         Clase latino2 = Clase.builder()
@@ -162,6 +167,7 @@ public class DataInitializer {
                 .ubicacion("La Bailoteca, Calle Floridablanca, 2, 30002 Murcia")
                 .dificultad(Dificultad.INICIAL)
                 .videoPresentacion("https://instagram.com/edificio.zentro")
+                .publica(true)
                 .build();
 
         Clase latinoAv = Clase.builder()
@@ -171,6 +177,7 @@ public class DataInitializer {
                 .ubicacion("La Bailoteca, Calle Floridablanca, 2, 30002 Murcia")
                 .dificultad(Dificultad.AVANZADO)
                 .videoPresentacion("https://instagram.com/labailoteca")
+                .publica(true)
                 .build();
 
         Clase latinoInter = Clase.builder()
@@ -180,6 +187,7 @@ public class DataInitializer {
                 .ubicacion("Edificio Zentro, C. Olivo, 9, 30009 Murcia")
                 .dificultad(Dificultad.INTERMEDIO)
                 .videoPresentacion("https://instagram.com/labailoteca")
+                .publica(true)
                 .build();
 
         Clase viernesJavi = Clase.builder()
@@ -189,9 +197,9 @@ public class DataInitializer {
                 .ubicacion("La Bailoteca, Calle Floridablanca, 2, 30002 Murcia")
                 .dificultad(Dificultad.INTERMEDIO)
                 .videoPresentacion("https://instagram.com/labailoteca")
+                .publica(true)
                 .build();
 
-        // Horarios
         HorarioClase h1 = new HorarioClase(null, "LUNES", LocalTime.of(20, 30), LocalTime.of(21, 30), latino1);
         HorarioClase h2 = new HorarioClase(null, "LUNES", LocalTime.of(21, 30), LocalTime.of(22, 30), latino2);
         HorarioClase h3 = new HorarioClase(null, "MARTES", LocalTime.of(21, 0), LocalTime.of(22, 30), latinoAv);

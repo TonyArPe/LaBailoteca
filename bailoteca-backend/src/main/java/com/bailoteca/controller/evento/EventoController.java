@@ -117,4 +117,14 @@ public class EventoController {
             return null;
         }
     }
+
+    /**
+     * Devuelve la lista de eventos públicos visibles para invitados.
+     * Solo se mostrarán los eventos en estado ACTIVO.
+     */
+    @GetMapping("/publicos")
+    public List<Evento> getEventosPublicos() {
+        return eventoRepo.findByEstado(EstadoEvento.ACTIVO);
+    }
+
 }
