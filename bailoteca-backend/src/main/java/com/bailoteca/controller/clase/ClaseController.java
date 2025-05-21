@@ -4,6 +4,7 @@ import com.bailoteca.models.clase.Clase;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.clase.ClaseRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
+import com.bailoteca.service.ClaseService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +25,7 @@ public class ClaseController {
 
     private final ClaseRepo claseRepo;
     private final UsuarioRepo usuarioRepo;
+    private final ClaseService claseService;
 
     /**
      * Devuelve todas las clases disponibles (acceso público o autenticado).
@@ -127,4 +129,13 @@ public class ClaseController {
             return null;
         }
     }
+
+    /**
+     * Devuelve todas las clases visibles públicamente para usuarios invitados.
+     */
+    @GetMapping("/publicas")
+    public List<Clase> obtenerClasesPublicas() {
+        return claseService.obtenerTodasLasClasesVisiblesParaInvitados();
+    }
+
 }

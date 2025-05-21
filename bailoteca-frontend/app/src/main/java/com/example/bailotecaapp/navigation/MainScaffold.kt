@@ -32,6 +32,8 @@ fun MainScaffold(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = currentBackStackEntry?.destination
+    val invitado by sesionViewModel.modoInvitado.collectAsState()
+
 
     val esPantallaPrincipal = currentDestination?.route in listOf(
         Screens.Home.route,

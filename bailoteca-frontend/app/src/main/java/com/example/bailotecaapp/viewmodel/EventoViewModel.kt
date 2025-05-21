@@ -30,7 +30,7 @@ class EventoViewModel @Inject constructor(
                 val resultado = apiService.obtenerEventos()
                 _eventos.value = resultado
             } catch (e: Exception) {
-                // En modo invitado, ignoramos errores y dejamos la lista vacía
+                // Ignoramos errores y dejamos la lista vacía
             }
         }
     }

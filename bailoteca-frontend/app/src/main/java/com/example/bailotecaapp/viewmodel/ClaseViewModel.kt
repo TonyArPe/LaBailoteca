@@ -34,7 +34,7 @@ class ClaseViewModel @Inject constructor(
     private val _claseSeleccionada = MutableStateFlow<Clase?>(null)
     val claseSeleccionada: StateFlow<Clase?> = _claseSeleccionada
 
-    // Lista de inscripciones del usuario (opcional si se usan desde aquí)
+    // Lista de inscripciones del usuario
     private val _inscripciones = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
@@ -46,7 +46,7 @@ class ClaseViewModel @Inject constructor(
     val errorMessage: StateFlow<String?> = _errorMessage
 
     /**
-     * Obtiene la lista de clases disponibles desde la API.
+     * Obtiene la lista de clases disponibles desde la API para usuarios logueados.
      */
     fun obtenerClases() {
         viewModelScope.launch {
@@ -69,6 +69,20 @@ class ClaseViewModel @Inject constructor(
                 Log.e("ClaseViewModel", "Excepción: ${e.localizedMessage}")
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Obtiene la lista de clases públicas para usuarios invitados sin autenticación.
+     */
+    fun obtenerClasesPublicas() {
+        viewModelScope.launch {
+            try {
+                val response = api.obtenerClases()
+                _clases.value = response
+            } catch (e: Exception) {
+                Log.e("ClaseViewModel", "Error al obtener clases públicas", e)
             }
         }
     }

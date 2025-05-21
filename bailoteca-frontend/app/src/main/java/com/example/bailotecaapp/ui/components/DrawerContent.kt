@@ -62,7 +62,7 @@ fun DrawerContent(
     }
 
     val usuario = usuarioState!!
-    val rol = usuario.rol ?: Rol.INVITADO
+    val rol = usuario.rol
     Log.d("DrawerContent", "ROL: $rol")
 
     val opciones = when (rol) {

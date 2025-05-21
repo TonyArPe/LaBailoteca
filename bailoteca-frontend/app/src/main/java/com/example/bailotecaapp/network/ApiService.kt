@@ -90,6 +90,10 @@ interface ApiService {
         @Path("id") claseId: Long
     ): Response<Clase>
 
+    @GET("/api/clases/publicas")
+    suspend fun obtenerClases(): List<Clase>
+
+
     // INSCRIPCIONES
 
     /**

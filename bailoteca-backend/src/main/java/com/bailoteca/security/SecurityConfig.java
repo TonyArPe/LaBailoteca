@@ -34,7 +34,8 @@ public class SecurityConfig {
                     "/notificaciones.html",
                     "/ws/**",
                     "/api/auth/**",
-                    "/api/usuarios"
+                    "/api/usuarios",
+                    "/api/clases/publicas"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
