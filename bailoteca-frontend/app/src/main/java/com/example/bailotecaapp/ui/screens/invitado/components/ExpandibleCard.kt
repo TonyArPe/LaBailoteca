@@ -1,25 +1,16 @@
 package com.example.bailotecaapp.ui.screens.invitado.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.remember
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -28,29 +19,35 @@ fun ExpandibleCard(
     content: @Composable () -> Unit
 ) {
     var expanded by remember { mutableStateOf(seccion.expandido) }
+    val rotationAngle by animateFloatAsState(targetValue = if (expanded) 180f else 0f, label = "rotation")
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = {
-            expanded = !expanded
-            seccion.expandido = expanded
-        },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable {
+                expanded = !expanded
+                seccion.expandido = expanded
+            },
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = seccion.titulo,
                     style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
-                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = "Expandir"
+                    imageVector = Icons.Default.ExpandMore,
+                    contentDescription = "Expandir",
+                    modifier = Modifier.rotate(rotationAngle)
                 )
             }
             AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(top = 8.dp)) {
+                Column(modifier = Modifier.padding(top = 12.dp)) {
                     content()
                 }
             }
