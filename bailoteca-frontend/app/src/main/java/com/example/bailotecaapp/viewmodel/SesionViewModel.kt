@@ -61,6 +61,9 @@ class SesionViewModel @Inject constructor(
     private val _modoInvitado = MutableStateFlow(false)
     val modoInvitado: StateFlow<Boolean> = _modoInvitado
 
+    private val _usuarioCargado = MutableStateFlow(false)
+    val usuarioCargado: StateFlow<Boolean> = _usuarioCargado
+
     init {
         viewModelScope.launch {
             val usuarioGuardado = UsuarioPreferences.obtenerUsuario(context)
@@ -95,6 +98,7 @@ class SesionViewModel @Inject constructor(
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
                 if (token.isNullOrEmpty()) {
                     _error.value = "Token de autenticación vacío"
+                    _usuarioCargado.value = true
                     return@launch
                 }
 
@@ -105,17 +109,15 @@ class SesionViewModel @Inject constructor(
                         UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
                         TokenPreferences.guardarToken(context, token)
                         cargarMisInscripciones()
-                        Log.d("SesionViewModel", "Usuario y token guardados correctamente")
                     }
                 } else {
                     _error.value = "Error al obtener perfil: ${response.code()}"
-                    Log.e("SesionViewModel", "Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
-                Log.e("SesionViewModel", "Excepción al obtener usuario", e)
             } finally {
                 _isLoading.value = false
+                _usuarioCargado.value = true
             }
         }
     }
@@ -145,6 +147,7 @@ class SesionViewModel @Inject constructor(
                 Log.e("SesionViewModel", "Excepción al obtener usuario", e)
             } finally {
                 _isLoading.value = false
+                _usuarioCargado.value = true
             }
         }
     }
@@ -227,9 +230,7 @@ class SesionViewModel @Inject constructor(
      */
     fun entrarComoInvitado(onPropagado: (() -> Unit)? = null) {
         viewModelScope.launch {
-            Log.d("SesionViewModel", "Entrando como invitado...")
-            _modoInvitado.value = true
-            _modoInvitadoForzado.value = true
+            Log.d("SesionViewModel", "🌐 Estableciendo modo invitado...")
 
             _usuario.value = Usuario(
                 id = -1,
@@ -249,7 +250,12 @@ class SesionViewModel @Inject constructor(
                 pagado = false
             )
 
-            delay(100) // Aseguramos que el state se propague
+            delay(50)
+            _modoInvitado.value = true
+            _modoInvitadoForzado.value = true
+
+            delay(200) // asegurar propagación Compose
+            Log.d("SesionViewModel", "🚀 Modo invitado activado completamente.")
             onPropagado?.invoke()
         }
     }
