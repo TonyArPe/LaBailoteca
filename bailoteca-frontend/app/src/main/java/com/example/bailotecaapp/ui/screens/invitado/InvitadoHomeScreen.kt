@@ -20,44 +20,42 @@ import com.example.bailotecaapp.viewmodel.EventoViewModel
  * @param eventoViewModel ViewModel que gestiona los eventos públicos.
  */
 @Composable
-fun InvitadoHomeScreen(
-    claseViewModel: ClaseViewModel = hiltViewModel(),
-    eventoViewModel: EventoViewModel = hiltViewModel()
-) {
-    // Observa los estados públicos expuestos por los ViewModels
-    val clases by claseViewModel.clases.collectAsState()
-    val eventos by eventoViewModel.eventos.collectAsState()
+fun InvitadoHomeScreen() {
+    val claseViewModel: ClaseViewModel = hiltViewModel()
+    val eventoViewModel: EventoViewModel = hiltViewModel()
+    val clases by claseViewModel.clasesPublicas.collectAsState()
+    val eventos by eventoViewModel.eventosPublicos.collectAsState()
 
-    // Lanza la carga de datos una vez al entrar en pantalla
-    LaunchedEffect(Unit) {
-        claseViewModel.obtenerClasesPublicas()
-        eventoViewModel.obtenerEventosPublicos()
+    val secciones = remember {
+        mutableStateListOf(
+            SeccionExpandable("Clases públicas", true),
+            SeccionExpandable("Eventos públicos", false),
+            SeccionExpandable("Redes sociales", false)
+        )
     }
 
-    // Contenido visual para invitados
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.Start
+            .padding(16.dp)
     ) {
-        Text("Eventos", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
-
-        eventos.forEach { evento ->
-            EventoCardInvitado(evento)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
+        Text("Estás en modo invitado. Regístrate para inscribirte a clases y eventos.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Clases", style = MaterialTheme.typography.headlineSmall)
-        Spacer(modifier = Modifier.height(8.dp))
+        secciones.forEach { seccion ->
+            ExpandableCard(seccion = seccion) {
+                when (seccion.titulo) {
+                    "Clases públicas" -> ClaseCardInvitadoList(clases)
+                    "Eventos públicos" -> EventoCardInvitadoList(eventos)
+                    "Redes sociales" -> RedesSocialesSection()
+                }
+            }
 
-        clases.forEach { clase ->
-            ClaseCardInvitado(clase)
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
     }
 }

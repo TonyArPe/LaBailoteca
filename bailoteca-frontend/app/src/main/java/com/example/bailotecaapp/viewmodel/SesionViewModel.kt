@@ -250,11 +250,13 @@ class SesionViewModel @Inject constructor(
                 pagado = false
             )
 
+            // 🔁 Refuerzo con delays
             delay(50)
             _modoInvitado.value = true
+            delay(50)
             _modoInvitadoForzado.value = true
+            delay(100)
 
-            delay(200) // asegurar propagación Compose
             Log.d("SesionViewModel", "🚀 Modo invitado activado completamente.")
             onPropagado?.invoke()
         }

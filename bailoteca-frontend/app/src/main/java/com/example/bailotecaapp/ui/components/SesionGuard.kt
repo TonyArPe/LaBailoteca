@@ -47,10 +47,7 @@ fun SesionGuard(
         }
     }
 
-    Log.d(
-        "SesionGuard",
-        "❗ usuario=${usuario?.correo}, modoInvitado=${modoInvitado}, modoInvitadoForzado=${modoInvitadoForzado}"
-    )
+    Log.d("SesionGuard", "❗ usuario=$usuario, modoInvitado=$modoInvitado, modoInvitadoForzado=$modoInvitadoForzado")
     if (!usuarioCargado && !modoInvitadoForzado && usuario?.rol != Rol.INVITADO) {
         Log.d("SesionGuard", "Esperando a que el usuario se cargue completamente...")
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -76,8 +73,8 @@ fun SesionGuard(
     }
 
     Log.d("SesionGuard", "modoInvitado=$modoInvitado, forzado=$modoInvitadoForzado, usuario=${usuario?.correo}")
-    if (usuario != null || (modoInvitadoForzado && modoInvitado)) {
-        Log.d("SesionGuard", "Renderizando contenido para usuario o invitado")
+    if (usuario != null || (modoInvitado || modoInvitadoForzado)) {
+        Log.d("SesionGuard", "🟢 Renderizando contenido para usuario o invitado")
         usuario?.let { content(it) }
         return
     }
