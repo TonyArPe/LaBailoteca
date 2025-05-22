@@ -1,15 +1,23 @@
 package com.example.bailotecaapp.ui.screens.invitado
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.bailotecaapp.ui.screens.invitado.components.ClaseCardInvitadoList
+import com.example.bailotecaapp.ui.screens.invitado.components.EventoCardInvitadoList
+import com.example.bailotecaapp.ui.screens.invitado.components.ExpandibleCard
+import com.example.bailotecaapp.ui.screens.invitado.components.RedesSocialesSection
+import com.example.bailotecaapp.ui.screens.invitado.components.SeccionExpandable
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.EventoViewModel
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
  * Pantalla de inicio para el usuario invitado.
@@ -19,43 +27,48 @@ import com.example.bailotecaapp.viewmodel.EventoViewModel
  * @param claseViewModel ViewModel que gestiona las clases públicas.
  * @param eventoViewModel ViewModel que gestiona los eventos públicos.
  */
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun InvitadoHomeScreen() {
-    val claseViewModel: ClaseViewModel = hiltViewModel()
-    val eventoViewModel: EventoViewModel = hiltViewModel()
-    val clases by claseViewModel.clasesPublicas.collectAsState()
-    val eventos by eventoViewModel.eventosPublicos.collectAsState()
+fun InvitadoHomeScreen(
+    sesionViewModel: SesionViewModel = hiltViewModel(),
+    claseViewModel: ClaseViewModel = hiltViewModel(),
+    eventoViewModel: EventoViewModel = hiltViewModel()
+) {
+    val clases by claseViewModel.clases.collectAsState()
+    val eventos by eventoViewModel.eventos.collectAsState()
 
-    val secciones = remember {
-        mutableStateListOf(
-            SeccionExpandable("Clases públicas", true),
-            SeccionExpandable("Eventos públicos", false),
-            SeccionExpandable("Redes sociales", false)
-        )
-    }
-
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text("Estás en modo invitado. Regístrate para inscribirte a clases y eventos.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.primary
-        )
+        item {
+            Text(
+                text = "Estás en modo invitado. Regístrate para inscribirte a clases y eventos.",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 24.dp)
+            )
+        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        secciones.forEach { seccion ->
-            ExpandableCard(seccion = seccion) {
-                when (seccion.titulo) {
-                    "Clases públicas" -> ClaseCardInvitadoList(clases)
-                    "Eventos públicos" -> EventoCardInvitadoList(eventos)
-                    "Redes sociales" -> RedesSocialesSection()
-                }
+        item {
+            ExpandibleCard(seccion = SeccionExpandable("Clases públicas")) {
+                ClaseCardInvitadoList(clases = clases)
             }
+        }
 
-            Spacer(modifier = Modifier.height(12.dp))
+        item {
+            ExpandibleCard(seccion = SeccionExpandable("Eventos públicos")) {
+                EventoCardInvitadoList(eventos = eventos)
+            }
+        }
+
+        item {
+            ExpandibleCard(seccion = SeccionExpandable("Redes sociales")) {
+                RedesSocialesSection()
+            }
         }
     }
 }
