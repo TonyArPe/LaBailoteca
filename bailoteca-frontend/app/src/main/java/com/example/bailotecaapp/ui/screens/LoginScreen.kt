@@ -17,6 +17,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.ui.screens.invitado.components.personalizacion.FondoGradiente
+import com.example.bailotecaapp.ui.screens.invitado.components.personalizacion.LoginAnimatedHeader
+import com.example.bailotecaapp.ui.theme.VerdeBailoteca
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
@@ -24,14 +27,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
-/**
- * Pantalla de login principal para autenticarse como usuario registrado
- * o entrar en modo invitado para acceso limitado.
- *
- * @param navController controlador de navegación para movernos a otras pantallas.
- * @param viewModel ViewModel que gestiona el login de Firebase.
- * @param sesionViewModel ViewModel que gestiona la sesión actual.
- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     navController: NavHostController,
@@ -48,13 +44,8 @@ fun LoginScreen(
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    /**
-     * Si se ha cargado un usuario válido (no invitado) y ya está completo,
-     * navegamos automáticamente a la Home.
-     */
     LaunchedEffect(usuarioCargado, usuario) {
         if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
-            Log.d("LoginScreen", "✅ Usuario autenticado, navegando a Home")
             navController.navigate(Screens.Home.route) {
                 popUpTo(0) { inclusive = true }
                 launchSingleTop = true
@@ -62,106 +53,118 @@ fun LoginScreen(
         }
     }
 
-    Scaffold { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 32.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "La Bailoteca",
-                style = MaterialTheme.typography.headlineLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
+    FondoGradiente {
+        Scaffold(containerColor = Color.Transparent) { padding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 32.dp),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                LoginAnimatedHeader()
 
-            Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it },
-                label = { Text("Correo electrónico") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                label = { Text("Contraseña") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    isLoading = true
-                    errorMessage = null
-                    viewModel.login(
-                        email,
-                        password,
-                        onSuccess = {
-                            coroutineScope.launch {
-                                try {
-                                    val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
-                                    if (!token.isNullOrEmpty()) {
-                                        sesionViewModel.obtenerUsuarioActualConToken(token)
-                                    } else {
-                                        errorMessage = "Token nulo o vacío."
-                                    }
-                                } catch (e: Exception) {
-                                    errorMessage = "Error obteniendo token: ${e.message}"
-                                } finally {
-                                    isLoading = false
-                                }
-                            }
-                        },
-                        onError = { error ->
-                            isLoading = false
-                            errorMessage = error
-                        }
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text("Correo electrónico", color = Color.White) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = LocalTextStyle.current.copy(color = Color.White),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = VerdeBailoteca,
+                        unfocusedBorderColor = Color.White,
+                        focusedLabelColor = VerdeBailoteca,
+                        unfocusedLabelColor = Color.White,
+                        cursorColor = VerdeBailoteca
                     )
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = !isLoading && !sesionCargando
-            ) {
-                Text(text = if (isLoading || sesionCargando) "Cargando..." else "Iniciar sesión")
-            }
+                )
 
-            errorMessage?.let {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodyMedium)
-            }
+                Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Contraseña") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = LocalTextStyle.current.copy(color = Color.White),
+                    colors = TextFieldDefaults.outlinedTextFieldColors(
+                        focusedBorderColor = VerdeBailoteca,
+                        cursorColor = VerdeBailoteca,
+                        focusedLabelColor = VerdeBailoteca,
+                        unfocusedLabelColor = Color.White,
+                        unfocusedBorderColor = Color.White
+                    )
+                )
 
-            TextButton(onClick = { navController.navigate(Screens.Register.route) }) {
-                Text("¿No tienes cuenta? Regístrate aquí")
-            }
+                Spacer(modifier = Modifier.height(24.dp))
 
-            TextButton(
-                onClick = {
-                    Log.d("LoginScreen", "🟡 Botón invitado pulsado")
-                    sesionViewModel.entrarComoInvitado {
-                        Log.d("LoginScreen", "🟢 Callback de invitado ejecutado. Navegando a invitado_home.")
-                        navController.navigate(Screens.InvitadoHome.route) {
-                            popUpTo(0) { inclusive = true }
-                            launchSingleTop = true
+                Button(
+                    onClick = {
+                        isLoading = true
+                        errorMessage = null
+                        viewModel.login(
+                            email,
+                            password,
+                            onSuccess = {
+                                coroutineScope.launch {
+                                    try {
+                                        val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                                        if (!token.isNullOrEmpty()) {
+                                            sesionViewModel.obtenerUsuarioActualConToken(token)
+                                        } else {
+                                            errorMessage = "Token nulo o vacío."
+                                        }
+                                    } catch (e: Exception) {
+                                        errorMessage = "Error obteniendo token: ${e.message}"
+                                    } finally {
+                                        isLoading = false
+                                    }
+                                }
+                            },
+                            onError = { error ->
+                                isLoading = false
+                                errorMessage = error
+                            }
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = !isLoading && !sesionCargando
+                ) {
+                    Text(text = if (isLoading || sesionCargando) "Cargando..." else "Iniciar sesión")
+                }
+
+                errorMessage?.let {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(text = it, color = Color.Red, style = MaterialTheme.typography.bodyMedium)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                TextButton(onClick = { navController.navigate(Screens.Register.route) }) {
+                    Text("¿No tienes cuenta? Regístrate aquí")
+                }
+
+                TextButton(
+                    onClick = {
+                        sesionViewModel.entrarComoInvitado {
+                            navController.navigate(Screens.InvitadoHome.route) {
+                                popUpTo(0) { inclusive = true }
+                                launchSingleTop = true
+                            }
                         }
-                    }
-                },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text("Entrar como invitado")
+                    },
+                    modifier = Modifier.padding(top = 16.dp)
+                ) {
+                    Text("Entrar como invitado")
+                }
             }
         }
     }
