@@ -11,7 +11,6 @@ import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.example.bailotecaapp.model.Usuario
 
 /**
  * Componente que gestiona la navegación entre pantallas.
@@ -44,20 +43,23 @@ fun AppNavigation(
         modifier = modifier,
         startDestination = Screens.Login.route
     ) {
-        // Ruta de Login (pública)
+        // Públicas
         composable(Screens.Login.route) {
             LoginScreen(navController)
         }
 
-        // Ruta de Registro (pública)
         composable(Screens.Register.route) {
             RegisterScreen(navController)
         }
 
-        // Rutas protegidas mediante SesionGuard y MainScaffold
+        // Protegidas con SesionGuard y MainScaffold
         composable(Screens.Home.route) {
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     HomeScreen(navController)
                 }
             }
@@ -65,7 +67,11 @@ fun AppNavigation(
 
         composable(Screens.Clases.route) {
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     ClaseListScreen(navController)
                 }
             }
@@ -73,7 +79,11 @@ fun AppNavigation(
 
         composable(Screens.Usuarios.route) {
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     UserListScreen(navController)
                 }
             }
@@ -85,7 +95,11 @@ fun AppNavigation(
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: -1L
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     ClaseDetailScreen(navController, claseId)
                 }
             }
@@ -93,7 +107,11 @@ fun AppNavigation(
 
         composable(Screens.Perfil.route) {
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     ProfileScreen(navController)
                 }
             }
@@ -101,7 +119,11 @@ fun AppNavigation(
 
         composable(Screens.EditProfile.route) {
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     EditProfileScreen(navController)
                 }
             }
@@ -113,13 +135,17 @@ fun AppNavigation(
         ) { backStackEntry ->
             val usuarioId = backStackEntry.arguments?.getLong("usuarioId") ?: 0L
             SesionGuard(navController = navController) { usuario ->
-                MainScaffold(navController = navController, usuario = usuario) {
+                MainScaffold(
+                    navController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sessionViewModel
+                ) {
                     EditUserScreen(usuarioId = usuarioId, navController = navController)
                 }
             }
         }
 
-        // Ruta exclusiva para invitados (sin protección de SesionGuard)
+        // Invitado
         composable("invitado_home") {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen()

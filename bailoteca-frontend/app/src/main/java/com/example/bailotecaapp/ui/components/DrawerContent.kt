@@ -20,18 +20,10 @@ import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.google.firebase.Firebase
-import com.google.firebase.auth.auth
+import com.google.firebase.auth.FirebaseAuth
 
 /**
- * Componente DrawerContent que muestra el menú lateral con opciones según el rol del usuario.
- * Este componente ahora evita duplicidad de ViewModel y recibe el usuario ya cargado.
- *
- * @param usuario Usuario autenticado.
- * @param onItemSelected Función llamada cuando se selecciona una opción del drawer.
- * @param navController Controlador de navegación.
- * @param onCloseDrawer Función para cerrar el drawer.
- * @param sesionViewModel ViewModel de sesión inyectado externamente.
+ * Menú lateral personalizado que se adapta al rol del usuario autenticado.
  */
 @Composable
 fun DrawerContent(
@@ -42,7 +34,7 @@ fun DrawerContent(
     sesionViewModel: SesionViewModel
 ) {
     val rol = usuario.rol
-    Log.d("DrawerContent", "ROL: $rol")
+    Log.d("DrawerContent", "Renderizando menú para rol: $rol")
 
     val opciones = when (rol) {
         Rol.ADMIN -> listOf(
@@ -71,15 +63,17 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Header con foto y nombre
+        // Encabezado con imagen y nombre
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(top = 48.dp, bottom = 16.dp)
                 .clickable {
-                    onItemSelected(DrawerDestination.Perfil.route)
-                    onCloseDrawer()
+                    if (rol != Rol.INVITADO) {
+                        onItemSelected(DrawerDestination.Perfil.route)
+                        onCloseDrawer()
+                    }
                 }
         ) {
             Column(
@@ -132,7 +126,7 @@ fun DrawerContent(
                     onClick = {
                         if (item == DrawerDestination.Logout) {
                             sesionViewModel.cerrarSesion()
-                            Firebase.auth.signOut()
+                            FirebaseAuth.getInstance().signOut()
                             navController.navigate(Screens.Login.route) {
                                 popUpTo(0) { inclusive = true }
                             }
