@@ -1,38 +1,75 @@
 package com.example.bailotecaapp.navigation
 
-import android.util.Log
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.ui.components.DrawerContent
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import kotlinx.coroutines.launch
 
 /**
- * Composable principal que actúa como punto de entrada visual para la app.
+ * Scaffold principal que muestra el Drawer lateral y la TopAppBar superior.
+ * Esta versión espera un usuario válido ya validado desde SesionGuard.
  *
- * Este componente encapsula el `Scaffold` con `TopAppBar`, `Drawer` y navegación
- * utilizando la clase segura [SecureScaffold], que se adapta dinámicamente
- * al estado de sesión y rol del usuario (ADMIN, PROFESOR, USUARIO, INVITADO).
- *
- * Esta clase centraliza el comportamiento del UI de alto nivel,
- * reduciendo la duplicación de lógica en múltiples pantallas.
- *
- * @param navController Controlador de navegación principal.
- *
- * @see SecureScaffold para la estructura visual y lógica del scaffold.
+ * @param navController Controlador de navegación para gestionar rutas.
+ * @param usuario Usuario ya autenticado (no se hacen verificaciones internas).
+ * @param content Contenido principal a renderizar dentro del Scaffold.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
-    navController: NavHostController
+    navController: NavHostController,
+    usuario: Usuario,
+    sesionViewModel: SesionViewModel,
+    content: @Composable () -> Unit
 ) {
-    // Inyección del ViewModel de sesión
-    val sesionViewModel: SesionViewModel = hiltViewModel()
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
 
-    // 🔍 Log para depuración del flujo de entrada al Scaffold principal
-    Log.d("MainScaffold", "🧱 Entrando en MainScaffold con navController=${navController.hashCode()}")
 
-    // Delegamos toda la estructura visual a SecureScaffold
-    SecureScaffold(
-        navController = navController,
-        sesionViewModel = sesionViewModel
-    )
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            DrawerContent(
+                usuario = usuario,
+                onItemSelected = { route ->
+                    scope.launch { drawerState.close() }
+                    navController.navigate(route)
+                },
+                navController = navController,
+                onCloseDrawer = {
+                    scope.launch { drawerState.close() }
+                },
+                sesionViewModel = sesionViewModel
+            )
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("La Bailoteca") },
+                    navigationIcon = {
+                        IconButton(onClick = {
+                            scope.launch { drawerState.open() }
+                        }) {
+                            Icon(Icons.Default.Menu, contentDescription = "Menú")
+                        }
+                    }
+                )
+            }
+        ) { innerPadding ->
+            Box(modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)) {
+                content()
+            }
+        }
+    }
 }

@@ -19,7 +19,10 @@ import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
  * Pantalla de login principal para autenticarse como usuario registrado
@@ -43,13 +46,14 @@ fun LoginScreen(
     val usuario by sesionViewModel.usuario.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
-    val modoInvitado by sesionViewModel.modoInvitado.collectAsState()
-    val modoInvitadoForzado by sesionViewModel.modoInvitadoForzado.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
-    // Redirigir a Home si hay sesión activa (no invitado)
-    LaunchedEffect(usuario, usuarioCargado, sesionCargando) {
-        if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado && !sesionCargando) {
+    /**
+     * Si se ha cargado un usuario válido (no invitado) y ya está completo,
+     * navegamos automáticamente a la Home.
+     */
+    LaunchedEffect(usuarioCargado, usuario) {
+        if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
             Log.d("LoginScreen", "✅ Usuario autenticado, navegando a Home")
             navController.navigate(Screens.Home.route) {
                 popUpTo(0) { inclusive = true }
@@ -58,7 +62,6 @@ fun LoginScreen(
         }
     }
 
-    // UI de Login
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -109,10 +112,14 @@ fun LoginScreen(
                         onSuccess = {
                             coroutineScope.launch {
                                 try {
-                                    sesionViewModel.obtenerUsuarioActual()
-                                    sesionViewModel.cargarMisInscripciones()
+                                    val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                                    if (!token.isNullOrEmpty()) {
+                                        sesionViewModel.obtenerUsuarioActualConToken(token)
+                                    } else {
+                                        errorMessage = "Token nulo o vacío."
+                                    }
                                 } catch (e: Exception) {
-                                    errorMessage = "Error al obtener datos de sesión: ${e.message}"
+                                    errorMessage = "Error obteniendo token: ${e.message}"
                                 } finally {
                                     isLoading = false
                                 }

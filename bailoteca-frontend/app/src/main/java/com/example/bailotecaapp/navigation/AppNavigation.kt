@@ -11,6 +11,7 @@ import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.model.Usuario
 
 /**
  * Componente que gestiona la navegación entre pantallas.
@@ -53,17 +54,29 @@ fun AppNavigation(
             RegisterScreen(navController)
         }
 
-        // Rutas protegidas mediante SesionGuard
+        // Rutas protegidas mediante SesionGuard y MainScaffold
         composable(Screens.Home.route) {
-            SesionGuard(navController = navController) { HomeScreen(navController) }
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    HomeScreen(navController)
+                }
+            }
         }
 
         composable(Screens.Clases.route) {
-            SesionGuard(navController = navController) { ClaseListScreen(navController) }
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    ClaseListScreen(navController)
+                }
+            }
         }
 
         composable(Screens.Usuarios.route) {
-            SesionGuard(navController = navController) { UserListScreen(navController) }
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    UserListScreen(navController)
+                }
+            }
         }
 
         composable(
@@ -71,15 +84,27 @@ fun AppNavigation(
             arguments = listOf(navArgument("claseId") { type = NavType.LongType })
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: -1L
-            SesionGuard(navController = navController) { ClaseDetailScreen(navController, claseId) }
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    ClaseDetailScreen(navController, claseId)
+                }
+            }
         }
 
         composable(Screens.Perfil.route) {
-            SesionGuard(navController = navController) { ProfileScreen(navController) }
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    ProfileScreen(navController)
+                }
+            }
         }
 
         composable(Screens.EditProfile.route) {
-            SesionGuard(navController = navController) { EditProfileScreen(navController) }
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    EditProfileScreen(navController)
+                }
+            }
         }
 
         composable(
@@ -87,8 +112,10 @@ fun AppNavigation(
             arguments = listOf(navArgument("usuarioId") { type = NavType.LongType })
         ) { backStackEntry ->
             val usuarioId = backStackEntry.arguments?.getLong("usuarioId") ?: 0L
-            SesionGuard(navController = navController) {
-                EditUserScreen(usuarioId = usuarioId, navController = navController)
+            SesionGuard(navController = navController) { usuario ->
+                MainScaffold(navController = navController, usuario = usuario) {
+                    EditUserScreen(usuarioId = usuarioId, navController = navController)
+                }
             }
         }
 
@@ -97,7 +124,6 @@ fun AppNavigation(
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
                 com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen()
             } else {
-                // Pantalla alternativa o aviso de incompatibilidad
                 androidx.compose.material3.Text("Esta pantalla no es compatible con versiones anteriores a Android 8 (API 26).")
             }
         }

@@ -7,16 +7,16 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.R
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -24,42 +24,23 @@ import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 
 /**
- * Componente DrawerContent que muestra el menú lateral de navegación personalizado según el rol.
+ * Componente DrawerContent que muestra el menú lateral con opciones según el rol del usuario.
+ * Este componente ahora evita duplicidad de ViewModel y recibe el usuario ya cargado.
  *
- * @param onItemSelected Callback para cambiar la pantalla según el destino seleccionado.
+ * @param usuario Usuario autenticado.
+ * @param onItemSelected Función llamada cuando se selecciona una opción del drawer.
  * @param navController Controlador de navegación.
- * @param usuario Usuario actualmente autenticado.
  * @param onCloseDrawer Función para cerrar el drawer.
- * @param sesionViewModel ViewModel de sesión (por defecto se obtiene con viewModel()).
+ * @param sesionViewModel ViewModel de sesión inyectado externamente.
  */
 @Composable
 fun DrawerContent(
+    usuario: Usuario,
     onItemSelected: (String) -> Unit,
     navController: NavHostController,
     onCloseDrawer: () -> Unit,
-    sesionViewModel: SesionViewModel = hiltViewModel()
+    sesionViewModel: SesionViewModel
 ) {
-    val usuarioState by sesionViewModel.usuario.collectAsState()
-
-    // Para que se cargue el usuario solo la primera vez que se abre el drawer
-    LaunchedEffect(Unit) {
-        if (usuarioState == null) {
-            sesionViewModel.obtenerUsuarioActual()
-        }
-    }
-
-    // Mostrar cargando si aún no hay usuario
-    if (usuarioState == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    val usuario = usuarioState!!
     val rol = usuario.rol
     Log.d("DrawerContent", "ROL: $rol")
 
@@ -90,7 +71,7 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Header con datos del usuario
+        // Header con foto y nombre
         Box(
             modifier = Modifier
                 .fillMaxWidth()

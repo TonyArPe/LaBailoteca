@@ -8,9 +8,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.google.firebase.auth.FirebaseAuth
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
  * Composable protector que garantiza que el usuario esté completamente cargado
@@ -30,20 +29,20 @@ fun SesionGuard(
     content: @Composable (Usuario) -> Unit
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
-    val isLoading by sesionViewModel.isLoading.collectAsState()
     val modoInvitado by sesionViewModel.modoInvitado.collectAsState()
     val modoInvitadoForzado by sesionViewModel.modoInvitadoForzado.collectAsState()
+    val isLoading by sesionViewModel.isLoading.collectAsState()
+    val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
 
-    Log.d("SesionGuard", "\uD83E\uDDE0 usuario=${usuario?.correo}, modoInvitado=$modoInvitado, forzado=$modoInvitadoForzado, isLoading=$isLoading")
+    Log.d("SesionGuard", "🧐 usuario=${usuario?.correo}, modoInvitado=$modoInvitado, forzado=$modoInvitadoForzado, isLoading=$isLoading, yaCargado=$usuarioCargado")
 
     /**
-     * Efecto lanzado cuando la sesión se cierra manualmente desde el ViewModel.
-     * Redirige al login y reinicia el estado interno.
+     * Redirigir a login si la sesión se ha cerrado manualmente.
      */
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
-            Log.d("SesionGuard", "\uD83D\uDD12 Sesión cerrada, redirigiendo al login...")
+            Log.d("SesionGuard", "🔒 Sesión cerrada manualmente, redirigiendo a login")
             navController.navigate("login") {
                 popUpTo(0) { inclusive = true }
             }
@@ -52,43 +51,40 @@ fun SesionGuard(
     }
 
     /**
-     * Protección adicional en caso de que todos los datos estén nulos.
-     * Fuerza redirección a login de forma segura.
+     * Redirigir a login si no hay usuario ni invitado
      */
-    LaunchedEffect(usuario, modoInvitado, modoInvitadoForzado) {
+    LaunchedEffect(usuario, modoInvitado, modoInvitadoForzado, isLoading) {
         if (usuario == null && !modoInvitado && !modoInvitadoForzado && !isLoading) {
-            Log.d("SesionGuard", "\u274C Sin sesión ni invitado. Intentando navegar a login...")
-            try {
-                if (navController.graph.startDestinationRoute != null) {
-                    navController.navigate("login") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                } else {
-                    Log.e("SesionGuard", "\u26A0\uFE0F navController aún no tiene grafo.")
-                }
-            } catch (e: Exception) {
-                Log.e("SesionGuard", "\uD83D\uDEA8 Error en navegación: ${e.localizedMessage}")
+            Log.d("SesionGuard", "❌ Sin sesión ni invitado. Redirigiendo a login")
+            navController.navigate("login") {
+                popUpTo(0) { inclusive = true }
             }
         }
     }
 
     /**
-     * Si el usuario no está seteado y no estamos en modo invitado, intentamos recuperar
-     * el usuario desde Firebase automáticamente (solo una vez).
+     * Restaurar sesión desde preferencias si aún no se ha hecho.
      */
-    LaunchedEffect(Unit) {
-        if (!modoInvitadoForzado && usuario == null) {
-            Log.d("SesionGuard", "\uD83D\uDD04 Intentando recuperar usuario desde Firebase...")
-            val authUser = FirebaseAuth.getInstance().currentUser
-            if (authUser != null) {
-                sesionViewModel.obtenerUsuarioActual()
-            }
+    LaunchedEffect(usuarioCargado) {
+        if (!usuarioCargado) {
+            Log.d("SesionGuard", "📦 Intentando restaurar sesión desde preferencias...")
+            sesionViewModel.recuperarSesionDesdePreferencias()
         }
     }
 
     /**
-     * Indicador de carga si aún no está seteado el usuario ni el modo invitado.
+     * Intentar sincronizar datos del backend si ya hay usuario pero falta carga
      */
+    LaunchedEffect(true) {
+        if (!sesionViewModel.usuarioYaCargado()) {
+            Log.d("SesionGuard", "📦 Restaurando sesión desde SesionGuard (solo una vez)")
+            sesionViewModel.recuperarSesionDesdePreferencias()
+        } else {
+            Log.d("SesionGuard", "✅ Sesión ya restaurada previamente")
+        }
+    }
+
+    // Mostrar indicador de carga mientras se procesa sesión
     if ((usuario == null && !modoInvitado && !modoInvitadoForzado) || isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -96,8 +92,6 @@ fun SesionGuard(
         return
     }
 
-    /**
-     * Si el usuario está disponible o el modo invitado está activo, renderizamos el contenido.
-     */
+    // Renderizar contenido autorizado
     usuario?.let { content(it) }
 }

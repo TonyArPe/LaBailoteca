@@ -12,6 +12,7 @@ import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.ApiService
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,6 +46,7 @@ class SesionViewModel @Inject constructor(
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
     private var _inscripcionesCargadas = false
+    private var usuarioYaCargadoFlag = false // ← NUEVO FLAG
 
     private val _versionClases = MutableStateFlow(0)
     val versionClases: StateFlow<Int> = _versionClases
@@ -96,32 +98,12 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    fun obtenerUsuarioActual() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val context = getApplication<Application>().applicationContext
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                val response = api.getUsuarioActual("Bearer $token")
-
-                if (response.isSuccessful) {
-                    response.body()?.let { user ->
-                        propagarCambioSesion(user, token)
-                        cargarMisInscripciones()
-                    }
-                } else {
-                    _error.value = "Error al obtener perfil: ${response.code()}"
-                }
-            } catch (e: Exception) {
-                _error.value = "Excepción al obtener usuario: ${e.message}"
-            } finally {
-                _isLoading.value = false
-                _usuarioCargado.value = true
-            }
-        }
-    }
-
     fun obtenerUsuarioActualConToken(token: String) {
+        if (usuarioYaCargadoFlag) {
+            Log.d("SesionViewModel", "🔁 Usuario ya cargado, se omite llamada a obtenerUsuarioActualConToken()")
+            return
+        }
+
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -130,6 +112,7 @@ class SesionViewModel @Inject constructor(
 
                 if (response.isSuccessful) {
                     response.body()?.let { user ->
+                        usuarioYaCargadoFlag = true
                         propagarCambioSesion(user, token)
                         cargarMisInscripciones()
                     }
@@ -147,13 +130,6 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Actualiza el perfil del usuario actual en el backend.
-     *
-     * @param usuarioActualizado Datos nuevos a enviar.
-     * @param onSuccess Callback en caso de éxito.
-     * @param onError Callback con mensaje en caso de error.
-     */
     fun actualizarPerfil(
         usuarioActualizado: UsuarioUpdateRequest,
         onSuccess: () -> Unit,
@@ -225,6 +201,7 @@ class SesionViewModel @Inject constructor(
             _inscripciones.value = emptyList()
             _inscripcionesCargadas = false
             _sesionCerrada.value = true
+            usuarioYaCargadoFlag = false
         }
     }
 
@@ -261,7 +238,33 @@ class SesionViewModel @Inject constructor(
     }
 
     fun usuarioYaCargado(): Boolean {
-        return usuario.value != null && usuario.value?.rol != Rol.INVITADO
+        return usuarioYaCargadoFlag
+    }
+
+    fun actualizarEstadoCargado(valor: Boolean = true) {
+        _usuarioCargado.value = valor
+    }
+
+    fun obtenerUsuarioActual() {
+        viewModelScope.launch {
+            try {
+                val token = FirebaseAuth.getInstance().currentUser?.getIdToken(false)?.await()?.token
+                if (!token.isNullOrBlank()) {
+                    val response = api.getUsuarioActual("Bearer $token")
+
+                    if (response.isSuccessful) {
+                        response.body()?.let { user ->
+                            setUsuario(user)
+                            actualizarEstadoCargado(true)
+                        }
+                    } else {
+                        _error.value = "Error al obtener usuario actual: ${response.code()}"
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("SesionViewModel", "❌ Error al obtener usuario actual: ${e.message}")
+            }
+        }
     }
 
     fun setUsuario(usuario: Usuario) {
@@ -275,5 +278,42 @@ class SesionViewModel @Inject constructor(
         _sesionCerrada.value = false
         _modoInvitadoForzado.value = false
         _usuarioCargado.value = false
+        usuarioYaCargadoFlag = false
+        _inscripcionesCargadas = false
     }
+
+    /**
+     * Intenta recuperar sesión desde DataStore si hay usuario y token persistidos.
+     */
+    fun recuperarSesionDesdePreferencias() {
+        viewModelScope.launch {
+            val context = getApplication<Application>().applicationContext
+            val usuarioPersistente = UsuarioPreferences.obtenerUsuario(context)
+            val token = TokenPreferences.obtenerToken(context)
+
+            if (usuarioPersistente != null && token != null) {
+                Log.d("SesionViewModel", "🧠 Restaurando sesión desde preferencias: ${usuarioPersistente.correo}")
+                try {
+                    val response = api.getUsuarioActual("Bearer $token")
+                    if (response.isSuccessful) {
+                        response.body()?.let { user ->
+                            propagarCambioSesion(user, token)
+                            cargarMisInscripciones()
+                            _usuarioCargado.value = true
+                            usuarioYaCargadoFlag = true
+                        }
+                    } else {
+                        Log.e("SesionViewModel", "⚠️ Error al restaurar sesión: ${response.code()}")
+                        cerrarSesion()
+                    }
+                } catch (e: Exception) {
+                    Log.e("SesionViewModel", "❌ Excepción al restaurar sesión: ${e.message}")
+                    cerrarSesion()
+                }
+            } else {
+                Log.d("SesionViewModel", "ℹ️ No hay usuario persistido")
+            }
+        }
+    }
+
 }
