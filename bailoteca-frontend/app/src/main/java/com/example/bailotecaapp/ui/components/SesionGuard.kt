@@ -11,7 +11,6 @@ import androidx.navigation.NavController
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.model.enums.Rol
 
 /**
  * Composable protector que garantiza que el usuario esté completamente cargado
@@ -35,11 +34,16 @@ fun SesionGuard(
     val modoInvitado by sesionViewModel.modoInvitado.collectAsState()
     val modoInvitadoForzado by sesionViewModel.modoInvitadoForzado.collectAsState()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
-    val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
 
+    Log.d("SesionGuard", "\uD83E\uDDE0 usuario=${usuario?.correo}, modoInvitado=$modoInvitado, forzado=$modoInvitadoForzado, isLoading=$isLoading")
+
+    /**
+     * Efecto lanzado cuando la sesión se cierra manualmente desde el ViewModel.
+     * Redirige al login y reinicia el estado interno.
+     */
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
-            Log.d("SesionGuard", "Sesión cerrada detectada. Redirigiendo a login...")
+            Log.d("SesionGuard", "\uD83D\uDD12 Sesión cerrada, redirigiendo al login...")
             navController.navigate("login") {
                 popUpTo(0) { inclusive = true }
             }
@@ -47,42 +51,53 @@ fun SesionGuard(
         }
     }
 
-    Log.d("SesionGuard", "❗ usuario=$usuario, modoInvitado=$modoInvitado, modoInvitadoForzado=$modoInvitadoForzado")
-    if (!usuarioCargado && !modoInvitadoForzado && usuario?.rol != Rol.INVITADO) {
-        Log.d("SesionGuard", "Esperando a que el usuario se cargue completamente...")
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    LaunchedEffect(Unit) {
-        if (!modoInvitadoForzado && usuario == null) {
-            Log.d("SesionGuard", "Usuario no autenticado y sin modo invitado. Intentando cargar usuario...")
-            val authUser = FirebaseAuth.getInstance().currentUser
-            if (authUser != null) {
-                Log.d("SesionGuard", "Usuario Firebase detectado, obteniendo datos del backend...")
-                sesionViewModel.obtenerUsuarioActual()
-            } else {
-                Log.d("SesionGuard", "No hay sesión activa en Firebase. Redirigiendo a login.")
-                navController.navigate("login") {
-                    popUpTo(0) { inclusive = true }
+    /**
+     * Protección adicional en caso de que todos los datos estén nulos.
+     * Fuerza redirección a login de forma segura.
+     */
+    LaunchedEffect(usuario, modoInvitado, modoInvitadoForzado) {
+        if (usuario == null && !modoInvitado && !modoInvitadoForzado && !isLoading) {
+            Log.d("SesionGuard", "\u274C Sin sesión ni invitado. Intentando navegar a login...")
+            try {
+                if (navController.graph.startDestinationRoute != null) {
+                    navController.navigate("login") {
+                        popUpTo(0) { inclusive = true }
+                    }
+                } else {
+                    Log.e("SesionGuard", "\u26A0\uFE0F navController aún no tiene grafo.")
                 }
+            } catch (e: Exception) {
+                Log.e("SesionGuard", "\uD83D\uDEA8 Error en navegación: ${e.localizedMessage}")
             }
         }
     }
 
-    Log.d("SesionGuard", "modoInvitado=$modoInvitado, forzado=$modoInvitadoForzado, usuario=${usuario?.correo}")
-    if (usuario != null || (modoInvitado || modoInvitadoForzado)) {
-        Log.d("SesionGuard", "🟢 Renderizando contenido para usuario o invitado")
-        usuario?.let { content(it) }
-        return
+    /**
+     * Si el usuario no está seteado y no estamos en modo invitado, intentamos recuperar
+     * el usuario desde Firebase automáticamente (solo una vez).
+     */
+    LaunchedEffect(Unit) {
+        if (!modoInvitadoForzado && usuario == null) {
+            Log.d("SesionGuard", "\uD83D\uDD04 Intentando recuperar usuario desde Firebase...")
+            val authUser = FirebaseAuth.getInstance().currentUser
+            if (authUser != null) {
+                sesionViewModel.obtenerUsuarioActual()
+            }
+        }
     }
 
-    if (isLoading) {
-        Log.d("SesionGuard", "Mostrando spinner de carga...")
+    /**
+     * Indicador de carga si aún no está seteado el usuario ni el modo invitado.
+     */
+    if ((usuario == null && !modoInvitado && !modoInvitadoForzado) || isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
+        return
     }
+
+    /**
+     * Si el usuario está disponible o el modo invitado está activo, renderizamos el contenido.
+     */
+    usuario?.let { content(it) }
 }

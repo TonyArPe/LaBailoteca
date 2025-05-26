@@ -3,6 +3,10 @@ package com.example.bailotecaapp.ui.screens.invitado.components
 import android.content.Intent
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -10,14 +14,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import lucide.compose.LucideIcons
-import lucide.compose.icons.Facebook
-import lucide.compose.icons.Twitter
-import lucide.compose.icons.Instagram
+
 
 /**
- * Muestra los botones para acceder a las redes sociales oficiales.
- * Utiliza iconos de la biblioteca Lucide para una apariencia moderna.
+ * Muestra botones de redes sociales usando Material Icons.
  */
 @Composable
 fun RedesSocialesSection() {
@@ -30,29 +30,24 @@ fun RedesSocialesSection() {
     ) {
         RedSocialButton(
             nombre = "Instagram",
-            icono = LucideIcons.Instagram,
+            icono = Icons.Filled.CameraAlt,
             url = "https://instagram.com/labailoteca"
         )
+
         RedSocialButton(
             nombre = "X / Twitter",
-            icono = LucideIcons.Twitter,
+            icono = Icons.Filled.Close,
             url = "https://twitter.com/labailoteca"
         )
+
         RedSocialButton(
             nombre = "Facebook",
-            icono = LucideIcons.Facebook,
+            icono = Icons.Filled.ThumbUp,
             url = "https://facebook.com/labailoteca"
         )
     }
 }
 
-/**
- * Botón individual de red social con ícono e intent implícito.
- *
- * @param nombre Nombre de la red.
- * @param icono Icono de Lucide correspondiente.
- * @param url URL a abrir en navegador.
- */
 @Composable
 fun RedSocialButton(
     nombre: String,
@@ -66,16 +61,17 @@ fun RedSocialButton(
             val intent = Intent(Intent.ACTION_VIEW, url.toUri())
             context.startActivity(intent)
         },
+        modifier = Modifier.fillMaxWidth(),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary
-        ),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Icon(
-            imageVector = icono,
-            contentDescription = nombre,
-            modifier = Modifier.padding(end = 8.dp)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Text(nombre)
+    ) {
+        Icon(icono, contentDescription = nombre, modifier = Modifier.padding(end = 8.dp))
+        Text(
+            text = nombre,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onPrimary
+        )
     }
 }

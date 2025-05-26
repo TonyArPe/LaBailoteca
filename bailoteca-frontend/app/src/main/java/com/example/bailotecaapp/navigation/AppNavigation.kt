@@ -1,10 +1,5 @@
-/**
- * Define la navegación principal de la aplicación.
- * Incluye rutas protegidas mediante SesionGuard y rutas públicas como login o registro.
- */
 package com.example.bailotecaapp.navigation
 
-import LoginScreen
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -15,7 +10,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
-import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
@@ -100,7 +94,12 @@ fun AppNavigation(
 
         // Ruta exclusiva para invitados (sin protección de SesionGuard)
         composable("invitado_home") {
-            InvitadoHomeScreen()
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen()
+            } else {
+                // Pantalla alternativa o aviso de incompatibilidad
+                androidx.compose.material3.Text("Esta pantalla no es compatible con versiones anteriores a Android 8 (API 26).")
+            }
         }
     }
 }

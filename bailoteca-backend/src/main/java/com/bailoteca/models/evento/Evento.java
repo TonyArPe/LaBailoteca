@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.usuario.Usuario;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -47,5 +48,8 @@ public class Evento {
     @ManyToOne
     @JoinColumn(name = "organizador_id")
     private Usuario organizador;
+
+    @Column(nullable = false)
+    private boolean publico;
 
 }

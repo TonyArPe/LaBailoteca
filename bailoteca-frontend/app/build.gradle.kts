@@ -76,10 +76,6 @@ dependencies {
     implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
     implementation("androidx.compose.runtime:runtime:1.5.4")
 
-    // Lucide
-    implementation("com.github.chrisbanes.accompanist:accompanist-placeholder:0.30.1") // Para animaciones
-    implementation("com.github.LucideIcons:lucide-android-compose:main-SNAPSHOT") // Jitpack
-
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
 

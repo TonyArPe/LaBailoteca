@@ -76,7 +76,7 @@ public class DataInitializer {
 
         System.out.println("Insertando datos de prueba...");
 
-        // Admin
+        // Usuarios
         Usuario admin = usuarioRepo.save(Usuario.builder()
                 .nombre("Antonio")
                 .apellido("Admin")
@@ -92,7 +92,6 @@ public class DataInitializer {
                 .build());
         crearUsuarioFirebaseSiNoExiste(admin.getCorreo(), admin.getContrasenna(), admin.getNombre() + " " + admin.getApellido());
 
-        // Profesores
         Usuario tomas = usuarioRepo.save(Usuario.builder()
                 .nombre("Tomás")
                 .apellido("Profesor")
@@ -135,7 +134,6 @@ public class DataInitializer {
                 .build());
         crearUsuarioFirebaseSiNoExiste(javi.getCorreo(), javi.getContrasenna(), javi.getNombre() + " " + javi.getApellido());
 
-        // Usuario demo
         Usuario demoUser = usuarioRepo.save(Usuario.builder()
                 .nombre("Pedro")
                 .apellido("Martínez")
@@ -149,7 +147,7 @@ public class DataInitializer {
                 .build());
         crearUsuarioFirebaseSiNoExiste(demoUser.getCorreo(), demoUser.getContrasenna(), demoUser.getNombre() + " " + demoUser.getApellido());
 
-        // Clases con campo publica
+        // Clases públicas
         Clase latino1 = Clase.builder()
                 .nombre("Latino Inicial 1")
                 .descripcion("Clases con Tomás - lunes y miércoles")
@@ -215,24 +213,28 @@ public class DataInitializer {
 
         claseRepo.saveAll(List.of(latino1, latino2, latinoAv, latinoInter, viernesJavi));
 
-        Evento evento = eventoRepo.save(Evento.builder()
-                .nombre("Social Bachata")
-                .descripcion("Evento social gratuito de prueba")
-                .fecha(LocalDateTime.now().plusWeeks(1))
-                .lugar("La Bailoteca")
+        // Evento público de prueba
+        Evento eventoPublico = eventoRepo.save(Evento.builder()
+                .nombre("Fiesta de Bienvenida")
+                .descripcion("Un evento social gratuito abierto a todo el público.")
+                .fecha(LocalDateTime.now().plusDays(7))
+                .lugar("Sala central - La Bailoteca")
                 .estado(EstadoEvento.ACTIVO)
-                .organizador(admin)
+                .organizador(tomas)
+                .publico(true)
                 .build());
 
+        // Inscripción de prueba
         inscripcionRepo.save(Inscripcion.builder()
                 .usuario(demoUser)
                 .clase(latino1)
                 .fechaInscripcion(LocalDate.now())
                 .build());
 
+        // Pago de evento ficticio
         pagoEventoRepo.save(PagoEvento.builder()
                 .usuario(demoUser)
-                .evento(evento)
+                .evento(eventoPublico)
                 .cantidad(5.0)
                 .fechaPago(LocalDate.now())
                 .build());

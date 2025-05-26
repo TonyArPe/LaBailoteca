@@ -1,3 +1,5 @@
+package com.example.bailotecaapp.ui.screens
+
 import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -17,9 +19,16 @@ import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+/**
+ * Pantalla de login principal para autenticarse como usuario registrado
+ * o entrar en modo invitado para acceso limitado.
+ *
+ * @param navController controlador de navegación para movernos a otras pantallas.
+ * @param viewModel ViewModel que gestiona el login de Firebase.
+ * @param sesionViewModel ViewModel que gestiona la sesión actual.
+ */
 @Composable
 fun LoginScreen(
     navController: NavHostController,
@@ -34,14 +43,14 @@ fun LoginScreen(
     val usuario by sesionViewModel.usuario.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
-    val modoInvitado by sesionViewModel.modoInvitadoForzado.collectAsState()
-    val coroutineScope = rememberCoroutineScope()
-    val invitado by sesionViewModel.modoInvitado.collectAsState()
+    val modoInvitado by sesionViewModel.modoInvitado.collectAsState()
     val modoInvitadoForzado by sesionViewModel.modoInvitadoForzado.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(usuario, sesionCargando) {
-        if (usuario != null && usuario!!.rol != Rol.INVITADO && !sesionCargando) {
-            Log.d("LoginScreen", "Usuario autenticado normal, navegando a Home")
+    // Redirigir a Home si hay sesión activa (no invitado)
+    LaunchedEffect(usuario, usuarioCargado, sesionCargando) {
+        if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado && !sesionCargando) {
+            Log.d("LoginScreen", "✅ Usuario autenticado, navegando a Home")
             navController.navigate(Screens.Home.route) {
                 popUpTo(0) { inclusive = true }
                 launchSingleTop = true
@@ -49,16 +58,7 @@ fun LoginScreen(
         }
     }
 
-    LaunchedEffect(usuarioCargado) {
-        if (usuarioCargado && usuario != null && usuario!!.rol != Rol.INVITADO) {
-            Log.d("LoginScreen", "Usuario completamente cargado. Navegando a Home.")
-            navController.navigate(Screens.Home.route) {
-                popUpTo(0) { inclusive = true }
-                launchSingleTop = true
-            }
-        }
-    }
-
+    // UI de Login
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -107,11 +107,16 @@ fun LoginScreen(
                         email,
                         password,
                         onSuccess = {
-                            if (!sesionViewModel.usuarioYaCargado()) {
-                                sesionViewModel.obtenerUsuarioActual()
-                                sesionViewModel.cargarMisInscripciones()
+                            coroutineScope.launch {
+                                try {
+                                    sesionViewModel.obtenerUsuarioActual()
+                                    sesionViewModel.cargarMisInscripciones()
+                                } catch (e: Exception) {
+                                    errorMessage = "Error al obtener datos de sesión: ${e.message}"
+                                } finally {
+                                    isLoading = false
+                                }
                             }
-                            isLoading = false
                         },
                         onError = { error ->
                             isLoading = false
@@ -136,15 +141,12 @@ fun LoginScreen(
                 Text("¿No tienes cuenta? Regístrate aquí")
             }
 
-            /**
-             * Entrar como invitado
-             */
             TextButton(
                 onClick = {
                     Log.d("LoginScreen", "🟡 Botón invitado pulsado")
                     sesionViewModel.entrarComoInvitado {
                         Log.d("LoginScreen", "🟢 Callback de invitado ejecutado. Navegando a invitado_home.")
-                        navController.navigate("invitado_home") {
+                        navController.navigate(Screens.InvitadoHome.route) {
                             popUpTo(0) { inclusive = true }
                             launchSingleTop = true
                         }

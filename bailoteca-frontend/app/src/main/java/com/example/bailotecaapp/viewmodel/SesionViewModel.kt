@@ -32,8 +32,6 @@ class SesionViewModel @Inject constructor(
     private val api: ApiService
 ) : AndroidViewModel(application) {
 
-    private val context = getApplication<Application>().applicationContext
-
     private val _usuario = MutableStateFlow<Usuario?>(null)
     val usuario: StateFlow<Usuario?> = _usuario
 
@@ -47,7 +45,6 @@ class SesionViewModel @Inject constructor(
     val inscripciones: StateFlow<List<Inscripcion>> = _inscripciones
 
     private var _inscripcionesCargadas = false
-    fun inscripcionesYaCargadas(): Boolean = _inscripcionesCargadas
 
     private val _versionClases = MutableStateFlow(0)
     val versionClases: StateFlow<Int> = _versionClases
@@ -66,10 +63,18 @@ class SesionViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val context = getApplication<Application>().applicationContext
             val usuarioGuardado = UsuarioPreferences.obtenerUsuario(context)
             val tokenGuardado = TokenPreferences.obtenerToken(context)
 
-            if (usuarioGuardado != null && tokenGuardado != null && usuarioGuardado.rol != Rol.INVITADO) {
+            if (usuarioGuardado == null || tokenGuardado == null) {
+                _modoInvitado.value = false
+                _modoInvitadoForzado.value = false
+                _usuario.value = null
+                return@launch
+            }
+
+            if (usuarioGuardado.rol != Rol.INVITADO) {
                 _usuario.value = Usuario(
                     id = usuarioGuardado.id,
                     nombre = usuarioGuardado.nombre,
@@ -95,26 +100,20 @@ class SesionViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
-                if (token.isNullOrEmpty()) {
-                    _error.value = "Token de autenticación vacío"
-                    _usuarioCargado.value = true
-                    return@launch
-                }
-
+                val context = getApplication<Application>().applicationContext
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
                 val response = api.getUsuarioActual("Bearer $token")
+
                 if (response.isSuccessful) {
                     response.body()?.let { user ->
-                        _usuario.value = user
-                        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
-                        TokenPreferences.guardarToken(context, token)
+                        propagarCambioSesion(user, token)
                         cargarMisInscripciones()
                     }
                 } else {
                     _error.value = "Error al obtener perfil: ${response.code()}"
                 }
             } catch (e: Exception) {
-                _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
+                _error.value = "Excepción al obtener usuario: ${e.message}"
             } finally {
                 _isLoading.value = false
                 _usuarioCargado.value = true
@@ -126,25 +125,21 @@ class SesionViewModel @Inject constructor(
         viewModelScope.launch {
             _isLoading.value = true
             try {
+                val context = getApplication<Application>().applicationContext
                 val response = api.getUsuarioActual("Bearer $token")
+
                 if (response.isSuccessful) {
                     response.body()?.let { user ->
-                        _usuario.value = user
-                        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
-                        TokenPreferences.guardarToken(context, token)
+                        propagarCambioSesion(user, token)
                         cargarMisInscripciones()
-                        Log.d("SesionViewModel", "Usuario y token guardados correctamente")
                     }
                 } else if (response.code() == 403) {
-                    Log.w("SesionViewModel", "Usuario no encontrado en backend, iniciando como invitado")
                     entrarComoInvitado()
                 } else {
                     _error.value = "Error al obtener perfil: ${response.code()}"
-                    Log.e("SesionViewModel", "Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _error.value = "Excepción al obtener usuario: ${e.localizedMessage}"
-                Log.e("SesionViewModel", "Excepción al obtener usuario", e)
+                _error.value = "Excepción: ${e.message}"
             } finally {
                 _isLoading.value = false
                 _usuarioCargado.value = true
@@ -152,50 +147,13 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    fun cargarMisInscripciones() {
-        if (_inscripcionesCargadas) return
-
-        viewModelScope.launch {
-            try {
-                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
-                val usuarioId = _usuario.value?.id ?: run {
-                    _error.value = "ID del usuario es nulo"
-                    return@launch
-                }
-
-                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
-                if (response.isSuccessful) {
-                    _inscripciones.value = response.body() ?: emptyList()
-                    _inscripcionesCargadas = true
-                    Log.d("SesionViewModel", "Inscripciones cargadas correctamente.")
-                } else {
-                    _error.value = "Error al obtener inscripciones: ${response.code()}"
-                    Log.e("SesionViewModel", "Error HTTP al obtener inscripciones: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                _error.value = "Error al cargar inscripciones: ${e.localizedMessage}"
-                Log.e("SesionViewModel", "Excepción al cargar inscripciones", e)
-            }
-        }
-    }
-
-    fun cerrarSesion() {
-        viewModelScope.launch {
-            Firebase.auth.signOut()
-            UsuarioPreferences.borrarUsuario(context)
-            TokenPreferences.borrarToken(context)
-
-            _usuario.value = null
-            _inscripciones.value = emptyList()
-            _error.value = null
-            _isLoading.value = false
-            _inscripcionesCargadas = false
-            _sesionCerrada.value = true
-
-            Log.d("SesionViewModel", "Sesión cerrada y datos persistentes borrados.")
-        }
-    }
-
+    /**
+     * Actualiza el perfil del usuario actual en el backend.
+     *
+     * @param usuarioActualizado Datos nuevos a enviar.
+     * @param onSuccess Callback en caso de éxito.
+     * @param onError Callback con mensaje en caso de error.
+     */
     fun actualizarPerfil(
         usuarioActualizado: UsuarioUpdateRequest,
         onSuccess: () -> Unit,
@@ -225,13 +183,53 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Establece un usuario invitado genérico y activa el modo invitado para navegación limitada.
-     */
+    private suspend fun propagarCambioSesion(user: Usuario, token: String) {
+        val context = getApplication<Application>().applicationContext
+        _usuario.value = user
+        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
+        TokenPreferences.guardarToken(context, token)
+        _modoInvitado.value = false
+        _modoInvitadoForzado.value = false
+    }
+
+    fun cargarMisInscripciones() {
+        if (_inscripcionesCargadas) return
+
+        viewModelScope.launch {
+            try {
+                val context = getApplication<Application>().applicationContext
+                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val usuarioId = _usuario.value?.id ?: return@launch
+                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
+
+                if (response.isSuccessful) {
+                    _inscripciones.value = response.body() ?: emptyList()
+                    _inscripcionesCargadas = true
+                } else {
+                    _error.value = "Error inscripciones: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _error.value = "Excepción al cargar inscripciones: ${e.message}"
+            }
+        }
+    }
+
+    fun cerrarSesion() {
+        viewModelScope.launch {
+            val context = getApplication<Application>().applicationContext
+            Firebase.auth.signOut()
+            UsuarioPreferences.borrarUsuario(context)
+            TokenPreferences.borrarToken(context)
+
+            _usuario.value = null
+            _inscripciones.value = emptyList()
+            _inscripcionesCargadas = false
+            _sesionCerrada.value = true
+        }
+    }
+
     fun entrarComoInvitado(onPropagado: (() -> Unit)? = null) {
         viewModelScope.launch {
-            Log.d("SesionViewModel", "🌐 Estableciendo modo invitado...")
-
             _usuario.value = Usuario(
                 id = -1,
                 nombre = "Invitado",
@@ -249,15 +247,11 @@ class SesionViewModel @Inject constructor(
                 activo = false,
                 pagado = false
             )
-
-            // 🔁 Refuerzo con delays
             delay(50)
             _modoInvitado.value = true
             delay(50)
             _modoInvitadoForzado.value = true
             delay(100)
-
-            Log.d("SesionViewModel", "🚀 Modo invitado activado completamente.")
             onPropagado?.invoke()
         }
     }
@@ -280,5 +274,6 @@ class SesionViewModel @Inject constructor(
     fun reiniciarEstadoSesion() {
         _sesionCerrada.value = false
         _modoInvitadoForzado.value = false
+        _usuarioCargado.value = false
     }
 }

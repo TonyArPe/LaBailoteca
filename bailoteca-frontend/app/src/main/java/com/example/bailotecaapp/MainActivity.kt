@@ -3,13 +3,11 @@ package com.example.bailotecaapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.bailotecaapp.navigation.AppNavigation
-import dagger.hilt.android.AndroidEntryPoint
-import com.example.bailotecaapp.navigation.MainScaffold
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.theme.BailotecaAppTheme
+import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -18,24 +16,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             BailotecaAppTheme {
                 val navController = rememberNavController()
-                val currentBackStackEntry = navController.currentBackStackEntryAsState().value
-                val currentRoute = currentBackStackEntry?.destination?.route
-
-                AppNavigation(navController)
-
-                val showScaffold = when (currentRoute) {
-                    Screens.Login.route,
-                    Screens.Register.route -> false
-                    else -> true
-                }
-
-                if (showScaffold) {
-                    MainScaffold(navController)
-                } else {
-                    AppNavigation(navController)
-                }
+                AppNavigation(navController = navController)
             }
         }
-
     }
 }
