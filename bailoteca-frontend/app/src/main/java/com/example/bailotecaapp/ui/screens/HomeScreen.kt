@@ -13,7 +13,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
-import com.example.bailotecaapp.utils.FirebaseUtils
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 @Composable
@@ -24,6 +23,13 @@ fun HomeScreen(
     val usuarioState by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
+
+    // Lógica para cargar usuario al entrar
+    LaunchedEffect(Unit) {
+        if (usuarioState == null && !sesionViewModel.modoInvitadoForzado.value) {
+            sesionViewModel.obtenerUsuarioActual()
+        }
+    }
 
     // Mostrar errores si hay
     if (error != null) {

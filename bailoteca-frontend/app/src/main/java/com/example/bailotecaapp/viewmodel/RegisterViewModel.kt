@@ -1,10 +1,8 @@
 package com.example.bailotecaapp.viewmodel
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.model.dto.UsuarioRequest
 import com.example.bailotecaapp.network.ApiService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
@@ -29,24 +27,10 @@ class RegisterViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                Log.d("RegisterViewModel", "Token de Firebase obtenido: $token")
-                val usuarioRequest = UsuarioRequest(
-                    nombre = usuario.nombre,
-                    apellido = usuario.apellido,
-                    correo = usuario.correo,
-                    contrasenna = usuario.contrasenna,
-                    rol = usuario.rol,
-                    telefono = usuario.telefono,
-                    direccion = usuario.direccion,
-                    fechaNacimiento = usuario.fechaNacimiento
-                )
-
-                val response = api.registrarDesdeFirebase("Bearer $token", usuarioRequest)
-                Log.d("RegisterViewModel", "Respuesta del backend: ${response.code()} ${response.message()}")
+                val response = api.crearUsuario("Bearer $token", usuario)
                 onResult(response)
             } catch (e: Exception) {
                 e.printStackTrace()
-                Log.e("RegisterViewModel", "Error al registrar en el backend: ${e.message}")
                 onResult(Response.error(500, okhttp3.ResponseBody.create(null, "Excepción: ${e.message}")))
             }
         }

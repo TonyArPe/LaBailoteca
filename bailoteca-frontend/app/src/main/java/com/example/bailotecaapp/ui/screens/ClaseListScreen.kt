@@ -13,13 +13,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.bailotecaapp.model.InscripcionRequest
-import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
@@ -39,32 +37,14 @@ fun ClaseListScreen(
     val error by viewModel.errorMessage.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
     val inscripciones by sesionViewModel.inscripciones.collectAsState()
+    val versionClases by sesionViewModel.versionClases.collectAsState()
+
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
-    val esInvitado = usuario?.rol == Rol.INVITADO
-
-    LaunchedEffect(usuario) {
-        if (usuario != null) {
-            viewModel.obtenerClases()
-            if (!esInvitado) {
-                sesionViewModel.obtenerInscripciones()
-            }
-        } else {
-            val firebaseUser = FirebaseAuth.getInstance().currentUser
-            if (firebaseUser != null) {
-                try {
-                    val token = firebaseUser.getIdToken(true).await().token
-                    if (!token.isNullOrBlank()) {
-                        sesionViewModel.obtenerUsuarioActualConToken(token)
-                    } else {
-                        Log.w("ClaseListScreen", "Token vacío. No se puede obtener usuario.")
-                    }
-                } catch (e: Exception) {
-                    Log.e("ClaseListScreen", "Error al obtener token JWT", e)
-                }
-            }
-        }
+    LaunchedEffect(versionClases) {
+        viewModel.obtenerClases()
+        sesionViewModel.cargarMisInscripciones()
     }
 
     fun inscribirseAClase(claseId: Long) {
@@ -78,12 +58,15 @@ fun ClaseListScreen(
 
                 if (response.isSuccessful) {
                     Toast.makeText(context, "Inscripción realizada con éxito", Toast.LENGTH_SHORT).show()
-                    sesionViewModel.obtenerInscripciones()
+                    sesionViewModel.cargarMisInscripciones()
+                    sesionViewModel.marcarClasesComoActualizadas()
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    Log.e("ClaseListScreen", "Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "Error al inscribirse: ${e.message}", Toast.LENGTH_SHORT).show()
+                Log.e("ClaseListScreen", "Excepción: ${e.localizedMessage}")
             }
         }
     }
@@ -105,17 +88,15 @@ fun ClaseListScreen(
                 usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     items(clases, key = { it.id }) { clase ->
-                        val yaInscrito = remember(inscripciones) {
-                            inscripciones.any { it.clase.id == clase.id }
-                        }
+                        val yaInscrito = inscripciones.any { it.clase?.id == clase.id }
 
                         ClaseCard(
                             clase = clase,
                             usuarioActual = usuario,
                             inscripciones = inscripciones,
                             yaInscrito = yaInscrito,
-                            onInscribirse = if (!esInvitado) { { claseId -> inscribirseAClase(claseId) } } else null,
-                            onVerDetalle = { claseId -> navController.navigate(Screens.ClaseDetail.createRoute(claseId)) }
+                            onInscribirse = { inscribirseAClase(it) },
+                            onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) }
                         )
                     }
                 }

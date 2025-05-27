@@ -1,8 +1,7 @@
 package com.bailoteca.models.enums;
 
 public enum Dificultad {
-    PRINCIPIANTE,
+    INICIAL,
     INTERMEDIO,
-    AVANZADO
+    AVANZADO;
 }
-

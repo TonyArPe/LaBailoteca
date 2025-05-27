@@ -5,7 +5,7 @@ import lombok.*;
 
 import java.time.LocalTime;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 
 @Entity
 @Data
@@ -24,6 +24,8 @@ public class HorarioClase {
 
     @ManyToOne
     @JoinColumn(name = "clase_id")
-    @JsonIgnore
+    // Indica que es el hijo de Clase
+    @JsonBackReference
     private Clase clase;
+
 }

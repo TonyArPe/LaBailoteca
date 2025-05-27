@@ -9,6 +9,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -20,16 +22,14 @@ import androidx.core.net.toUri
 
 /**
  * Componente visual que muestra una tarjeta con la información básica de una clase.
- * Si el usuario no está inscrito, permite inscribirse.
- * Si ya está inscrito, muestra un mensaje indicando el estado.
- * Si es invitado, se ofrece botón para contactar con el profesor.
+ * El contenido mostrado depende del rol y del estado de inscripción del usuario:
  *
  * @param clase Clase a mostrar.
  * @param usuarioActual Usuario autenticado que visualiza la tarjeta.
  * @param inscripciones Lista de inscripciones activas del usuario.
- * @param yaInscrito Indica si el usuario ya está inscrito en la clase.
- * @param onInscribirse Acción que se ejecuta cuando el usuario pulsa el botón de inscripción.
- * @param onVerDetalle Acción que se ejecuta al pulsar en la tarjeta para ver más detalles.
+ * @param yaInscrito Indica si el usuario ya está inscrito en esta clase.
+ * @param onInscribirse Acción que se ejecuta al pulsar el botón "Inscribirme".
+ * @param onVerDetalle Acción al pulsar en la tarjeta para ver más detalles.
  */
 @Composable
 fun ClaseCard(
@@ -37,74 +37,86 @@ fun ClaseCard(
     usuarioActual: Usuario?,
     inscripciones: List<Inscripcion>,
     yaInscrito: Boolean,
-    onInscribirse: ((Long) -> Unit)? = null,
+    onInscribirse: (Long) -> Unit,
     onVerDetalle: (Long) -> Unit
 ) {
     val context = LocalContext.current
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
             .clickable { onVerDetalle(clase.id) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(clase.nombre, style = MaterialTheme.typography.titleMedium)
-            Text(clase.descripcion, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = clase.nombre,
+                style = MaterialTheme.typography.titleLarge
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text("Profesor: ${clase.profesor.nombre}", style = MaterialTheme.typography.labelSmall)
+            Text(
+                text = clase.descripcion,
+                style = MaterialTheme.typography.bodyMedium
+            )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (clase.horarioClases.isNotEmpty()) {
-                clase.horarioClases.forEach { horario ->
-                    Text("• ${horario.diaSemana} ${horario.horaInicio} - ${horario.horaFin}")
-                }
-            } else {
-                Text("Horarios no disponibles", style = MaterialTheme.typography.labelSmall)
+            Text(
+                text = "Ubicación: ${clase.ubicacion}",
+                style = MaterialTheme.typography.labelMedium
+            )
+
+            clase.dificultad?.let {
+                Text(
+                    text = "Dificultad: ${it.name.lowercase().replaceFirstChar { c -> c.uppercase() }}",
+                    style = MaterialTheme.typography.labelMedium
+                )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (usuarioActual != null) {
-                    when (usuarioActual.rol) {
-                        Rol.INVITADO -> {
-                            IconButton(onClick = {
-                                val intent = Intent(Intent.ACTION_SENDTO).apply {
-                                    data = "mailto:${clase.profesor.correo}".toUri()
-                                    putExtra(Intent.EXTRA_SUBJECT, "Interesado en ${clase.nombre}")
-                                    putExtra(
-                                        Intent.EXTRA_TEXT,
-                                        "Hola ${clase.profesor.nombre},\n\nEstoy interesado en la clase '${clase.nombre}'. ¿Podrías darme más información?\n\nGracias."
-                                    )
-                                }
-                                context.startActivity(intent)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Email,
-                                    contentDescription = "Enviar correo",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
-                        else -> {
-                            if (onInscribirse != null && !yaInscrito) {
-                                Button(onClick = { onInscribirse(clase.id) }) {
-                                    Text("Inscribirse")
-                                }
-                            } else {
-                                Text("Ya estás inscrito", style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
+                Text(
+                    text = "Profesor: ${clase.profesor.nombre}",
+                    style = MaterialTheme.typography.labelMedium
+                )
+
+                if (usuarioActual?.rol == Rol.USUARIO) {
+                    Button(
+                        onClick = {
+                            if (!yaInscrito) onInscribirse(clase.id)
+                        },
+                        enabled = !yaInscrito,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (yaInscrito) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                        )
+                    ) {
+                        Text(if (yaInscrito) "Ya inscrito" else "Inscribirse")
                     }
                 }
+
+                if (usuarioActual?.rol == Rol.INVITADO) {
+                    IconButton(onClick = {
+                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                            val asunto = Uri.encode("Consulta sobre la clase: ${clase.nombre}")
+                            val mensaje = Uri.encode("Hola ${clase.profesor.nombre},\n\nEstoy interesado en tu clase '${clase.nombre}'. ¿Podrías darme más información?\n\nGracias.")
+                            data =
+                                "mailto:${clase.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
+                        }
+                        context.startActivity(intent)
+                    }) {
+                        Icon(Icons.Default.Email, contentDescription = "Contactar")
+                    }
+                }
+            }
+
+            LaunchedEffect(yaInscrito) {
+                Log.d("ClaseCard", "Recomposición para clase ${clase.id}, yaInscrito=$yaInscrito")
             }
         }
     }

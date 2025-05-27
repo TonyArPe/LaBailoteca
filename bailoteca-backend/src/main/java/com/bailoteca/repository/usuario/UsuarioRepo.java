@@ -5,8 +5,10 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import com.bailoteca.dto.UsuarioDTO;
 import com.bailoteca.models.usuario.Usuario;
 
 /**
@@ -26,12 +28,7 @@ public interface UsuarioRepo extends JpaRepository<Usuario, Long> {
 
     Usuario findByNombre(String nombre);
 
-    @Query("""
-                SELECT DISTINCT u FROM Usuario u
-                JOIN Inscripcion i ON u.id = i.usuario.id
-                JOIN Clase c ON i.clase.id = c.id
-                WHERE c.profesor.id = :profesorId
-            """)
-    List<Usuario> findAlumnosPorProfesor(Long profesorId);
+    @Query("SELECT new com.bailoteca.dto.UsuarioDTO(u.id, u.nombre, u.apellido, u.correo) FROM Inscripcion i JOIN i.usuario u WHERE i.clase.profesor.id = :idProfesor")
+    List<UsuarioDTO> findAlumnosPorProfesorId(@Param("idProfesor") Long idProfesor);
 
 }

@@ -8,5 +8,5 @@ data class HorarioClase(
     val diaSemana: String,
     val horaInicio: String, // "HH:mm:ss"
     val horaFin: String,
-    val clase: Clase? = null // Evitar ciclos infinitos
+    val clase: Clase? = null // Evita ciclos infinitos
 )

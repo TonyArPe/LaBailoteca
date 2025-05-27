@@ -7,63 +7,34 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.R
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 
 /**
- * Componente que representa el contenido del menú lateral (Drawer) adaptado al rol del usuario.
+ * Menú lateral personalizado que se adapta al rol del usuario autenticado.
  */
 @Composable
 fun DrawerContent(
+    usuario: Usuario,
     onItemSelected: (String) -> Unit,
     navController: NavHostController,
     onCloseDrawer: () -> Unit,
-    sesionViewModel: SesionViewModel = hiltViewModel()
+    sesionViewModel: SesionViewModel
 ) {
-    val usuarioState by sesionViewModel.usuario.collectAsState()
-    val scope = rememberCoroutineScope()
-
-    // Si el usuario no está cargado aún, intenta recuperarlo
-    LaunchedEffect(usuarioState) {
-        if (usuarioState == null && FirebaseAuth.getInstance().currentUser != null) {
-            try {
-                val token = FirebaseAuth.getInstance().currentUser?.getIdToken(true)?.await()?.token
-                if (!token.isNullOrBlank()) {
-                    sesionViewModel.obtenerUsuarioActualConToken(token)
-                } else {
-                    Log.w("DrawerContent", "Token vacío. No se puede cargar usuario.")
-                }
-            } catch (e: Exception) {
-                Log.e("DrawerContent", "Error al obtener token JWT", e)
-            }
-        }
-    }
-
-    // Spinner de carga
-    if (usuarioState == null) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-        return
-    }
-
-    val usuario = usuarioState!!
     val rol = usuario.rol
-    Log.d("DrawerContent", "ROL: $rol")
+    Log.d("DrawerContent", "Renderizando menú para rol: $rol")
 
     val opciones = when (rol) {
         Rol.ADMIN -> listOf(
@@ -92,19 +63,24 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Encabezado con datos del usuario
+        // Encabezado con imagen y nombre
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(top = 48.dp, bottom = 16.dp)
                 .clickable {
-                    onItemSelected(DrawerDestination.Perfil.route)
-                    onCloseDrawer()
+                    if (rol != Rol.INVITADO) {
+                        onItemSelected(DrawerDestination.Perfil.route)
+                        onCloseDrawer()
+                    }
                 }
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                val painter = if (usuario.fotoPerfil.isEmpty()) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val painter = if (usuario.fotoPerfil.isNullOrEmpty()) {
                     painterResource(id = R.drawable.default_profile)
                 } else {
                     rememberAsyncImagePainter(usuario.fotoPerfil)
@@ -148,42 +124,16 @@ fun DrawerContent(
                     label = { Text(item.label) },
                     selected = false,
                     onClick = {
-                        onCloseDrawer()
-
                         if (item == DrawerDestination.Logout) {
-                            scope.launch {
-                                sesionViewModel.cerrarSesion()
-                                FirebaseAuth.getInstance().signOut()
-                                navController.navigate(Screens.Login.route) {
-                                    popUpTo(0) { inclusive = true }
-                                }
-                            }
-                        } else {
-                            navController.navigate(item.route) {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                launchSingleTop = true
-                            }
-                            onItemSelected(item.route)
-                        }
-                    },
-                    modifier = Modifier.padding(vertical = 4.dp)
-                )
-            }
-
-            // Botón adicional solo para invitados
-            if (rol == Rol.INVITADO) {
-                NavigationDrawerItem(
-                    label = { Text("Volver al login") },
-                    selected = false,
-                    onClick = {
-                        scope.launch {
                             sesionViewModel.cerrarSesion()
                             FirebaseAuth.getInstance().signOut()
                             navController.navigate(Screens.Login.route) {
                                 popUpTo(0) { inclusive = true }
                             }
-                            onCloseDrawer()
+                        } else {
+                            onItemSelected(item.route)
                         }
+                        onCloseDrawer()
                     },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )

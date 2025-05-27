@@ -3,170 +3,242 @@ package com.bailoteca.config;
 import com.bailoteca.models.clase.Clase;
 import com.bailoteca.models.clase.HorarioClase;
 import com.bailoteca.models.enums.Dificultad;
+import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.enums.Rol;
+import com.bailoteca.models.evento.Evento;
+import com.bailoteca.models.inscripcion.Inscripcion;
+import com.bailoteca.models.pago.PagoEvento;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.clase.ClaseRepo;
-import com.bailoteca.repository.clase.HorarioClaseRepo;
+import com.bailoteca.repository.evento.EventoRepo;
+import com.bailoteca.repository.inscripcion.InscripcionRepo;
+import com.bailoteca.repository.pago.PagoEventoRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
-
+import com.google.firebase.auth.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import com.google.firebase.auth.UserRecord.CreateRequest;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
 /**
- * Inicializador de datos que se ejecuta al arrancar la aplicación.
- * Crea usuarios (admin, profesores, demo), clases y horarios predefinidos.
+ * Inicializador de datos de prueba para la aplicación.
+ * Crea usuarios, clases, eventos e inscripciones de ejemplo.
  */
 @Component
 @RequiredArgsConstructor
 public class DataInitializer {
 
+    @Autowired
+    private FirebaseAuth firebaseAuth;
+
     private final UsuarioRepo usuarioRepo;
     private final ClaseRepo claseRepo;
-    private final HorarioClaseRepo horarioClaseRepo;
+    private final EventoRepo eventoRepo;
+    private final InscripcionRepo inscripcionRepo;
+    private final PagoEventoRepo pagoEventoRepo;
+
+    private void crearUsuarioFirebaseSiNoExiste(String email, String password, String displayName) {
+        try {
+            firebaseAuth.getUserByEmail(email);
+            System.out.println("Usuario ya registrado en Firebase: " + email);
+        } catch (FirebaseAuthException e) {
+            if (e.getAuthErrorCode() == AuthErrorCode.USER_NOT_FOUND) {
+                try {
+                    CreateRequest request = new CreateRequest()
+                            .setEmail(email)
+                            .setPassword(password)
+                            .setDisplayName(displayName);
+                    firebaseAuth.createUser(request);
+                    System.out.println("Usuario registrado en Firebase: " + email);
+                } catch (FirebaseAuthException ex) {
+                    System.err.println("Error creando usuario Firebase: " + email);
+                    ex.printStackTrace();
+                }
+            } else {
+                System.err.println("Error buscando usuario Firebase: " + email);
+                e.printStackTrace();
+            }
+        }
+    }
 
     @PostConstruct
     public void initData() {
         if (usuarioRepo.findByCorreo("admin@bailoteca.com").isPresent()) {
-            System.out.println("DATOS YA INSERTADOS ANTERIORMENTE. INICIALIZACION OMITIDA");
+            System.out.println("Datos ya insertados anteriormente. Inicialización omitida.");
             return;
         }
 
-        System.out.println("INSERTANDO DATOS DE PRUEBA...");
+        System.out.println("Insertando datos de prueba...");
 
-        // USUARIOS
-        Usuario admin = Usuario.builder()
+        // Usuarios
+        Usuario admin = usuarioRepo.save(Usuario.builder()
                 .nombre("Antonio")
-                .apellido("ApellidoAdmin")
+                .apellido("Admin")
                 .correo("admin@bailoteca.com")
                 .contrasenna("admin123")
                 .rol(Rol.ADMIN)
                 .telefono("600000000")
-                .direccion("Calle Admin")
+                .direccion("Calle Admin, 1")
                 .fechaNacimiento(LocalDate.of(1990, 1, 1))
                 .activo(true)
                 .pagado(true)
                 .fechaRegistro(LocalDate.now())
-                .build();
+                .build());
+        crearUsuarioFirebaseSiNoExiste(admin.getCorreo(), admin.getContrasenna(), admin.getNombre() + " " + admin.getApellido());
 
-        Usuario tomas = Usuario.builder()
+        Usuario tomas = usuarioRepo.save(Usuario.builder()
                 .nombre("Tomás")
                 .apellido("Profesor")
                 .correo("tomas@bailoteca.com")
                 .contrasenna("123456")
                 .rol(Rol.PROFESOR)
                 .telefono("697281258")
-                .direccion("Calle Tomás")
+                .direccion("Calle Flamenco, 3")
                 .activo(true)
                 .pagado(true)
                 .fechaRegistro(LocalDate.now())
-                .build();
+                .build());
+        crearUsuarioFirebaseSiNoExiste(tomas.getCorreo(), tomas.getContrasenna(), tomas.getNombre() + " " + tomas.getApellido());
 
-        Usuario alba = Usuario.builder()
+        Usuario alba = usuarioRepo.save(Usuario.builder()
                 .nombre("Alba")
                 .apellido("Profesora")
                 .correo("alba@bailoteca.com")
                 .contrasenna("123456")
                 .rol(Rol.PROFESOR)
                 .telefono("659930437")
-                .direccion("Calle Alba")
+                .direccion("Calle Salsa, 5")
                 .activo(true)
                 .pagado(true)
                 .fechaRegistro(LocalDate.now())
-                .build();
+                .build());
+        crearUsuarioFirebaseSiNoExiste(alba.getCorreo(), alba.getContrasenna(), alba.getNombre() + " " + alba.getApellido());
 
-        Usuario javi = Usuario.builder()
+        Usuario javi = usuarioRepo.save(Usuario.builder()
                 .nombre("Javi")
                 .apellido("Parra")
                 .correo("javi@bailoteca.com")
                 .contrasenna("123456")
                 .rol(Rol.PROFESOR)
                 .telefono("692352064")
-                .direccion("Calle Javi")
+                .direccion("Calle Bachata, 8")
                 .activo(true)
                 .pagado(true)
                 .fechaRegistro(LocalDate.now())
-                .build();
+                .build());
+        crearUsuarioFirebaseSiNoExiste(javi.getCorreo(), javi.getContrasenna(), javi.getNombre() + " " + javi.getApellido());
 
-        usuarioRepo.saveAll(List.of(admin, tomas, alba, javi));
+        Usuario demoUser = usuarioRepo.save(Usuario.builder()
+                .nombre("Pedro")
+                .apellido("Martínez")
+                .correo("pedro@bailoteca.com")
+                .contrasenna("123456")
+                .rol(Rol.USUARIO)
+                .direccion("Calle Merengue, 9")
+                .activo(true)
+                .pagado(false)
+                .fechaRegistro(LocalDate.now())
+                .build());
+        crearUsuarioFirebaseSiNoExiste(demoUser.getCorreo(), demoUser.getContrasenna(), demoUser.getNombre() + " " + demoUser.getApellido());
 
-        // CLASES 
+        // Clases públicas
         Clase latino1 = Clase.builder()
                 .nombre("Latino Inicial 1")
-                .descripcion("Clases con Tomás y Alba - lunes y miércoles")
+                .descripcion("Clases con Tomás - lunes y miércoles")
                 .profesor(tomas)
+                .ubicacion("Edificio Zentro, C. Olivo, 9, 30009 Murcia")
+                .dificultad(Dificultad.INICIAL)
                 .videoPresentacion("https://www.instagram.com/edificio.zentro/")
-                .ubicacion("Zentro Bailoteca")
-                .dificultad(Dificultad.PRINCIPIANTE)
+                .publica(true)
                 .build();
 
         Clase latino2 = Clase.builder()
                 .nombre("Latino Inicial 2")
-                .descripcion("Clases con Tomás y Alba - lunes y miércoles")
+                .descripcion("Clases con Alba - lunes y miércoles")
                 .profesor(alba)
+                .ubicacion("La Bailoteca, Calle Floridablanca, 2, 30002 Murcia")
+                .dificultad(Dificultad.INICIAL)
                 .videoPresentacion("https://instagram.com/edificio.zentro")
-                .ubicacion("Zentro Bailoteca")
-                .dificultad(Dificultad.PRINCIPIANTE)
+                .publica(true)
                 .build();
 
         Clase latinoAv = Clase.builder()
                 .nombre("Latino Avanzando")
-                .descripcion("Clases martes (próximamente)")
+                .descripcion("Clases avanzadas martes")
                 .profesor(tomas)
-                .videoPresentacion("https://instagram.com/labailoteca")
-                .ubicacion("La Bailoteca")
+                .ubicacion("La Bailoteca, Calle Floridablanca, 2, 30002 Murcia")
                 .dificultad(Dificultad.AVANZADO)
+                .videoPresentacion("https://instagram.com/labailoteca")
+                .publica(true)
                 .build();
 
         Clase latinoInter = Clase.builder()
                 .nombre("Latino Intermedio")
                 .descripcion("Clases jueves")
                 .profesor(alba)
-                .videoPresentacion("https://instagram.com/labailoteca")
-                .ubicacion("La Bailoteca")
+                .ubicacion("Edificio Zentro, C. Olivo, 9, 30009 Murcia")
                 .dificultad(Dificultad.INTERMEDIO)
+                .videoPresentacion("https://instagram.com/labailoteca")
+                .publica(true)
                 .build();
 
         Clase viernesJavi = Clase.builder()
                 .nombre("Latino Inicial/Intermedio (Javi Parra)")
                 .descripcion("Viernes en La Bailoteca")
                 .profesor(javi)
-                .videoPresentacion("https://instagram.com/labailoteca")
-                .ubicacion("La Bailoteca")
+                .ubicacion("La Bailoteca, Calle Floridablanca, 2, 30002 Murcia")
                 .dificultad(Dificultad.INTERMEDIO)
+                .videoPresentacion("https://instagram.com/labailoteca")
+                .publica(true)
                 .build();
+
+        HorarioClase h1 = new HorarioClase(null, "LUNES", LocalTime.of(20, 30), LocalTime.of(21, 30), latino1);
+        HorarioClase h2 = new HorarioClase(null, "LUNES", LocalTime.of(21, 30), LocalTime.of(22, 30), latino2);
+        HorarioClase h3 = new HorarioClase(null, "MARTES", LocalTime.of(21, 0), LocalTime.of(22, 30), latinoAv);
+        HorarioClase h4 = new HorarioClase(null, "JUEVES", LocalTime.of(20, 30), LocalTime.of(22, 0), latinoInter);
+        HorarioClase h5 = new HorarioClase(null, "VIERNES", LocalTime.of(19, 30), LocalTime.of(21, 0), viernesJavi);
+        HorarioClase h6 = new HorarioClase(null, "VIERNES", LocalTime.of(21, 0), LocalTime.of(22, 0), viernesJavi);
+
+        latino1.setHorarioClases(List.of(h1));
+        latino2.setHorarioClases(List.of(h2));
+        latinoAv.setHorarioClases(List.of(h3));
+        latinoInter.setHorarioClases(List.of(h4));
+        viernesJavi.setHorarioClases(List.of(h5, h6));
 
         claseRepo.saveAll(List.of(latino1, latino2, latinoAv, latinoInter, viernesJavi));
 
-        // HORARIOS 
-        horarioClaseRepo.saveAll(List.of(
-                new HorarioClase(null, "LUNES", LocalTime.of(20, 30), LocalTime.of(21, 30), latino1),
-                new HorarioClase(null, "LUNES", LocalTime.of(21, 30), LocalTime.of(22, 30), latino2),
-                new HorarioClase(null, "MARTES", LocalTime.of(21, 0), LocalTime.of(22, 30), latinoAv),
-                new HorarioClase(null, "JUEVES", LocalTime.of(20, 30), LocalTime.of(22, 0), latinoInter),
-                new HorarioClase(null, "VIERNES", LocalTime.of(19, 30), LocalTime.of(21, 0), viernesJavi),
-                new HorarioClase(null, "VIERNES", LocalTime.of(21, 0), LocalTime.of(22, 0), viernesJavi)
-        ));
+        // Evento público de prueba
+        Evento eventoPublico = eventoRepo.save(Evento.builder()
+                .nombre("Fiesta de Bienvenida")
+                .descripcion("Un evento social gratuito abierto a todo el público.")
+                .fecha(LocalDateTime.now().plusDays(7))
+                .lugar("Sala central - La Bailoteca")
+                .estado(EstadoEvento.ACTIVO)
+                .organizador(tomas)
+                .publico(true)
+                .build());
 
-        // ---------- USUARIO DEMO ----------
-        Usuario demoUser = Usuario.builder()
-                .nombre("Pedro")
-                .apellido("Martínez")
-                .correo("pedro@bailoteca.com")
-                .contrasenna("123456")
-                .rol(Rol.USUARIO)
-                .direccion("Calle Pedro")
-                .activo(true)
-                .pagado(false)
-                .fechaRegistro(LocalDate.now())
-                .build();
+        // Inscripción de prueba
+        inscripcionRepo.save(Inscripcion.builder()
+                .usuario(demoUser)
+                .clase(latino1)
+                .fechaInscripcion(LocalDate.now())
+                .build());
 
-        usuarioRepo.save(demoUser);
+        // Pago de evento ficticio
+        pagoEventoRepo.save(PagoEvento.builder()
+                .usuario(demoUser)
+                .evento(eventoPublico)
+                .cantidad(5.0)
+                .fechaPago(LocalDate.now())
+                .build());
 
-        System.out.println("DATOS INSERTADOS CORRECTAMENTE.");
+        System.out.println("Datos insertados correctamente.");
     }
 }

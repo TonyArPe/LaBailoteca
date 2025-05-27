@@ -1,9 +1,11 @@
 package com.bailoteca.controller.clase;
 
+import com.bailoteca.dto.ClaseRequest;
 import com.bailoteca.models.clase.Clase;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.clase.ClaseRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
+import com.bailoteca.service.ClaseService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,7 @@ public class ClaseController {
 
     private final ClaseRepo claseRepo;
     private final UsuarioRepo usuarioRepo;
+    private final ClaseService claseService;
 
     /**
      * Devuelve todas las clases disponibles (acceso público o autenticado).
@@ -61,13 +64,20 @@ public class ClaseController {
      * Crea una nueva clase (solo ADMIN o PROFESOR).
      */
     @PostMapping
-    public ResponseEntity<Clase> createClase(@RequestBody Clase clase) {
+    public ResponseEntity<Clase> createClase(@RequestBody ClaseRequest claseRequest) {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         if (actual.getRol().name().equals("ADMIN") || actual.getRol().name().equals("PROFESOR")) {
-            clase.setProfesor(actual); // el profesor autenticado será el dueño
+            Clase clase = new Clase();
+            clase.setNombre(claseRequest.getNombre());
+            clase.setDescripcion(claseRequest.getDescripcion());
+            clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
+            clase.setDificultad(claseRequest.getDificultad());
+            clase.setPublica(claseRequest.isPublica());
+            clase.setProfesor(actual);
+
             return ResponseEntity.ok(claseRepo.save(clase));
         }
 
@@ -79,16 +89,18 @@ public class ClaseController {
      * ADMIN.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<Clase> updateClase(@PathVariable Long id, @RequestBody Clase claseData) {
+    public ResponseEntity<Clase> updateClase(@PathVariable Long id, @RequestBody ClaseRequest claseRequest) {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         return claseRepo.findById(id).map(clase -> {
             if (actual.getRol().name().equals("ADMIN") || clase.getProfesor().getId().equals(actual.getId())) {
-                clase.setNombre(claseData.getNombre());
-                clase.setDescripcion(claseData.getDescripcion());
-                clase.setVideoPresentacion(claseData.getVideoPresentacion());
+                clase.setNombre(claseRequest.getNombre());
+                clase.setDescripcion(claseRequest.getDescripcion());
+                clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
+                clase.setDificultad(claseRequest.getDificultad());
+                clase.setPublica(claseRequest.isPublica());
                 return ResponseEntity.ok(claseRepo.save(clase));
             }
             return ResponseEntity.status(HttpStatus.FORBIDDEN).<Clase>build();
@@ -127,4 +139,13 @@ public class ClaseController {
             return null;
         }
     }
+
+    /**
+     * Devuelve todas las clases visibles públicamente para usuarios invitados.
+     */
+    @GetMapping("/publicas")
+    public List<Clase> obtenerClasesPublicas() {
+        return claseService.obtenerTodasLasClasesVisiblesParaInvitados();
+    }
+
 }

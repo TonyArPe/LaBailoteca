@@ -2,8 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt)
+
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
     id("kotlin-kapt")
-    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.23"
 }
 
 android {
@@ -60,20 +61,20 @@ dependencies {
     // Activity para Compose
     implementation(libs.androidx.activity.compose.v182)
 
-    // Hacer Serializables
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-    implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:0.8.0")
-
-
     // Jetpack Compose
     implementation("androidx.compose.ui:ui:1.7.8")
     implementation("androidx.compose.material3:material3:1.2.1")
     implementation(libs.androidx.foundation.layout.android)
-    implementation("androidx.datastore:datastore-preferences:1.1.6")
     debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // SnapShot
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
+    implementation("androidx.compose.runtime:runtime:1.5.4")
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
@@ -86,6 +87,12 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation(libs.firebase.auth.ktx)
+
+    // Jetpack DataStore (Preferences)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // kotlinx.serialization (para guardar el usuario como JSON)
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 
     // Retrofit y Gson
     implementation(libs.retrofit)

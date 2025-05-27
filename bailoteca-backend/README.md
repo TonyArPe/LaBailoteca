@@ -383,6 +383,110 @@ Cliente → `/app/notificar` → [Servidor] → `/topic/notificaciones` → Clie
 - Solo el usuario receptor puede consultar, marcar o eliminar sus notificaciones.
 - El sistema registra automáticamente la fecha de envío y marca la notificación como no leída por defecto.
 
+## 🔐 Autenticación con Firebase – Documentación Profesional para el README
+
+### 🧩 Descripción General
+
+La aplicación utiliza **Firebase Authentication** para gestionar el login y registro de usuarios desde el frontend Android. Los tokens JWT generados por Firebase se envían en cada petición protegida y son validados por el backend (Spring Boot) usando el **Firebase Admin SDK**.
+
+El backend no genera tokens propios (ya no se usa `JwtUtils`) y confía únicamente en los tokens emitidos por Firebase.
+
+---
+
+### Configuración del Backend
+
+#### 1. Dependencia `firebase-admin`
+
+Agrega la siguiente dependencia en el archivo `pom.xml`:
+
+```xml
+<dependency>
+  <groupId>com.google.firebase</groupId>
+  <artifactId>firebase-admin</artifactId>
+  <version>9.2.0</version>
+</dependency>
+```
+
+#### 2. Inicialización de Firebase
+
+Inicializa Firebase una sola vez al arrancar la aplicación (por ejemplo, en `BailotecaApp.java`):
+
+```java
+FirebaseOptions options = FirebaseOptions.builder()
+  .setCredentials(GoogleCredentials.fromStream(new FileInputStream("ruta/clave-firebase.json")))
+  .build();
+FirebaseApp.initializeApp(options);
+```
+
+#### 3. Filtro `FirebaseJwtFilter`
+
+Este filtro intercepta todas las peticiones protegidas:
+
+```java
+FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+String email = decodedToken.getEmail();
+```
+
+- Extrae el email del token.
+- Carga el usuario desde la base de datos utilizando `CustomUserDetailsService`.
+- Establece el usuario autenticado en el contexto de Spring Security.
+
+#### 4. Configuración de Seguridad (`SecurityConfig`)
+
+El filtro se añade a la cadena de filtros de seguridad:
+
+```java
+.addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class)
+```
+
+Además, se definen rutas públicas:
+
+```java
+.requestMatchers("/api/auth/**", "/ws/**", "/index.html", ...).permitAll()
+```
+
+---
+
+### Requisitos para que funcione
+
+| Requisito               | Descripción                                                                 |
+|-------------------------|-----------------------------------------------------------------------------|
+| ✅ Registro en Firebase | El usuario debe estar registrado con su email en Firebase Authentication.  |
+| ✅ Coincidencia de email | El email del token debe coincidir con el correo del usuario en la base de datos. |
+| ✅ Token en las peticiones | El frontend debe enviar el token JWT de Firebase en el header: `Authorization: Bearer <token>`. |
+
+---
+
+### Envío del token desde Retrofit (Android)
+
+En el archivo `RetrofitInstance.kt`, se implementa un interceptor que añade el token automáticamente a cada petición:
+
+```kotlin
+val token = runBlocking {
+  Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+}
+```
+
+Este token se añade como header:
+
+```kotlin
+.addHeader("Authorization", "Bearer $token")
+```
+
+---
+
+### Peticiones protegidas
+
+Desde Android, este sistema permite acceder correctamente a rutas como:
+
+- `/api/usuarios`
+- `/api/clases`
+- `/api/eventos`
+- `/api/inscripciones`
+
+Siempre que el token sea válido y el email exista en la base de datos.
+
+
 ### Clases clave
 
 - **`NotificacionService:`** lógica de negocio y validación de acceso.

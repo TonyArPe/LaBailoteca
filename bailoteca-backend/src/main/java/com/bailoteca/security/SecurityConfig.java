@@ -12,10 +12,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
-/**
- * Configuración de seguridad para La Bailoteca.
- */
 @Configuration
 @RequiredArgsConstructor
 @EnableMethodSecurity
@@ -26,28 +25,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/",
-                                "/index.html",
-                                "/chat.html",
-                                "/chat-privado.html",
-                                "/notificaciones.html",
-                                "/ws/**",
-                                "/api/auth/**",
-                                "/api/usuarios/firebase")
-                        .permitAll()
-                        .anyRequest().authenticated())
-                .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .csrf(csrf -> csrf.disable())
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/", 
+                    "/index.html", 
+                    "/chat.html", 
+                    "/chat-privado.html", 
+                    "/notificaciones.html",
+                    "/ws/**",
+                    "/api/auth/**",
+                    "/api/usuarios",
+                    "/api/clases/publicas"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class); // Solo este filtro
 
         return http.build();
     }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(); 
     }
 
     @Bean
