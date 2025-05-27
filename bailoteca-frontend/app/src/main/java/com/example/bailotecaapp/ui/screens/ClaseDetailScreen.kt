@@ -40,70 +40,58 @@ fun ClaseDetailScreen(
 ) {
     SesionGuard(navController = navController) { usuario ->
 
-        val sessionViewModel: SesionViewModel = hiltViewModel()
-        val versionClases by sessionViewModel.versionClases.collectAsState()
+        val sesionViewModel: SesionViewModel = hiltViewModel()
         val clase by claseViewModel.claseSeleccionada.collectAsState()
-        val inscripciones by sessionViewModel.inscripciones.collectAsState()
+        val inscripciones by sesionViewModel.inscripciones.collectAsState()
+        val versionClases by sesionViewModel.versionClases.collectAsState()
+
         val context = LocalContext.current
         val uriHandler = LocalUriHandler.current
         val coroutineScope = rememberCoroutineScope()
 
-        val esInvitado = (usuario as? com.example.bailotecaapp.model.Usuario)?.rol == Rol.INVITADO
+        val esInvitado = usuario.rol == Rol.INVITADO
         val claseYaCargada = remember { mutableStateOf(false) }
 
         LaunchedEffect(claseId) {
             if (!claseYaCargada.value) {
-                Log.d("ClaseDetailScreen", "CARGANDO CLASE CON ID: $claseId")
-                claseYaCargada.value = true
+                Log.d("ClaseDetailScreen", "🔄 Cargando clase ID: $claseId")
                 claseViewModel.cargarClase(claseId)
+                claseYaCargada.value = true
             }
         }
 
         LaunchedEffect(versionClases) {
             if (!esInvitado) {
-                Log.d("ClaseDetailScreen", "DETONADA LA BOMBA DE INSCRIPCIONES")
-                sessionViewModel.cargarMisInscripciones()
+                Log.d("ClaseDetailScreen", "🔁 Recargando inscripciones")
+                sesionViewModel.cargarMisInscripciones()
             }
         }
 
-        val inscripcionActual by remember(inscripciones, claseId) {
-            derivedStateOf {
-                val encontrada = inscripciones.find { it.clase.id == claseId }
-                Log.d("ClaseDetailScreen", "INSCRIPCION ACTUAL: ${encontrada?.id ?: "Ninguna"} para claseId=$claseId")
-                encontrada
-            }
+        val inscripcionActual = remember(inscripciones) {
+            inscripciones.find { it.clase.id == claseId }
         }
 
-        val estaInscrito by remember(inscripcionActual) {
-            derivedStateOf {
-                val resultado = inscripcionActual != null
-                Log.d("ClaseDetailScreen", "¿ESTA INSCRITO? -> $resultado")
-                resultado
-            }
-        }
+        val estaInscrito = inscripcionActual != null
 
-        fun desinscribirse(inscripcionId: Long) {
+        fun cancelarInscripcion(inscripcionId: Long) {
             coroutineScope.launch {
                 try {
                     val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
-                    if (token == null) {
-                        Log.e("ClaseDetailScreen", "TOKEN JWTES NULL, CANCELANDO ACCION")
+                    if (token.isNullOrEmpty()) {
+                        Toast.makeText(context, "Token inválido", Toast.LENGTH_SHORT).show()
                         return@launch
                     }
-                    Log.d("ClaseDetailScreen", "ENVIANDO SOLICITUD PARA ELIMINAR INSCRIPCION CONId=$inscripcionId")
+
                     val response = claseViewModel.eliminarInscripcion(token, inscripcionId)
 
                     if (response.isSuccessful) {
                         Toast.makeText(context, "Inscripción cancelada", Toast.LENGTH_SHORT).show()
-                        Log.d("ClaseDetailScreen", "INSCRIPCION ELIMINADA CON EXITO")
-                        sessionViewModel.cargarMisInscripciones()
-                        sessionViewModel.marcarClasesComoActualizadas()
+                        sesionViewModel.cargarMisInscripciones()
+                        sesionViewModel.marcarClasesComoActualizadas()
                     } else {
-                        Log.e("ClaseDetailScreen", "ERROR HTP AL ELIMINAR LA INSCRIPCION: ${response.code()}")
                         Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
                     }
                 } catch (e: Exception) {
-                    Log.e("ClaseDetailScreen", "EXCEPCION AL DESESCRIBIRSE", e)
                     Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
@@ -117,20 +105,18 @@ fun ClaseDetailScreen(
                     .padding(16.dp)
             ) {
                 clase?.let { c ->
-                    Log.d("ClaseDetailScreen", "CLASE CARGADA: ${c.nombre}, dificultad: ${c.dificultad}")
-
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Text(c.nombre, style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.primary)
-                        Text(c.descripcion, style = MaterialTheme.typography.bodyMedium)
+                        Text(c.descripcion)
 
                         Divider()
 
                         Text("📍 Ubicación: ${c.ubicacion}")
                         val dificultadTexto = when (c.dificultad) {
-                            null -> "Sin especificar"
                             Dificultad.INICIAL -> "Inicial"
                             Dificultad.INTERMEDIO -> "Intermedio"
                             Dificultad.AVANZADO -> "Avanzado"
+                            else -> "Sin especificar"
                         }
                         Text("🎯 Dificultad: $dificultadTexto")
 
@@ -141,52 +127,55 @@ fun ClaseDetailScreen(
                                 text = AnnotatedString("🎥 Ver video de presentación"),
                                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.secondary),
                                 onClick = {
-                                    Log.d("ClaseDetailScreen", "ABRIENDO VIDEO DE PRESENTACION: ${c.videoPresentacion}")
                                     uriHandler.openUri(c.videoPresentacion)
                                 }
                             )
                         }
 
                         Divider()
+
                         Text("🕒 Horarios:", style = MaterialTheme.typography.titleSmall)
-                        c.horarioClases.forEach { horario ->
-                            Text("• ${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}")
+                        c.horarioClases.forEach {
+                            Text("• ${it.diaSemana}: ${it.horaInicio} - ${it.horaFin}")
                         }
 
-                        Spacer(modifier = Modifier.height(20.dp))
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                        if (usuario.rol == Rol.USUARIO && estaInscrito && inscripcionActual != null) {
-                            Log.d("ClaseDetailScreen", "MOSTRANDO BOTON PARA CANCELAR SUBSCRIPCION")
-                            Button(
-                                onClick = { desinscribirse(inscripcionActual!!.id) },
-                                modifier = Modifier.align(Alignment.CenterHorizontally),
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text("Cancelar inscripción")
+                        // Botones según rol
+                        when (usuario.rol) {
+                            Rol.USUARIO -> {
+                                if (estaInscrito && inscripcionActual != null) {
+                                    Button(
+                                        onClick = { cancelarInscripcion(inscripcionActual.id) },
+                                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                    ) {
+                                        Text("Cancelar inscripción")
+                                    }
+                                }
                             }
-                        }
 
-                        if (esInvitado) {
-                            Button(
-                                onClick = {
-                                    val asunto = Uri.encode("Consulta sobre la clase: ${c.nombre}")
-                                    val mensaje = Uri.encode("Hola ${c.profesor.nombre},\n\nEstoy interesado en tu clase '${c.nombre}'. ¿Podrías darme más información?\n\nGracias.")
-                                    val correo = "mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
-                                    val intent = Intent(Intent.ACTION_SENDTO).apply { data = correo }
-                                    Log.d("ClaseDetailScreen", "INTENTANDO CONTACTAR CON EL PROFESOR: ${c.profesor.correo}")
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            ) {
-                                Text("Contactar al profesor")
+                            Rol.INVITADO -> {
+                                Button(
+                                    onClick = {
+                                        val asunto = Uri.encode("Consulta sobre la clase: ${c.nombre}")
+                                        val mensaje = Uri.encode("Hola ${c.profesor.nombre},\n\nEstoy interesado en tu clase '${c.nombre}'. ¿Podrías darme más información?\n\nGracias.")
+                                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                                            data = "mailto:${c.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
+                                        }
+                                        context.startActivity(intent)
+                                    },
+                                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                                ) {
+                                    Text("Contactar al profesor")
+                                }
                             }
+
+                            else -> {}
                         }
 
                         OutlinedButton(
-                            onClick = {
-                                Log.d("ClaseDetailScreen", "VOLVIENDO ATRAS")
-                                navController.popBackStack()
-                            },
+                            onClick = { navController.popBackStack() },
                             modifier = Modifier.align(Alignment.CenterHorizontally)
                         ) {
                             Text("Volver")

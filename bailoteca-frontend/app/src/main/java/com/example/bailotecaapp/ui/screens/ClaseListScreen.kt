@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.dto.InscripcionRequest
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
@@ -112,7 +113,13 @@ fun ClaseListScreen(
                             usuarioActual = usuario,
                             inscripciones = inscripciones,
                             yaInscrito = yaInscrito,
-                            onInscribirse = { inscribirseAClase(it) },
+                            onInscribirse = {
+                                if (usuario!!.rol != Rol.INVITADO) {
+                                    inscribirseAClase(it)
+                                } else {
+                                    Toast.makeText(context, "Inicia sesión para inscribirte", Toast.LENGTH_SHORT).show()
+                                }
+                            },
                             onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) }
                         )
                     }

@@ -21,15 +21,11 @@ import com.example.bailotecaapp.model.enums.Rol
 import androidx.core.net.toUri
 
 /**
- * Componente visual que muestra una tarjeta con la información básica de una clase.
- * El contenido mostrado depende del rol y del estado de inscripción del usuario:
- *
- * @param clase Clase a mostrar.
- * @param usuarioActual Usuario autenticado que visualiza la tarjeta.
- * @param inscripciones Lista de inscripciones activas del usuario.
- * @param yaInscrito Indica si el usuario ya está inscrito en esta clase.
- * @param onInscribirse Acción que se ejecuta al pulsar el botón "Inscribirme".
- * @param onVerDetalle Acción al pulsar en la tarjeta para ver más detalles.
+ * Tarjeta visual de una clase que muestra su información básica.
+ * Adapta el contenido mostrado según el rol del usuario:
+ * - USUARIO: puede inscribirse o ver "Ya inscrito".
+ * - INVITADO: puede contactar con el profesor por correo.
+ * - Otros roles (ADMIN, PROFESOR): solo lectura.
  */
 @Composable
 fun ClaseCard(
@@ -41,6 +37,7 @@ fun ClaseCard(
     onVerDetalle: (Long) -> Unit
 ) {
     val context = LocalContext.current
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -48,25 +45,13 @@ fun ClaseCard(
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = clase.nombre,
-                style = MaterialTheme.typography.titleLarge
-            )
-
+            Text(text = clase.nombre, style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = clase.descripcion,
-                style = MaterialTheme.typography.bodyMedium
-            )
-
+            Text(text = clase.descripcion, style = MaterialTheme.typography.bodyMedium)
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = "Ubicación: ${clase.ubicacion}",
-                style = MaterialTheme.typography.labelMedium
-            )
-
+            Text(text = "Ubicación: ${clase.ubicacion}", style = MaterialTheme.typography.labelMedium)
             clase.dificultad?.let {
                 Text(
                     text = "Dificultad: ${it.name.lowercase().replaceFirstChar { c -> c.uppercase() }}",
@@ -81,37 +66,31 @@ fun ClaseCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Profesor: ${clase.profesor.nombre}",
-                    style = MaterialTheme.typography.labelMedium
-                )
+                Text("Profesor: ${clase.profesor.nombre}", style = MaterialTheme.typography.labelMedium)
 
-                if (usuarioActual?.rol == Rol.USUARIO) {
-                    Button(
-                        onClick = {
-                            if (!yaInscrito) onInscribirse(clase.id)
-                        },
-                        enabled = !yaInscrito,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (yaInscrito) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
-                        )
-                    ) {
-                        Text(if (yaInscrito) "Ya inscrito" else "Inscribirse")
+                when (usuarioActual?.rol) {
+                    Rol.USUARIO -> {
+                        Button(
+                            onClick = { if (!yaInscrito) onInscribirse(clase.id) },
+                            enabled = !yaInscrito,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (yaInscrito) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                            )
+                        ) {
+                            Text(if (yaInscrito) "Ya inscrito" else "Inscribirse")
+                        }
                     }
-                }
-
-                if (usuarioActual?.rol == Rol.INVITADO) {
-                    IconButton(onClick = {
-                        val intent = Intent(Intent.ACTION_SENDTO).apply {
+                    Rol.INVITADO -> {
+                        IconButton(onClick = {
                             val asunto = Uri.encode("Consulta sobre la clase: ${clase.nombre}")
                             val mensaje = Uri.encode("Hola ${clase.profesor.nombre},\n\nEstoy interesado en tu clase '${clase.nombre}'. ¿Podrías darme más información?\n\nGracias.")
-                            data =
-                                "mailto:${clase.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
+                            val uri = "mailto:${clase.profesor.correo}?subject=$asunto&body=$mensaje".toUri()
+                            context.startActivity(Intent(Intent.ACTION_SENDTO).apply { data = uri })
+                        }) {
+                            Icon(Icons.Default.Email, contentDescription = "Contactar")
                         }
-                        context.startActivity(intent)
-                    }) {
-                        Icon(Icons.Default.Email, contentDescription = "Contactar")
                     }
+                    else -> {} // ADMIN, PROFESOR: no acción específica
                 }
             }
 

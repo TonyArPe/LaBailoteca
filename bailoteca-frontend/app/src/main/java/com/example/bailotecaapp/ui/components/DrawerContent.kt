@@ -44,7 +44,13 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-        Rol.PROFESOR, Rol.USUARIO -> listOf(
+        Rol.PROFESOR -> listOf(
+            DrawerDestination.Home,
+            DrawerDestination.Clases,
+            DrawerDestination.Perfil,
+            DrawerDestination.Logout
+        )
+        Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,
@@ -54,7 +60,6 @@ fun DrawerContent(
             DrawerDestination.Home,
             DrawerDestination.Clases
         )
-        else -> listOf(DrawerDestination.Home)
     }
 
     Column(
@@ -63,49 +68,38 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Encabezado
+        // Cabecera con foto y nombre
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(top = 48.dp, bottom = 16.dp)
-                .clickable {
-                    if (rol != Rol.INVITADO) {
-                        Log.d("DrawerContent", "🧭 Navegando a perfil desde cabecera")
-                        onItemSelected(DrawerDestination.Perfil.route)
-                        onCloseDrawer()
-                    }
+                .clickable(enabled = rol != Rol.INVITADO) {
+                    onItemSelected(DrawerDestination.Perfil.route)
+                    onCloseDrawer()
                 }
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                val painter = if (usuario.fotoPerfil.isNullOrEmpty()) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                val painter = if (usuario.fotoPerfil.isNullOrEmpty())
                     painterResource(id = R.drawable.default_profile)
-                } else {
-                    rememberAsyncImagePainter(usuario.fotoPerfil)
-                }
+                else rememberAsyncImagePainter(usuario.fotoPerfil)
 
-                Box(
+                Image(
+                    painter = painter,
+                    contentDescription = "Foto de perfil",
                     modifier = Modifier
                         .size(90.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                         .padding(4.dp)
-                ) {
-                    Image(
-                        painter = painter,
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                )
 
                 Spacer(modifier = Modifier.height(8.dp))
-
                 Text(usuario.nombre, style = MaterialTheme.typography.titleMedium)
-                Text(rol.name.lowercase().replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.bodySmall)
+                Text(
+                    rol.name.lowercase().replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
 

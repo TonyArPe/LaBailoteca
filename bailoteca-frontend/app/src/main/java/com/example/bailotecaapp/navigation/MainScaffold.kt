@@ -7,9 +7,9 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.DrawerContent
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
@@ -25,7 +25,6 @@ fun MainScaffold(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
-    // Log de entrada del scaffold
     LaunchedEffect(usuario.id) {
         Log.d("MainScaffold", "🧭 Renderizando Scaffold para: ${usuario.correo}")
     }
@@ -47,22 +46,19 @@ fun MainScaffold(
                     }
                 },
                 navController = navController,
-                onCloseDrawer = {
-                    scope.launch { drawerState.close() }
-                },
+                onCloseDrawer = { scope.launch { drawerState.close() } },
                 sesionViewModel = sesionViewModel
             )
         }
     ) {
         Scaffold(
             topBar = {
-                if (usuario.rol.name != "INVITADO") {
+                // Mostrar TopBar solo si el usuario NO es invitado
+                if (usuario.rol != Rol.INVITADO) {
                     TopAppBar(
                         title = { Text("La Bailoteca") },
                         navigationIcon = {
-                            IconButton(onClick = {
-                                scope.launch { drawerState.open() }
-                            }) {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
                                 Icon(Icons.Default.Menu, contentDescription = "Menú")
                             }
                         }
