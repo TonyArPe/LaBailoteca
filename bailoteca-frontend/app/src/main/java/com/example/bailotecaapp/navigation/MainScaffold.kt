@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.navigation
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -13,10 +14,6 @@ import com.example.bailotecaapp.ui.components.DrawerContent
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
 
-/**
- * Scaffold principal que contiene un Drawer lateral y una TopAppBar superior.
- * Recibe el usuario ya autenticado desde el SesionGuard y evita duplicar ViewModel.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
@@ -28,15 +25,25 @@ fun MainScaffold(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
+    // Log de entrada del scaffold
+    LaunchedEffect(usuario.id) {
+        Log.d("MainScaffold", "🧭 Renderizando Scaffold para: ${usuario.correo}")
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
             DrawerContent(
                 usuario = usuario,
                 onItemSelected = { route ->
-                    scope.launch { drawerState.close() }
-                    navController.navigate(route) {
-                        launchSingleTop = true // 🚀 evita múltiples instancias
+                    Log.d("MainScaffold", "📌 Item seleccionado en Drawer: $route")
+                    scope.launch {
+                        drawerState.close()
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.startDestinationId) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 },
                 navController = navController,
@@ -49,16 +56,18 @@ fun MainScaffold(
     ) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = { Text("La Bailoteca") },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch { drawerState.open() }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menú")
+                if (usuario.rol.name != "INVITADO") {
+                    TopAppBar(
+                        title = { Text("La Bailoteca") },
+                        navigationIcon = {
+                            IconButton(onClick = {
+                                scope.launch { drawerState.open() }
+                            }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menú")
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
         ) { innerPadding ->
             Box(

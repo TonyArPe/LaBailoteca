@@ -68,11 +68,7 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
             }
 
             // Autenticación manual
-            UserDetails userDetails = new User(
-                    usuario.getCorreo(),
-                    usuario.getContrasenna() != null ? usuario.getContrasenna() : "",
-                    Collections.emptyList()
-            );
+            UserDetails userDetails = new UsuarioDetails(usuario);
 
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(

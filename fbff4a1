@@ -1,0 +1,20 @@
+[33mb33365a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend[m[33m, [m[1;31morigin/backend[m[33m)[m HEAD@{0}: reset: moving to HEAD
+[33mb33365a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend[m[33m, [m[1;31morigin/backend[m[33m)[m HEAD@{1}: checkout: moving from dev to backend
+[33m209db4f[m[33m ([m[1;31morigin/frontend[m[33m, [m[1;31morigin/dev[m[33m, [m[1;32mfrontend[m[33m, [m[1;32mdev[m[33m)[m HEAD@{2}: merge frontend: Fast-forward
+[33mce8c828[m HEAD@{3}: checkout: moving from backend to dev
+[33mb33365a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend[m[33m, [m[1;31morigin/backend[m[33m)[m HEAD@{4}: checkout: moving from frontend to backend
+[33m209db4f[m[33m ([m[1;31morigin/frontend[m[33m, [m[1;31morigin/dev[m[33m, [m[1;32mfrontend[m[33m, [m[1;32mdev[m[33m)[m HEAD@{5}: commit: Ajuste de modelos y datos para el modo invitado
+[33mfbff4a1[m HEAD@{6}: commit: Arreglado modo invitado definitivamente ajustes en datainitializer y ajuste en modelos para este modo
+[33mcad7ba4[m HEAD@{7}: commit: Limpieza de anterior modo invitado ajuste de
+[33m817c370[m HEAD@{8}: commit: Creacion de servicio de clases publicas, añadido al security y creacion de metodo en controller
+[33m44c4a43[m HEAD@{9}: commit: Creacion de respuesta usuarios y mas estabilidad
+[33me469cfd[m HEAD@{10}: commit: Limpieza del modo invitado en principal
+[33md16beca[m HEAD@{11}: commit: Flecha de back arreglo de guardar datos y perfectamente sincro con el back
+[33ma1a99d6[m HEAD@{12}: commit: CRUD de usuarios. Solo Admin
+[33m728ee33[m HEAD@{13}: commit: Ajustes
+[33me1e132a[m HEAD@{14}: commit: Solucion entrada como invitado
+[33mc163e56[m HEAD@{15}: commit: Ahora se puede acceder a los detalles. Arreglo en las inscripciones
+[33mb194268[m HEAD@{16}: commit: Ajuestes en carga infinita despues de login
+[33m22dfb96[m HEAD@{17}: checkout: moving from backend to frontend
+[33mb33365a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mbackend[m[33m, [m[1;31morigin/backend[m[33m)[m HEAD@{18}: checkout: moving from master to backend
+[33m1268e66[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/app[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m HEAD@{19}: clone: from https://github.com/TonyArPe/LaBailoteca.git
