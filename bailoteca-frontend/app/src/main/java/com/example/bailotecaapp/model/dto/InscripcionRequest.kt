@@ -3,9 +3,11 @@ package com.example.bailotecaapp.model.dto
 import kotlinx.serialization.Serializable
 
 /**
- * DTO que encapsula el ID de la clase para solicitar la inscripción.
+ * DTO que representa la solicitud de inscripción a una clase.
+ * Se envía al backend cuando un usuario desea inscribirse.
  */
 @Serializable
 data class InscripcionRequest(
+    val usuarioId: Long,
     val claseId: Long
 )

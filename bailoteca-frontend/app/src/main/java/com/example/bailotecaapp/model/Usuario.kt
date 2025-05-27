@@ -1,6 +1,7 @@
 package com.example.bailotecaapp.model
 
 import com.example.bailotecaapp.model.enums.Rol
+import kotlinx.serialization.Serializable
 
 /**
  * Representación del usuario desde el backend.

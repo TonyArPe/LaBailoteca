@@ -10,10 +10,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
+/**
+ * Modelo persistente simplificado del usuario para guardar en DataStore.
+ * Evita guardar datos innecesarios o estructuras recursivas.
+ */
 @Serializable
 data class UsuarioPersistente(
     val id: Long,
     val nombre: String,
+    val apellido: String = "",
     val correo: String,
     val rol: Rol
 )
@@ -21,6 +26,9 @@ data class UsuarioPersistente(
 private val Context.dataStore by preferencesDataStore(name = "usuario_prefs")
 private val USUARIO_KEY = stringPreferencesKey("usuario_json")
 
+/**
+ * Utilidad para guardar, recuperar o eliminar un usuario en DataStore.
+ */
 object UsuarioPreferences {
 
     private val json = Json {

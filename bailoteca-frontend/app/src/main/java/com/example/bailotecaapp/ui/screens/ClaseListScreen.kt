@@ -10,10 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.example.bailotecaapp.model.dto.InscripcionRequest
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
@@ -49,7 +49,10 @@ fun ClaseListScreen(
 
     fun inscribirseAClase(claseId: Long) {
         val userId = usuario?.id ?: return
-        val request = InscripcionRequest(usuarioId = userId, claseId = claseId)
+        val request = InscripcionRequest(
+            usuarioId = userId, // 🔧 asegurado que este nombre sea correcto
+            claseId = claseId
+        )
 
         coroutineScope.launch {
             try {

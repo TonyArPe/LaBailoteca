@@ -162,7 +162,13 @@ class SesionViewModel @Inject constructor(
     private suspend fun propagarCambioSesion(user: Usuario, token: String) {
         val context = getApplication<Application>().applicationContext
         _usuario.value = user
-        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(user.id!!, user.nombre, user.correo, user.rol))
+        UsuarioPreferences.guardarUsuario(context, UsuarioPersistente(
+            id = user.id!!,
+            nombre = user.nombre,
+            apellido = user.apellido,
+            correo = user.correo,
+            rol = user.rol
+        ))
         TokenPreferences.guardarToken(context, token)
         _modoInvitado.value = false
         _modoInvitadoForzado.value = false

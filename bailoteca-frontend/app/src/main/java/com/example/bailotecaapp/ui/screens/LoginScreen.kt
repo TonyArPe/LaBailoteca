@@ -108,32 +108,36 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
-                        isLoading = true
-                        errorMessage = null
-                        viewModel.login(
-                            email,
-                            password,
-                            onSuccess = {
-                                coroutineScope.launch {
-                                    try {
-                                        val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
-                                        if (!token.isNullOrEmpty()) {
-                                            sesionViewModel.obtenerUsuarioActualConToken(token)
-                                        } else {
-                                            errorMessage = "Token nulo o vacío."
+                        coroutineScope.launch {
+                            isLoading = true
+                            errorMessage = null
+
+                            viewModel.login(
+                                email,
+                                password,
+                                onSuccess = {
+                                    coroutineScope.launch {
+                                        try {
+                                            val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                                            if (!token.isNullOrEmpty()) {
+                                                sesionViewModel.obtenerUsuarioActualConToken(token)
+                                                sesionViewModel.cargarMisInscripciones()
+                                            } else {
+                                                errorMessage = "Token nulo o vacío."
+                                            }
+                                        } catch (e: Exception) {
+                                            errorMessage = "Error obteniendo token: ${e.message}"
+                                        } finally {
+                                            isLoading = false
                                         }
-                                    } catch (e: Exception) {
-                                        errorMessage = "Error obteniendo token: ${e.message}"
-                                    } finally {
-                                        isLoading = false
                                     }
+                                },
+                                onError = { error ->
+                                    isLoading = false
+                                    errorMessage = error
                                 }
-                            },
-                            onError = { error ->
-                                isLoading = false
-                                errorMessage = error
-                            }
-                        )
+                            )
+                        }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading && !sesionCargando
@@ -165,19 +169,6 @@ fun LoginScreen(
                 ) {
                     Text("Entrar como invitado")
                 }
-            }
-
-            TextButton(
-                onClick = {
-                    sesionViewModel.entrarComoInvitado()
-                    navController.navigate(Screens.Home.route) {
-                        popUpTo(0) { inclusive = true }
-                        launchSingleTop = true
-                    }
-                },
-                modifier = Modifier.padding(top = 16.dp)
-            ) {
-                Text("Entrar como invitado")
             }
         }
     }

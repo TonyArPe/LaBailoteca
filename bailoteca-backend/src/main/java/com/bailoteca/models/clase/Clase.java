@@ -10,8 +10,6 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
-import com.bailoteca.models.enums.Dificultad;
-
 @Entity
 @Data
 @NoArgsConstructor
@@ -34,15 +32,11 @@ public class Clase {
 
     private String ubicacion;
 
+    private String videoPresentacion;
+
     @ManyToOne
     @JoinColumn(name = "profesor_id", nullable = false)
     private Usuario profesor;
-
-    private String ubicacion;
-
-    private Dificultad dificultad;
-
-    private String videoPresentacion;
 
     @OneToMany(mappedBy = "clase", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
