@@ -1,42 +1,33 @@
 package com.bailoteca.security;
 
 import com.bailoteca.models.usuario.Usuario;
-import lombok.RequiredArgsConstructor;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
 
 /**
- * Implementación de UserDetails para adaptar la entidad Usuario
- * al sistema de autenticación de Spring Security.
+ * Implementación personalizada de UserDetails que encapsula el objeto Usuario completo.
  */
-@RequiredArgsConstructor
+@Getter
+@AllArgsConstructor
 public class UsuarioDetails implements UserDetails {
 
     private final Usuario usuario;
 
-    /**
-     * Devuelve el rol del usuario como autoridad de Spring Security.
-     */
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
+        return Collections.emptyList(); // Puedes mapear roles si quieres usar authorities
     }
 
-    /**
-     * Devuelve la contraseña del usuario.
-     */
     @Override
     public String getPassword() {
-        return usuario.getContrasenna();
+        return usuario.getContrasenna() != null ? usuario.getContrasenna() : "";
     }
 
-    /**
-     * Devuelve el identificador del usuario (correo).
-     */
     @Override
     public String getUsername() {
         return usuario.getCorreo();
@@ -60,12 +51,5 @@ public class UsuarioDetails implements UserDetails {
     @Override
     public boolean isEnabled() {
         return usuario.isActivo();
-    }
-
-    /**
-     * Devuelve el usuario original encapsulado.
-     */
-    public Usuario getUsuario() {
-        return usuario;
     }
 }

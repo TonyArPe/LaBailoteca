@@ -12,8 +12,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 @Configuration
 @RequiredArgsConstructor
@@ -36,12 +34,15 @@ public class SecurityConfig {
                     "/notificaciones.html",
                     "/ws/**",
                     "/api/auth/**",
-                    "/api/usuarios",
-                    "/api/clases/publicas"
+                    "/api/clases/publicas",
+                    "/api/eventos/publicos"
                 ).permitAll()
+                // Solo permite POST a usuarios para registro
+                .requestMatchers("/api/usuarios").permitAll()
+                .requestMatchers("/api/usuarios/**").authenticated()
                 .anyRequest().authenticated()
             )
-            .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class); // Solo este filtro
+            .addFilterBefore(firebaseJwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
