@@ -10,10 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import com.example.bailotecaapp.model.dto.InscripcionRequest
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.components.ClaseCard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
@@ -48,15 +48,29 @@ fun ClaseListScreen(
     }
 
     fun inscribirseAClase(claseId: Long) {
-        val userId = usuario?.id ?: return
-        val request = InscripcionRequest(
-            usuarioId = userId, // 🔧 asegurado que este nombre sea correcto
-            claseId = claseId
-        )
+        val userId = usuario?.id ?: run {
+            Log.w("ClaseListScreen", "⚠️ Usuario nulo al intentar inscribirse")
+            return
+        }
+
+        val request = InscripcionRequest(usuarioId = userId, claseId = claseId)
 
         coroutineScope.launch {
+            val currentUser = Firebase.auth.currentUser
+            if (currentUser == null) {
+                Toast.makeText(context, "Usuario Firebase nulo", Toast.LENGTH_SHORT).show()
+                Log.w("ClaseListScreen", "⚠️ Firebase user es null")
+                return@launch
+            }
+
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token ?: return@launch
+                val token = currentUser.getIdToken(false).await().token
+                if (token.isNullOrBlank()) {
+                    Toast.makeText(context, "Token inválido", Toast.LENGTH_SHORT).show()
+                    Log.w("ClaseListScreen", "⚠️ Token JWT nulo o vacío")
+                    return@launch
+                }
+
                 val response = viewModel.inscribirseAClase(token, request)
 
                 if (response.isSuccessful) {
@@ -65,11 +79,11 @@ fun ClaseListScreen(
                     sesionViewModel.marcarClasesComoActualizadas()
                 } else {
                     Toast.makeText(context, "Error: ${response.code()}", Toast.LENGTH_SHORT).show()
-                    Log.e("ClaseListScreen", "Error HTTP: ${response.code()}")
+                    Log.e("ClaseListScreen", "❌ Error HTTP: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Toast.makeText(context, "Error al inscribirse: ${e.message}", Toast.LENGTH_SHORT).show()
-                Log.e("ClaseListScreen", "Excepción: ${e.localizedMessage}")
+                Log.e("ClaseListScreen", "❌ Excepción al inscribirse: ${e.message}")
             }
         }
     }

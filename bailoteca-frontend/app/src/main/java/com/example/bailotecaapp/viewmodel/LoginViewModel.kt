@@ -27,6 +27,7 @@ class LoginViewModel : ViewModel() {
         onError: (String) -> Unit
     ) {
         if (email.isBlank() || password.isBlank()) {
+            Log.w("LoginViewModel", "⚠️ Correo o contraseña vacíos")
             onError("Correo y contraseña no pueden estar vacíos.")
             return
         }
@@ -34,11 +35,11 @@ class LoginViewModel : ViewModel() {
         auth.signInWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
-                    Log.d("LoginViewModel", "✅ Login correcto con Firebase")
+                    Log.d("LoginViewModel", "✅ Login correcto con Firebase para: $email")
                     onSuccess()
                 } else {
                     val error = task.exception?.localizedMessage ?: "Error desconocido"
-                    Log.e("LoginViewModel", "Login fallido: $error")
+                    Log.e("LoginViewModel", "❌ Login fallido: $error")
                     onError(error)
                 }
             }
@@ -59,11 +60,13 @@ class LoginViewModel : ViewModel() {
         onError: (String) -> Unit
     ) {
         if (email.isBlank() || password.isBlank()) {
+            Log.w("LoginViewModel", "⚠️ Registro con campos vacíos")
             onError("Correo y contraseña no pueden estar vacíos.")
             return
         }
 
         if (password.length < 6) {
+            Log.w("LoginViewModel", "⚠️ Contraseña muy corta para registro")
             onError("La contraseña debe tener al menos 6 caracteres.")
             return
         }
@@ -71,10 +74,11 @@ class LoginViewModel : ViewModel() {
         auth.createUserWithEmailAndPassword(email, password)
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
+                    Log.d("LoginViewModel", "✅ Registro exitoso para: $email")
                     onSuccess()
                 } else {
                     val error = task.exception?.localizedMessage ?: "Error desconocido"
-                    Log.e("LoginViewModel", "Registro fallido: $error")
+                    Log.e("LoginViewModel", "❌ Registro fallido: $error")
                     onError(error)
                 }
             }

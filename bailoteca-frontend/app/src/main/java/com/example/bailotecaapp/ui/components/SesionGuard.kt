@@ -38,7 +38,7 @@ fun SesionGuard(
     Log.d("SesionGuard", "🧐 usuario=${usuario?.correo}, modoInvitado=$modoInvitado, forzado=$modoInvitadoForzado, isLoading=$isLoading, yaCargado=$usuarioCargado")
 
     /**
-     * Redirigir a login si la sesión se ha cerrado manualmente.
+     * Control de cierre de sesión manual.
      */
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
@@ -51,19 +51,7 @@ fun SesionGuard(
     }
 
     /**
-     * Redirigir a login si no hay usuario ni invitado
-     */
-    LaunchedEffect(usuario, modoInvitado, modoInvitadoForzado, isLoading) {
-        if (usuario == null && !modoInvitado && !modoInvitadoForzado && !isLoading) {
-            Log.d("SesionGuard", "❌ Sin sesión ni invitado. Redirigiendo a login")
-            navController.navigate("login") {
-                popUpTo(0) { inclusive = true }
-            }
-        }
-    }
-
-    /**
-     * Restaurar sesión desde preferencias si aún no se ha hecho.
+     * Restaurar sesión desde preferencias si no se ha hecho.
      */
     LaunchedEffect(usuarioCargado) {
         if (!usuarioCargado) {
@@ -73,25 +61,35 @@ fun SesionGuard(
     }
 
     /**
-     * Intentar sincronizar datos del backend si ya hay usuario pero falta carga
+     * Evitar redirección anticipada mientras se está cargando el usuario.
+     * Solo redirige si ya se intentó cargar y aún no hay sesión activa ni modo invitado.
      */
-    LaunchedEffect(true) {
-        if (!sesionViewModel.usuarioYaCargado()) {
-            Log.d("SesionGuard", "📦 Restaurando sesión desde SesionGuard (solo una vez)")
-            sesionViewModel.recuperarSesionDesdePreferencias()
-        } else {
-            Log.d("SesionGuard", "✅ Sesión ya restaurada previamente")
+    LaunchedEffect(usuario, modoInvitado, modoInvitadoForzado, isLoading, usuarioCargado) {
+        if (usuarioCargado && usuario == null && !modoInvitado && !modoInvitadoForzado && !isLoading) {
+            Log.d("SesionGuard", "❌ Sin sesión ni invitado. Redirigiendo a login")
+            if (navController.currentDestination?.route != "login") {
+                navController.navigate("login") {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
         }
     }
 
-    // Mostrar indicador de carga mientras se procesa sesión
-    if ((usuario == null && !modoInvitado && !modoInvitadoForzado) || isLoading) {
+    /**
+     * Mostrar loading mientras se prepara el estado.
+     */
+    if (!usuarioCargado || isLoading || (usuario == null && !modoInvitado && !modoInvitadoForzado)) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
     }
 
-    // Renderizar contenido autorizado
-    usuario?.let { content(it) }
+    /**
+     * Renderizar contenido una vez el usuario está disponible.
+     */
+    usuario?.let {
+        Log.d("SesionGuard", "🎯 Renderizando contenido protegido para: ${it.correo}")
+        content(it)
+    }
 }

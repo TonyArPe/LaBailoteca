@@ -44,6 +44,7 @@ fun LoginScreen(
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
     val coroutineScope = rememberCoroutineScope()
 
+    // Redirige al Home una vez el usuario esté cargado
     LaunchedEffect(usuarioCargado, usuario) {
         if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
             navController.navigate(Screens.Home.route) {
@@ -118,10 +119,17 @@ fun LoginScreen(
                                 onSuccess = {
                                     coroutineScope.launch {
                                         try {
-                                            val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                                            val currentUser = Firebase.auth.currentUser
+                                            if (currentUser == null) {
+                                                Log.w("LoginScreen", "⚠️ currentUser es null")
+                                                errorMessage = "No se pudo obtener el usuario."
+                                                return@launch
+                                            }
+                                            val token = currentUser.getIdToken(false).await().token
                                             if (!token.isNullOrEmpty()) {
-                                                sesionViewModel.obtenerUsuarioActualConToken(token)
-                                                sesionViewModel.cargarMisInscripciones()
+                                                Log.d("LoginScreen", "🔑 Token obtenido: $token")
+                                                sesionViewModel.iniciarSesionConTokenYSincronizar(token)
+
                                             } else {
                                                 errorMessage = "Token nulo o vacío."
                                             }

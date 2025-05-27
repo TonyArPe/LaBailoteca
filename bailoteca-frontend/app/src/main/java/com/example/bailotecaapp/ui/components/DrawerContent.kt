@@ -34,7 +34,7 @@ fun DrawerContent(
     sesionViewModel: SesionViewModel
 ) {
     val rol = usuario.rol
-    Log.d("DrawerContent", "Renderizando menú para rol: $rol")
+    Log.d("DrawerContent", "📦 Renderizando menú para rol: $rol")
 
     val opciones = when (rol) {
         Rol.ADMIN -> listOf(
@@ -63,7 +63,7 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Encabezado con imagen y nombre
+        // Encabezado
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -71,6 +71,7 @@ fun DrawerContent(
                 .padding(top = 48.dp, bottom = 16.dp)
                 .clickable {
                     if (rol != Rol.INVITADO) {
+                        Log.d("DrawerContent", "🧭 Navegando a perfil desde cabecera")
                         onItemSelected(DrawerDestination.Perfil.route)
                         onCloseDrawer()
                     }
@@ -102,21 +103,13 @@ fun DrawerContent(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = usuario.nombre,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-
-                Text(
-                    text = rol.name.lowercase().replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
+                Text(usuario.nombre, style = MaterialTheme.typography.titleMedium)
+                Text(rol.name.lowercase().replaceFirstChar { it.uppercase() },
+                    style = MaterialTheme.typography.bodySmall)
             }
         }
 
-        Divider(thickness = 1.dp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+        Divider(thickness = 1.dp)
 
         Column(modifier = Modifier.padding(16.dp)) {
             opciones.forEach { item ->
@@ -124,7 +117,9 @@ fun DrawerContent(
                     label = { Text(item.label) },
                     selected = false,
                     onClick = {
+                        Log.d("DrawerContent", "🧭 Selección de ítem: ${item.route}")
                         if (item == DrawerDestination.Logout) {
+                            Log.d("DrawerContent", "🔒 Logout")
                             sesionViewModel.cerrarSesion()
                             FirebaseAuth.getInstance().signOut()
                             navController.navigate(Screens.Login.route) {

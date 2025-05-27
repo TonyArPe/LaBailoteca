@@ -145,7 +145,7 @@ fun RegisterScreen(
                                         registerViewModel.registrarUsuarioBackend(usuario) { response ->
                                             isLoading = false
                                             if (response.isSuccessful) {
-                                                sesionViewModel.obtenerUsuarioActual()
+                                                sesionViewModel.recuperarSesionDesdePreferencias()
                                                 navController.navigate(Screens.Home.route) {
                                                     popUpTo(0) { inclusive = true }
                                                 }

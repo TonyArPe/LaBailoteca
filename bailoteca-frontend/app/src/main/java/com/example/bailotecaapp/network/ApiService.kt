@@ -12,6 +12,11 @@ import retrofit2.Response
  */
 interface ApiService {
 
+    // SESION
+    @GET("/api/usuarios/me")
+    suspend fun obtenerUsuarioActual(@Header("Authorization") token: String): Usuario
+
+
     // USUARIOS
 
     /**
