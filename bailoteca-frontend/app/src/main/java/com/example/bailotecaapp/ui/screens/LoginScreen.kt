@@ -47,7 +47,7 @@ fun LoginScreen(
     // Redirige al Home una vez el usuario esté cargado
     LaunchedEffect(usuarioCargado, usuario) {
         if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
-            navController.navigate(Screens.Home.route) {
+            navController.navigate("main") {
                 popUpTo(0) { inclusive = true }
                 launchSingleTop = true
             }

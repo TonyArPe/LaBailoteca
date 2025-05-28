@@ -1,4 +1,4 @@
-package com.example.bailotecaapp.ui.components
+package com.example.bailotecaapp.navigation
 
 /**
  * Representa las rutas y etiquetas disponibles en el menú lateral.

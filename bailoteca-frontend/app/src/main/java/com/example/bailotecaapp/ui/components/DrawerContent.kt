@@ -7,23 +7,32 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.R
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.navigation.DrawerDestination
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 /**
- * Menú lateral personalizado que se adapta al rol del usuario autenticado.
+ * Composable del menú lateral (Drawer).
+ * Muestra opciones distintas según el rol del usuario y permite navegar o cerrar sesión.
+ *
+ * @param usuario Usuario actualmente autenticado.
+ * @param onItemSelected Callback con la ruta seleccionada.
+ * @param navController Controlador de navegación global.
+ * @param onCloseDrawer Función a ejecutar al cerrar el Drawer.
+ * @param sesionViewModel ViewModel de sesión para cerrar sesión correctamente.
  */
 @Composable
 fun DrawerContent(
@@ -36,6 +45,7 @@ fun DrawerContent(
     val rol = usuario.rol
     Log.d("DrawerContent", "📦 Renderizando menú para rol: $rol")
 
+    // Opciones por rol
     val opciones = when (rol) {
         Rol.ADMIN -> listOf(
             DrawerDestination.Home,
@@ -44,13 +54,7 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-        Rol.PROFESOR -> listOf(
-            DrawerDestination.Home,
-            DrawerDestination.Clases,
-            DrawerDestination.Perfil,
-            DrawerDestination.Logout
-        )
-        Rol.USUARIO -> listOf(
+        Rol.PROFESOR, Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,
@@ -62,13 +66,17 @@ fun DrawerContent(
         )
     }
 
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    Log.d("DrawerContent", "📍 Ruta actual: $currentRoute")
+
     Column(
         modifier = Modifier
             .fillMaxHeight()
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Cabecera con foto y nombre
+        // Cabecera con datos de usuario
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -79,7 +87,10 @@ fun DrawerContent(
                     onCloseDrawer()
                 }
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 val painter = if (usuario.fotoPerfil.isNullOrEmpty())
                     painterResource(id = R.drawable.default_profile)
                 else rememberAsyncImagePainter(usuario.fotoPerfil)
@@ -93,7 +104,6 @@ fun DrawerContent(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                         .padding(4.dp)
                 )
-
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(usuario.nombre, style = MaterialTheme.typography.titleMedium)
                 Text(
@@ -105,22 +115,25 @@ fun DrawerContent(
 
         Divider(thickness = 1.dp)
 
+        // Ítems del menú
         Column(modifier = Modifier.padding(16.dp)) {
             opciones.forEach { item ->
                 NavigationDrawerItem(
                     label = { Text(item.label) },
-                    selected = false,
+                    selected = currentRoute == item.route,
                     onClick = {
                         Log.d("DrawerContent", "🧭 Selección de ítem: ${item.route}")
                         if (item == DrawerDestination.Logout) {
-                            Log.d("DrawerContent", "🔒 Logout")
+                            Log.d("DrawerContent", "🔒 Logout solicitado")
                             sesionViewModel.cerrarSesion()
                             FirebaseAuth.getInstance().signOut()
                             navController.navigate(Screens.Login.route) {
                                 popUpTo(0) { inclusive = true }
                             }
                         } else {
-                            onItemSelected(item.route)
+                            if (item.route != currentRoute) {
+                                onItemSelected(item.route)
+                            }
                         }
                         onCloseDrawer()
                     },

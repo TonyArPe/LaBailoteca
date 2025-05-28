@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,9 @@ fun HomeScreen(
     val usuarioState by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
+
+    var isDarkMode by remember { mutableStateOf(false) }
+
 
     // Lógica para cargar usuario al entrar
     LaunchedEffect(Unit) {
@@ -51,6 +55,19 @@ fun HomeScreen(
             CircularProgressIndicator()
         }
         return
+    }
+
+    @Composable
+    fun ModoOscuroToggle(
+        isDark: Boolean,
+        onToggle: (Boolean) -> Unit
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Modo oscuro")
+            Switch(checked = isDark, onCheckedChange = onToggle)
+        }
     }
 
     val usuario = usuarioState!!

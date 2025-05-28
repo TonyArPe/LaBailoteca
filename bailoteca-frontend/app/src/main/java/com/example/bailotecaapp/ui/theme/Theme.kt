@@ -5,37 +5,37 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val LightColorScheme = lightColorScheme(
-    primary = Magenta,
-    secondary = Lima,
-    background = Blanco,
-    surface = Color(0xFFF1F1F1),
-    onPrimary = Blanco,
-    onSecondary = Negro,
-    onBackground = TextoOscuro,
-    onSurface = TextoOscuro
+val BailotecaLightColorScheme = lightColorScheme(
+    primary = Color(0xFFEC007F),
+    secondary = Color(0xFF95D600),
+    background = Color(0xFFFFFFFF),
+    surface = Color(0xFFF5F5F5),
+    onPrimary = Color.White,
+    onSecondary = Color.Black,
+    onBackground = Color.Black,
+    onSurface = Color.Black,
 )
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Magenta,
-    secondary = Lima,
-    background = GrisOscuro,
-    surface = GrisSurface,
-    onPrimary = Blanco,
-    onSecondary = Negro,
-    onBackground = TextoClaro,
-    onSurface = TextoClaro
+val BailotecaDarkColorScheme = darkColorScheme(
+    primary = Color(0xFFEC007F),
+    secondary = Color(0xFF95D600),
+    background = Color(0xFF1C1C1C),
+    surface = Color(0xFF2A2A2A),
+    onPrimary = Color.White,
+    onSecondary = Color.White,
+    onBackground = Color.White,
+    onSurface = Color.White,
 )
 
 @Composable
-fun BailotecaAppTheme(
+fun BailotecaTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
+    val colors = if (darkTheme) BailotecaDarkColorScheme else BailotecaLightColorScheme
 
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = colors,
         typography = Typography,
         content = content
     )
