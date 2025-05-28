@@ -1,4 +1,4 @@
-package com.example.bailotecaapp.ui.screens.invitado.components.personalizacion
+package com.example.bailotecaapp.ui.components.personalizacion
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -9,15 +9,16 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 
 @Composable
-fun FondoGradiente(content: @Composable () -> Unit) {
+fun FondoBailotecaGeneral(content: @Composable () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1E1E1E), // Fondo superior oscuro
-                        Color(0xFF121212)  // Inferior aún más oscuro
+                        Color(0xFF181818),     // Negro suave
+                        Color(0xFFDA1884),     // Fucsia
+                        Color(0xFF78BE20),     // Verde Bailoteca
                     )
                 )
             )

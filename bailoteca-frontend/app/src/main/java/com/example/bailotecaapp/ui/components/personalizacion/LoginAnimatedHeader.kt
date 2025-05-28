@@ -1,4 +1,4 @@
-package com.example.bailotecaapp.ui.screens.invitado.components.personalizacion
+package com.example.bailotecaapp.ui.components.personalizacion
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween

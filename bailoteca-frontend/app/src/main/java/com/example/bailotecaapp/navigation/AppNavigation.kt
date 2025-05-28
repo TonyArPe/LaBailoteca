@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.navigation
 
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -10,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
+import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
 /**
@@ -148,9 +150,14 @@ fun AppNavigation(
         // Invitado
         composable("invitado_home") {
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen()
+                InvitadoHomeScreen(
+                    navController = navController,
+                    sesionViewModel = hiltViewModel(),
+                    claseViewModel = hiltViewModel(),
+                    eventoViewModel = hiltViewModel()
+                )
             } else {
-                androidx.compose.material3.Text("Esta pantalla no es compatible con versiones anteriores a Android 8 (API 26).")
+                Text("Esta pantalla no es compatible con versiones anteriores a Android O")
             }
         }
     }

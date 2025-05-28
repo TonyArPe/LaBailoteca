@@ -17,8 +17,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
-import com.example.bailotecaapp.ui.screens.invitado.components.personalizacion.FondoGradiente
-import com.example.bailotecaapp.ui.screens.invitado.components.personalizacion.LoginAnimatedHeader
+import com.example.bailotecaapp.ui.components.personalizacion.FondoGradiente
+import com.example.bailotecaapp.ui.components.personalizacion.LoginAnimatedHeader
 import com.example.bailotecaapp.ui.theme.VerdeBailoteca
 import com.example.bailotecaapp.viewmodel.LoginViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel

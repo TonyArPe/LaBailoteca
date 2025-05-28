@@ -64,7 +64,7 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
             if (usuario == null) {
                 System.out.println("⛔ FILTRO FIREBASE - Usuario no registrado en la base de datos");
                 response.sendError(HttpServletResponse.SC_FORBIDDEN, "Usuario no registrado en backend");
-                return; // ← CORTAMOS LA CADENA
+                return; // CORTAMOS LA CADENA
             }
 
             // Autenticación manual
