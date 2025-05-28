@@ -92,7 +92,7 @@ fun DrawerContentInvitado(
         ) {
             Icon(
                 imageVector = Icons.Default.ExitToApp,
-                contentDescription = "Cerrar sesión",
+                contentDescription = "Volver al Login",
                 tint = MaterialTheme.colorScheme.error
             )
             Spacer(modifier = Modifier.width(8.dp))

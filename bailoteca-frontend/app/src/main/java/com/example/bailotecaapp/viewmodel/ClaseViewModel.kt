@@ -45,6 +45,10 @@ class ClaseViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    init {
+        obtenerClasesPublicas()
+    }
+
     /**
      * Obtiene la lista de clases disponibles desde la API para usuarios logueados.
      */
@@ -79,10 +83,12 @@ class ClaseViewModel @Inject constructor(
     fun obtenerClasesPublicas() {
         viewModelScope.launch {
             try {
+                Log.d("ClaseViewModel", "🔄 Cargando clases públicas...")
                 val response = api.obtenerClases()
                 _clases.value = response
+                Log.d("ClaseViewModel", "✅ Clases públicas cargadas: ${response.size}")
             } catch (e: Exception) {
-                Log.e("ClaseViewModel", "Error al obtener clases públicas", e)
+                Log.e("ClaseViewModel", "❌ Error al obtener clases públicas", e)
             }
         }
     }
