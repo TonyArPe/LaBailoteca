@@ -17,6 +17,7 @@ import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.ui.screens.clases.ClaseDetailProfesorScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseDetailScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
+import com.example.bailotecaapp.ui.screens.clases.CrearEditarClaseScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
@@ -102,6 +103,25 @@ fun AppNavigation(
                     ClaseDetailScreen(navController, claseId)
                 }
             }
+        }
+
+        composable(
+            route = "crearEditarClase",
+        ) {
+            CrearEditarClaseScreen(
+                navController = navController
+            )
+        }
+
+        composable(
+            route = "crearEditarClase/{claseId}",
+            arguments = listOf(navArgument("claseId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+            CrearEditarClaseScreen(
+                navController = navController,
+                claseId = claseId
+            )
         }
 
         // Modo invitado

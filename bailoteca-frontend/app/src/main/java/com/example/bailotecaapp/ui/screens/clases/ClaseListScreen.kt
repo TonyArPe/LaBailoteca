@@ -89,7 +89,17 @@ fun ClaseListScreen(
         }
     }
 
-    Scaffold { padding ->
+    Scaffold(
+        floatingActionButton = {
+            if (usuario?.rol == Rol.PROFESOR) {
+                FloatingActionButton(onClick = {
+                    navController.navigate("crearEditarClase")
+                }) {
+                    Text("+")
+                }
+            }
+        }
+    ) { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -108,20 +118,30 @@ fun ClaseListScreen(
                     items(clases, key = { it.id }) { clase ->
                         val yaInscrito = inscripciones.any { it.clase?.id == clase.id }
 
-                        ClaseCard(
-                            clase = clase,
-                            usuarioActual = usuario,
-                            inscripciones = inscripciones,
-                            yaInscrito = yaInscrito,
-                            onInscribirse = {
-                                if (usuario!!.rol != Rol.INVITADO) {
-                                    inscribirseAClase(it)
-                                } else {
-                                    Toast.makeText(context, "Inicia sesión para inscribirte", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                            onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) }
-                        )
+                        if (usuario!!.rol == Rol.PROFESOR && clase.profesor.id == usuario!!.id) {
+                            ClaseCardProfesor(
+                                clase = clase,
+                                usuarioActual = usuario!!,
+                                navController = navController,
+                                claseViewModel = viewModel,
+                                sesionViewModel = sesionViewModel
+                            )
+                        } else {
+                            ClaseCard(
+                                clase = clase,
+                                usuarioActual = usuario,
+                                inscripciones = inscripciones,
+                                yaInscrito = yaInscrito,
+                                onInscribirse = {
+                                    if (usuario!!.rol != Rol.INVITADO) {
+                                        inscribirseAClase(it)
+                                    } else {
+                                        Toast.makeText(context, "Inicia sesión para inscribirte", Toast.LENGTH_SHORT).show()
+                                    }
+                                },
+                                onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) }
+                            )
+                        }
                     }
                 }
             }

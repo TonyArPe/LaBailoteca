@@ -1,5 +1,7 @@
 package com.bailoteca.dto;
 
+import java.util.List;
+
 import com.bailoteca.models.enums.Dificultad;
 import lombok.Data;
 
@@ -11,7 +13,9 @@ import lombok.Data;
 public class ClaseRequest {
     private String nombre;
     private String descripcion;
+    private String ubicacion;
     private String videoPresentacion;
     private Dificultad dificultad;
     private boolean publica;
+    private List<HorarioClaseRequest> horarioClases;
 }

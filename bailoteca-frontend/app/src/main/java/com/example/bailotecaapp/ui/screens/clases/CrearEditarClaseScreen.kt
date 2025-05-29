@@ -44,7 +44,7 @@ fun CrearEditarClaseScreen(
         var nombre by remember { mutableStateOf(TextFieldValue()) }
         var descripcion by remember { mutableStateOf(TextFieldValue()) }
         var ubicacion by remember { mutableStateOf(TextFieldValue()) }
-        var dificultad by remember { mutableStateOf(Dificultad.INICIAL) }
+        var dificultad: Dificultad? by remember { mutableStateOf(Dificultad.INICIAL) }
         var video by remember { mutableStateOf(TextFieldValue()) }
 
         // Al cargar en edición
@@ -88,7 +88,7 @@ fun CrearEditarClaseScreen(
                             ubicacion = ubicacion.text,
                             dificultad = dificultad,
                             videoPresentacion = video.text,
-                            horarioClases = emptyList() // opcional
+                            horarioClases = emptyList()
                         )
 
                         scope.launch {
@@ -118,11 +118,11 @@ fun CrearEditarClaseScreen(
 }
 
 @Composable
-fun DropdownMenuBox(selected: Dificultad, onSelected: (Dificultad) -> Unit) {
+fun DropdownMenuBox(selected: Dificultad?, onSelected: (Dificultad) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
     Box {
         OutlinedButton(onClick = { expanded = true }) {
-            Text("Dificultad: ${selected.name.lowercase().replaceFirstChar { it.uppercase() }}")
+            Text("Dificultad: ${selected?.name?.lowercase()?.replaceFirstChar { it.uppercase() }}")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             Dificultad.values().forEach {

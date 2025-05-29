@@ -2,6 +2,7 @@ package com.bailoteca.controller.clase;
 
 import com.bailoteca.dto.ClaseRequest;
 import com.bailoteca.models.clase.Clase;
+import com.bailoteca.models.clase.HorarioClase;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.clase.ClaseRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
@@ -10,6 +11,7 @@ import com.bailoteca.service.ClaseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -28,6 +30,18 @@ public class ClaseController {
     private final UsuarioRepo usuarioRepo;
     private final ClaseService claseService;
 
+    private Usuario getUsuarioAutenticado() {
+        try {
+            String correo = ((UserDetails) SecurityContextHolder
+                    .getContext()
+                    .getAuthentication()
+                    .getPrincipal()).getUsername();
+            return usuarioRepo.findByCorreo(correo).orElse(null);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     /**
      * Devuelve todas las clases disponibles (acceso público o autenticado).
      */
@@ -42,6 +56,16 @@ public class ClaseController {
     @GetMapping("/{id}")
     public ResponseEntity<Clase> getById(@PathVariable Long id) {
         return ResponseEntity.of(claseRepo.findById(id));
+    }
+
+    @PreAuthorize("hasRole('PROFESOR')")
+    @GetMapping("/mias")
+    public ResponseEntity<List<Clase>> getClasesPropias() {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        return ResponseEntity.ok(claseRepo.findByProfesorId(actual.getId()));
     }
 
     /**
@@ -70,15 +94,21 @@ public class ClaseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         if (actual.getRol().name().equals("ADMIN") || actual.getRol().name().equals("PROFESOR")) {
+            List<HorarioClase> horarios = claseRequest.getHorarioClases().stream()
+                    .map(req -> new HorarioClase(null, req.getDiaSemana(), req.getHoraInicio(), req.getHoraFin(), null))
+                    .toList();
+
             Clase clase = new Clase();
             clase.setNombre(claseRequest.getNombre());
             clase.setDescripcion(claseRequest.getDescripcion());
+            clase.setUbicacion(claseRequest.getUbicacion());
             clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
             clase.setDificultad(claseRequest.getDificultad());
             clase.setPublica(claseRequest.isPublica());
             clase.setProfesor(actual);
 
-            return ResponseEntity.ok(claseRepo.save(clase));
+            Clase claseGuardada = claseService.guardarClaseConHorarios(clase, horarios);
+            return ResponseEntity.ok(claseGuardada);
         }
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -98,46 +128,21 @@ public class ClaseController {
             if (actual.getRol().name().equals("ADMIN") || clase.getProfesor().getId().equals(actual.getId())) {
                 clase.setNombre(claseRequest.getNombre());
                 clase.setDescripcion(claseRequest.getDescripcion());
+                clase.setUbicacion(claseRequest.getUbicacion());
                 clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
                 clase.setDificultad(claseRequest.getDificultad());
                 clase.setPublica(claseRequest.isPublica());
-                return ResponseEntity.ok(claseRepo.save(clase));
+
+                List<HorarioClase> horarios = claseRequest.getHorarioClases().stream()
+                        .map(req -> new HorarioClase(null, req.getDiaSemana(), req.getHoraInicio(), req.getHoraFin(),
+                                null))
+                        .toList();
+
+                Clase claseActualizada = claseService.actualizarClaseYHorarios(clase, horarios);
+                return ResponseEntity.ok(claseActualizada);
             }
             return ResponseEntity.status(HttpStatus.FORBIDDEN).<Clase>build();
         }).orElse(ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Elimina una clase si el usuario autenticado es el profesor asignado o ADMIN.
-     */
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteClase(@PathVariable Long id) {
-        Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        return claseRepo.findById(id).map(clase -> {
-            if (actual.getRol().name().equals("ADMIN") || clase.getProfesor().getId().equals(actual.getId())) {
-                claseRepo.deleteById(id);
-                return ResponseEntity.ok().build();
-            }
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }).orElse(ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Método auxiliar para obtener el usuario autenticado.
-     */
-    private Usuario getUsuarioAutenticado() {
-        try {
-            String correo = ((UserDetails) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal()).getUsername();
-            return usuarioRepo.findByCorreo(correo).orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
     }
 
     /**

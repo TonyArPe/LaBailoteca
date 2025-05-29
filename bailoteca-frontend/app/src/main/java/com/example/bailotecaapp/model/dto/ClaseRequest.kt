@@ -8,6 +8,7 @@ data class ClaseRequest(
     val nombre: String,
     val descripcion: String,
     val videoPresentacion: String,
-    val dificultad: Dificultad,
+    val ubicacion: String,
+    val dificultad: Dificultad?,
     val horarioClases: List<HorarioClaseRequest>
 )
