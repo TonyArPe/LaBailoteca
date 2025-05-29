@@ -1,4 +1,4 @@
-package com.example.bailotecaapp.ui.screens
+package com.example.bailotecaapp.ui.screens.clases
 
 import android.util.Log
 import android.widget.Toast

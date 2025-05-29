@@ -5,8 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Clase
 import com.example.bailotecaapp.model.Inscripcion
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.network.ApiService
+import com.example.bailotecaapp.network.session.SesionManager
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -23,7 +25,8 @@ import javax.inject.Inject
  */
 @HiltViewModel
 class ClaseViewModel @Inject constructor(
-    private val api: ApiService
+    private val api: ApiService,
+    private val sesionManager: SesionManager
 ) : ViewModel() {
 
     // Lista de clases disponibles
@@ -44,6 +47,9 @@ class ClaseViewModel @Inject constructor(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _alumnosInscritos = MutableStateFlow<List<Usuario>>(emptyList())
+    val alumnosInscritos: StateFlow<List<Usuario>> = _alumnosInscritos
 
     init {
         obtenerClasesPublicas()
@@ -153,5 +159,21 @@ class ClaseViewModel @Inject constructor(
      */
     suspend fun eliminarInscripcion(token: String, inscripcionId: Long): Response<Void> {
         return api.eliminarInscripcion("Bearer $token", inscripcionId)
+    }
+
+    fun cargarAlumnosInscritos(claseId: Long) {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken() ?: return@launch
+                val response = api.obtenerAlumnosPorProfesor(claseId, "Bearer $token")
+                if (response.isSuccessful) {
+                    _alumnosInscritos.value = response.body() ?: emptyList()
+                } else {
+                    Log.e("ClaseViewModel", "❌ Error al obtener alumnos: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("ClaseViewModel", "❌ Excepción al cargar alumnos: ${e.message}")
+            }
+        }
     }
 }

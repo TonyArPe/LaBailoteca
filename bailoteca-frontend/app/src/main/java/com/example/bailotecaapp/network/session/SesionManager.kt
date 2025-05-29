@@ -41,6 +41,34 @@ class SesionManager @Inject constructor(
     val yaCargado: StateFlow<Boolean> = _yaCargado
 
     /**
+     * Devuelve el token JWT actualmente almacenado en memoria.
+     * Si no está en memoria, lo intenta cargar desde DataStore.
+     *
+     * @return Token JWT o null si no existe.
+     */
+    suspend fun getToken(): String? {
+        // Devuelve token en memoria si existe
+        token.value?.let {
+            return it
+        }
+
+        // Si no hay token en memoria, lo intenta restaurar desde preferencias
+        return TokenPreferences.obtenerToken(context)?.also {
+            _token.value = it
+        }
+    }
+
+    suspend fun guardarToken(token: String) {
+        TokenPreferences.guardarToken(context, token)
+        _token.value = token
+    }
+
+    suspend fun borrarToken() {
+        TokenPreferences.borrarToken(context)
+        _token.value = null
+    }
+
+    /**
      * Restaura la sesión desde DataStore si existen token y usuario guardados.
      *
      * Se utiliza normalmente al iniciar la app para intentar restablecer el estado

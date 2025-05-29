@@ -7,13 +7,22 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
+import com.example.bailotecaapp.ui.screens.clases.ClaseDetailProfesorScreen
+import com.example.bailotecaapp.ui.screens.clases.ClaseDetailScreen
+import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
+import com.example.bailotecaapp.ui.screens.login.LoginScreen
+import com.example.bailotecaapp.ui.screens.login.RegisterScreen
+import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 
 /**
  * Controlador principal de navegación de la app.
@@ -79,6 +88,20 @@ fun AppNavigation(
         }
         composable(Screens.Perfil.route) {
             ProfileScreen(navController, sesionViewModel)
+        }
+
+        composable(
+            route = Screens.ClaseDetail.route,
+            arguments = listOf(navArgument("claseId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                if (usuario.rol == Rol.PROFESOR) {
+                    ClaseDetailProfesorScreen(navController, claseId)
+                } else {
+                    ClaseDetailScreen(navController, claseId)
+                }
+            }
         }
 
         // Modo invitado

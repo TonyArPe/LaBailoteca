@@ -104,6 +104,12 @@ interface ApiService {
     @GET("/api/eventos/publicos")
     suspend fun obtenerEventos(): List<Evento>
 
+    @GET("usuarios/profesor/{claseId}/alumnos")
+    suspend fun obtenerAlumnosPorProfesor(
+        @Path("claseId") claseId: Long,
+        @Header("Authorization") token: String
+    ): Response<List<Usuario>>
+
     // INSCRIPCIONES
 
     /**

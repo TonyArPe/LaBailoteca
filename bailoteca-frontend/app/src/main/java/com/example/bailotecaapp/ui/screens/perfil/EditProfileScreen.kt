@@ -1,4 +1,4 @@
-package com.example.bailotecaapp.ui.screens
+package com.example.bailotecaapp.ui.screens.perfil
 
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult

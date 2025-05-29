@@ -37,24 +37,26 @@ public class UsuarioController {
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
     @GetMapping
-    public ResponseEntity<List<Usuario>> getUsuarios() {
+    public ResponseEntity<?> getUsuarios() {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
         if (actual.getRol().name().equals("ADMIN")) {
-            return ResponseEntity.ok(usuarioRepo.findAll());
+            return ResponseEntity.ok(usuarioRepo.findAll()); // List<Usuario>
         }
 
         if (actual.getRol().name().equals("PROFESOR")) {
-            return ResponseEntity.ok(usuarioRepo.findAlumnosPorProfesor(actual.getId()));
+            return ResponseEntity.ok(usuarioRepo.findAlumnosPorProfesorId(actual.getId())); // List<UsuarioDTO>
         }
+
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
     /**
-     * Crea un nuevo usuario en el sistema. La contraseña se codifica automáticamente.
+     * Crea un nuevo usuario en el sistema. La contraseña se codifica
+     * automáticamente.
      */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {

@@ -1,4 +1,4 @@
-package com.example.bailotecaapp.ui.screens
+package com.example.bailotecaapp.ui.screens.login
 
 import android.util.Log
 import androidx.compose.foundation.layout.*

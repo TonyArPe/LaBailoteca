@@ -1,6 +1,5 @@
 package com.example.bailotecaapp.navigation
 
-import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
@@ -10,9 +9,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.ui.components.DrawerContent
-import com.example.bailotecaapp.ui.screens.ClaseListScreen
+import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.HomeScreen
-import com.example.bailotecaapp.ui.screens.ProfileScreen
+import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.UserListScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
