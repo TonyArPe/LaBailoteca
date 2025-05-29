@@ -27,7 +27,6 @@ fun HomeScreen(
 
     var isDarkMode by remember { mutableStateOf(false) }
 
-
     // Lógica para cargar usuario al entrar
     LaunchedEffect(Unit) {
         if (usuarioState == null && !sesionViewModel.modoInvitadoForzado.value) {
@@ -63,9 +62,15 @@ fun HomeScreen(
         onToggle: (Boolean) -> Unit
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(vertical = 16.dp)
         ) {
-            Text("Modo oscuro")
+            Text(
+                text = if (isDark) "🌙 Modo Oscuro" else "☀️ Modo Claro",
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(end = 8.dp)
+            )
             Switch(checked = isDark, onCheckedChange = onToggle)
         }
     }
@@ -102,12 +107,20 @@ fun HomeScreen(
             ) {
                 Text("Ver usuarios registrados")
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(onClick = { navController.navigate(Screens.Clases.route) }) {
+        Button(
+            onClick = { navController.navigate(Screens.Clases.route) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Ver clases disponibles")
         }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Toggle de modo oscuro/claro
+        ModoOscuroToggle(isDark = isDarkMode) { isDarkMode = it }
     }
 }
