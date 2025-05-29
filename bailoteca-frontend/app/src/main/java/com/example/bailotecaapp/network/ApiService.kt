@@ -1,6 +1,7 @@
 package com.example.bailotecaapp.network
 
 import com.example.bailotecaapp.model.*
+import com.example.bailotecaapp.model.dto.ClaseRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import retrofit2.http.*
@@ -109,6 +110,25 @@ interface ApiService {
         @Path("claseId") claseId: Long,
         @Header("Authorization") token: String
     ): Response<List<Usuario>>
+
+    @POST("/api/clases")
+    suspend fun crearClase(
+        @Header("Authorization") token: String,
+        @Body request: ClaseRequest
+    ): Response<Void>
+
+    @PUT("/api/clases/{id}")
+    suspend fun actualizarClase(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long,
+        @Body request: ClaseRequest
+    ): Response<Void>
+
+    @DELETE("/api/clases/{id}")
+    suspend fun eliminarClase(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long
+    ): Response<Void>
 
     // INSCRIPCIONES
 

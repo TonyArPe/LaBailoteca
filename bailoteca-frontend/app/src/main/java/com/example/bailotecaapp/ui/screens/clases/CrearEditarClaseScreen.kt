@@ -1,5 +1,3 @@
-package com.example.bailotecaapp.ui.screens.clases
-
 // CRUD para profesores sobre sus propias clases (versión inicial sin UI refinada)
 
 package com.example.bailotecaapp.ui.screens.clases
@@ -90,7 +88,7 @@ fun CrearEditarClaseScreen(
                             ubicacion = ubicacion.text,
                             dificultad = dificultad,
                             videoPresentacion = video.text,
-                            publica = true // de momento fija
+                            horarioClases = emptyList() // opcional
                         )
 
                         scope.launch {

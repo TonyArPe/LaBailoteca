@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Clase
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.ClaseRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
@@ -176,4 +177,17 @@ class ClaseViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun crearClase(token: String, request: ClaseRequest): Response<Void> {
+        return api.crearClase("Bearer $token", request)
+    }
+
+    suspend fun actualizarClase(token: String, claseId: Long, request: ClaseRequest): Response<Void> {
+        return api.actualizarClase("Bearer $token", claseId, request)
+    }
+
+    suspend fun eliminarClase(token: String, claseId: Long): Response<Void> {
+        return api.eliminarClase("Bearer $token", claseId)
+    }
+
 }
