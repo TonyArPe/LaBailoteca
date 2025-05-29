@@ -62,6 +62,8 @@ class SesionViewModel @Inject constructor(
     private val _modoInvitadoForzado = MutableStateFlow(false)
     val modoInvitadoForzado: StateFlow<Boolean> = _modoInvitadoForzado
 
+    val yaCargado = sesionManager.yaCargado
+
     fun obtenerUsuarioActualConToken(token: String) {
         if (usuarioYaCargado.value) {
             Log.d("SesionViewModel", "⛔ Usuario ya cargado, omitiendo nueva llamada a /me")

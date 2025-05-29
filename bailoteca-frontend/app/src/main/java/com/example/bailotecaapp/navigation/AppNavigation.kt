@@ -3,6 +3,8 @@ package com.example.bailotecaapp.navigation
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -18,28 +20,36 @@ import com.example.bailotecaapp.ui.screens.clases.ClaseDetailProfesorScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseDetailScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.clases.CrearEditarClaseScreen
-import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
-import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
+import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.viewmodel.ThemeViewModel
 
-/**
- * Controlador principal de navegación de la app.
- * Define todas las rutas de la app dentro de un único NavHost.
- *
- * @param navController Controlador global de navegación.
- */
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    themeViewModel: ThemeViewModel
 ) {
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val yaCargado by sesionViewModel.yaCargado.collectAsState(initial = false)
     var currentScreen by remember { mutableStateOf(MainScreen.HOME) }
+
+    // 🚫 Si aún no se ha cargado la sesión, no inicies navegación
+    if (!yaCargado) {
+        Box(modifier = Modifier.fillMaxSize()) { /* Carga inicial silenciosa */ }
+        return
+    }
+
+    val startDestination = remember(usuario) {
+        if (usuario != null) "main" else Screens.Login.route
+    }
 
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
@@ -53,7 +63,7 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screens.Login.route,
+        startDestination = startDestination,
         modifier = modifier
     ) {
         composable(Screens.Login.route) {
@@ -105,23 +115,16 @@ fun AppNavigation(
             }
         }
 
-        composable(
-            route = "crearEditarClase",
-        ) {
-            CrearEditarClaseScreen(
-                navController = navController
-            )
+        composable("crearEditarClase") {
+            CrearEditarClaseScreen(navController = navController)
         }
 
         composable(
-            route = "crearEditarClase/{claseId}",
+            "crearEditarClase/{claseId}",
             arguments = listOf(navArgument("claseId") { type = NavType.LongType })
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
-            CrearEditarClaseScreen(
-                navController = navController,
-                claseId = claseId
-            )
+            CrearEditarClaseScreen(navController = navController, claseId = claseId)
         }
 
         // Modo invitado

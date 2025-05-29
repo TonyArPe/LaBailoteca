@@ -6,9 +6,15 @@ import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.RequiresApi
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.bailotecaapp.navigation.AppNavigation
 import com.example.bailotecaapp.ui.theme.BailotecaTheme
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -23,11 +29,22 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "🚀 onCreate llamado, inicializando interfaz")
 
         setContent {
-            BailotecaTheme {
-                val navController = rememberNavController()
+            val navController = rememberNavController()
+            val themeViewModel: ThemeViewModel = hiltViewModel()
+            val isDark = themeViewModel.isDarkTheme.collectAsState(initial = false).value
+
+            BailotecaTheme (darkTheme = isDark) {
+                val sesionViewModel: SesionViewModel = hiltViewModel()
+
+                // Esto ejecuta una sola vez al abrir la app
+                LaunchedEffect(Unit) {
+                    sesionViewModel.recuperarSesionDesdePreferencias()
+                }
 
                 // Este controlador se pasa a la navegacion
-                AppNavigation(navController = navController)
+                AppNavigation(
+                    navController = navController,
+                    themeViewModel = themeViewModel)
             }
         }
     }

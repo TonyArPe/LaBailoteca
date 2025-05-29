@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -24,6 +25,9 @@ fun HomeScreen(
     val usuarioState by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
+    val themeViewModel: ThemeViewModel = hiltViewModel()
+    val isDark by themeViewModel.isDarkTheme.collectAsState(initial = false)
+
 
     var isDarkMode by remember { mutableStateOf(false) }
 
@@ -121,6 +125,9 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         // Toggle de modo oscuro/claro
-        ModoOscuroToggle(isDark = isDarkMode) { isDarkMode = it }
+        ModoOscuroToggle(
+            isDark = isDark,
+            onToggle = { themeViewModel.toggleDarkTheme(it) }
+        )
     }
 }

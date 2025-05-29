@@ -27,9 +27,10 @@ val BailotecaDarkColorScheme = darkColorScheme(
     onSurface = Color.White,
 )
 
+
 @Composable
 fun BailotecaTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    darkTheme: Boolean,
     content: @Composable () -> Unit
 ) {
     val colors = if (darkTheme) BailotecaDarkColorScheme else BailotecaLightColorScheme
