@@ -40,6 +40,7 @@ fun AppNavigation(
     val usuario by sesionViewModel.usuario.collectAsState()
     val yaCargado by sesionViewModel.yaCargado.collectAsState(initial = false)
     var currentScreen by remember { mutableStateOf(MainScreen.HOME) }
+    val themeViewModel: ThemeViewModel = hiltViewModel()
 
     // 🚫 Si aún no se ha cargado la sesión, no inicies navegación
     if (!yaCargado) {
@@ -82,7 +83,8 @@ fun AppNavigation(
                     usuario = usuario,
                     sesionViewModel = sesionViewModel,
                     currentScreen = currentScreen,
-                    onNavigate = { screen -> currentScreen = screen }
+                    onNavigate = { screen -> currentScreen = screen },
+                    themeViewModel = themeViewModel
                 )
             }
         }

@@ -1,12 +1,8 @@
 package com.example.bailotecaapp.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.*
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,33 +13,30 @@ import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 
+/**
+ * Pantalla principal de bienvenida después del login.
+ * Muestra acciones según el rol y da la bienvenida personalizada al usuario.
+ */
 @Composable
 fun HomeScreen(
     navController: NavHostController,
-    sesionViewModel: SesionViewModel = hiltViewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val usuarioState by sesionViewModel.usuario.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
     val error by sesionViewModel.error.collectAsState()
-    val themeViewModel: ThemeViewModel = hiltViewModel()
-    val isDark by themeViewModel.isDarkTheme.collectAsState(initial = false)
 
-
-    var isDarkMode by remember { mutableStateOf(false) }
-
-    // Lógica para cargar usuario al entrar
+    // Cargar usuario al iniciar si no se ha hecho aún
     LaunchedEffect(Unit) {
         if (usuarioState == null && !sesionViewModel.modoInvitadoForzado.value) {
             sesionViewModel.recuperarSesionDesdePreferencias()
         }
     }
 
-    // Mostrar errores si hay
+    // Mostrar error
     if (error != null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Text("Error: $error")
         }
         return
@@ -51,32 +44,10 @@ fun HomeScreen(
 
     // Mostrar loading
     if (isLoading || usuarioState == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
-    }
-
-    @Composable
-    fun ModoOscuroToggle(
-        isDark: Boolean,
-        onToggle: (Boolean) -> Unit
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.padding(vertical = 16.dp)
-        ) {
-            Text(
-                text = if (isDark) "🌙 Modo Oscuro" else "☀️ Modo Claro",
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(end = 8.dp)
-            )
-            Switch(checked = isDark, onCheckedChange = onToggle)
-        }
     }
 
     val usuario = usuarioState!!
@@ -121,13 +92,5 @@ fun HomeScreen(
         ) {
             Text("Ver clases disponibles")
         }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Toggle de modo oscuro/claro
-        ModoOscuroToggle(
-            isDark = isDark,
-            onToggle = { themeViewModel.toggleDarkTheme(it) }
-        )
     }
 }

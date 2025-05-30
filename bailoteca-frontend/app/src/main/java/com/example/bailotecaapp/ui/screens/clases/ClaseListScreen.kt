@@ -31,7 +31,8 @@ import kotlinx.coroutines.tasks.await
 fun ClaseListScreen(
     navController: NavHostController,
     viewModel: ClaseViewModel = hiltViewModel(),
-    sesionViewModel: SesionViewModel = hiltViewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val clases by viewModel.clases.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

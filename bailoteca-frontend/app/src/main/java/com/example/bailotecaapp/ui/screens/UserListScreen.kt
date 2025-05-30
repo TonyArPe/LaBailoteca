@@ -27,7 +27,8 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 @Composable
 fun UserListScreen(
     navController: NavController,
-    viewModel: UsuarioViewModel = hiltViewModel()
+    viewModel: UsuarioViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()

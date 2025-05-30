@@ -1,10 +1,13 @@
 package com.example.bailotecaapp.navigation
 
+import ThemeToggleButton
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
@@ -15,15 +18,20 @@ import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.UserListScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
 
 /**
- * Contenedor principal de la aplicación una vez iniciada la sesión.
- * Muestra la estructura con Drawer + TopBar y renderiza la pantalla actual del NavHost.
+ * Contenedor principal que gestiona la estructura visible de la app (drawer, top bar y contenido).
  *
- * @param globalNavController Controlador global de navegación (único en toda la app).
- * @param usuario Usuario autenticado.
- * @param sesionViewModel ViewModel que gestiona la sesión y datos del usuario.
+ * Este Scaffold se usa después de que el usuario ha iniciado sesión o accede como invitado.
+ *
+ * @param globalNavController Controlador de navegación único de la app.
+ * @param usuario Usuario actual (autenticado o invitado).
+ * @param sesionViewModel ViewModel que gestiona los datos del usuario.
+ * @param currentScreen Pantalla actualmente visible (home, clases, perfil, etc).
+ * @param onNavigate Función que cambia la pantalla activa.
+ * @param themeViewModel ViewModel que controla el modo claro/oscuro.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +40,8 @@ fun MainScaffold(
     usuario: Usuario,
     sesionViewModel: SesionViewModel,
     currentScreen: MainScreen,
-    onNavigate: (MainScreen) -> Unit
+    onNavigate: (MainScreen) -> Unit,
+    themeViewModel: ThemeViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
@@ -66,6 +75,9 @@ fun MainScaffold(
             topBar = {
                 TopAppBar(
                     title = { Text("Bailoteca") },
+                    actions = {
+                        ThemeToggleButton(themeViewModel)
+                    },
                     navigationIcon = {
                         IconButton(onClick = {
                             coroutineScope.launch {
@@ -78,11 +90,29 @@ fun MainScaffold(
                 )
             }
         ) { padding ->
+            // Aplicamos padding para respetar la barra superior y otros elementos del Scaffold
             when (currentScreen) {
-                MainScreen.HOME -> HomeScreen(globalNavController, sesionViewModel)
-                MainScreen.CLASES -> ClaseListScreen(globalNavController, hiltViewModel(), sesionViewModel)
-                MainScreen.USUARIOS -> UserListScreen(globalNavController, hiltViewModel())
-                MainScreen.PERFIL -> ProfileScreen(globalNavController, sesionViewModel)
+                MainScreen.HOME -> HomeScreen(
+                    navController = globalNavController,
+                    sesionViewModel = sesionViewModel,
+                    modifier = Modifier.padding(padding)
+                )
+                MainScreen.CLASES -> ClaseListScreen(
+                    navController = globalNavController,
+                    viewModel = hiltViewModel(),
+                    sesionViewModel = sesionViewModel,
+                    modifier = Modifier.padding(padding)
+                )
+                MainScreen.USUARIOS -> UserListScreen(
+                    navController = globalNavController,
+                    viewModel = hiltViewModel(),
+                    modifier = Modifier.padding(padding)
+                )
+                MainScreen.PERFIL -> ProfileScreen(
+                    navController = globalNavController,
+                    sesionViewModel = sesionViewModel,
+                    modifier = Modifier.padding(padding)
+                )
             }
         }
     }

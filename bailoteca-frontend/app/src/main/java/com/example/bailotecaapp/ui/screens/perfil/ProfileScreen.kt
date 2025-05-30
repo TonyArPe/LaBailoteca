@@ -28,7 +28,8 @@ import com.example.bailotecaapp.model.enums.Rol
 @Composable
 fun ProfileScreen(
     navController: NavHostController,
-    sesionViewModel: SesionViewModel = hiltViewModel()
+    sesionViewModel: SesionViewModel = hiltViewModel(),
+    modifier: Modifier = Modifier
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
 
