@@ -12,5 +12,6 @@ data class Clase(
     val dificultad: Dificultad?,
     val videoPresentacion: String,
 
-    val horarioClases: List<HorarioClase>
+    val horarioClases: List<HorarioClase>,
+    val publica: Boolean
 )

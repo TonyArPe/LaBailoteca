@@ -10,5 +10,6 @@ data class ClaseRequest(
     val videoPresentacion: String,
     val ubicacion: String,
     val dificultad: Dificultad?,
-    val horarioClases: List<HorarioClaseRequest>
+    val horarioClases: List<HorarioClaseRequest>,
+    val publica: Boolean = true
 )

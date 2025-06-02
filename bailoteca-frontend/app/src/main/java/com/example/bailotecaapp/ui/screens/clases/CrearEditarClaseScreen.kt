@@ -50,6 +50,7 @@ fun CrearEditarClaseScreen(
         var ubicacion by remember { mutableStateOf(TextFieldValue()) }
         var dificultad: Dificultad? by remember { mutableStateOf(Dificultad.INICIAL) }
         var video by remember { mutableStateOf(TextFieldValue()) }
+        var publica by remember { mutableStateOf(true) }
 
         // Al cargar en edición
         LaunchedEffect(claseId) {
@@ -66,6 +67,7 @@ fun CrearEditarClaseScreen(
                 ubicacion = TextFieldValue(it.ubicacion)
                 dificultad = it.dificultad
                 video = TextFieldValue(it.videoPresentacion)
+                publica = it.publica
             }
         }
 
@@ -102,6 +104,21 @@ fun CrearEditarClaseScreen(
                 OutlinedTextField(value = video, onValueChange = { video = it }, label = { Text("Video presentación") })
 
                 DropdownMenuBox(selected = dificultad, onSelected = { dificultad = it })
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Clase pública", style = MaterialTheme.typography.bodyMedium)
+                    Switch(
+                        checked = publica,
+                        onCheckedChange = { publica = it },
+                        colors = SwitchDefaults.colors(
+                            checkedThumbColor = MaterialTheme.colorScheme.primary,
+                            uncheckedThumbColor = MaterialTheme.colorScheme.secondary
+                        )
+                    )
+                }
 
                 Button(
                     onClick = {
@@ -111,7 +128,8 @@ fun CrearEditarClaseScreen(
                             ubicacion = ubicacion.text,
                             dificultad = dificultad,
                             videoPresentacion = video.text,
-                            horarioClases = emptyList()
+                            horarioClases = emptyList(),
+                            publica = true
                         )
 
                         scope.launch {

@@ -153,4 +153,28 @@ public class ClaseController {
         return claseService.obtenerTodasLasClasesVisiblesParaInvitados();
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
+    public ResponseEntity<Void> eliminarClase(@PathVariable Long id) {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        var claseOptional = claseRepo.findById(id);
+        if (claseOptional.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Clase clase = claseOptional.get();
+        boolean esPropietario = clase.getProfesor().getId().equals(actual.getId());
+        boolean esAdmin = actual.getRol().name().equals("ADMIN");
+
+        if (esAdmin || esPropietario) {
+            claseRepo.delete(clase);
+            return ResponseEntity.noContent().build(); // 204
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403
+        }
+    }
+
 }
