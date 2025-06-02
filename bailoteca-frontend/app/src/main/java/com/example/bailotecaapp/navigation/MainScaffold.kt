@@ -1,38 +1,28 @@
 package com.example.bailotecaapp.navigation
 
 import ThemeToggleButton
+import android.util.Log
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.ui.components.DrawerContent
-import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.HomeScreen
-import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.UserListScreen
+import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
+import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
 
-/**
- * Contenedor principal que gestiona la estructura visible de la app (drawer, top bar y contenido).
- *
- * Este Scaffold se usa después de que el usuario ha iniciado sesión o accede como invitado.
- *
- * @param globalNavController Controlador de navegación único de la app.
- * @param usuario Usuario actual (autenticado o invitado).
- * @param sesionViewModel ViewModel que gestiona los datos del usuario.
- * @param currentScreen Pantalla actualmente visible (home, clases, perfil, etc).
- * @param onNavigate Función que cambia la pantalla activa.
- * @param themeViewModel ViewModel que controla el modo claro/oscuro.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffold(
@@ -46,74 +36,119 @@ fun MainScaffold(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
 
+    val backStackEntry by globalNavController.currentBackStackEntryAsState()
+    val currentDestination = backStackEntry?.destination
+    val currentRoute = currentDestination?.route ?: ""
+    val currentBaseRoute = currentRoute.split("/").firstOrNull() ?: ""
+
+    // Rutas principales que muestran Drawer
+    val mainRoutes = setOf(
+        Screens.Home.route,
+        Screens.Clases.route,
+        Screens.Usuarios.route,
+        Screens.Perfil.route,
+        Screens.InvitadoHome.route
+    )
+
+    val showDrawer = currentBaseRoute in mainRoutes
+    val showBack = !showDrawer
+
+    Log.d("MainScaffold", "🔍 Ruta actual completa: $currentRoute")
+    Log.d("MainScaffold", "🧩 BaseRoute: $currentBaseRoute")
+    Log.d("MainScaffold", "📦 showDrawer: $showDrawer, showBack: $showBack")
+
+    val topBarTitle = when {
+        currentRoute.contains("clase/") -> "Detalle de clase"
+        else -> "Bailoteca"
+    }
+
+    val topBarNavigationIcon: @Composable (() -> Unit) = {
+        if (showDrawer) {
+            Log.d("MainScaffold", "👈 Mostrando botón menú (Drawer)")
+            IconButton(onClick = {
+                coroutineScope.launch { drawerState.open() }
+            }) {
+                Icon(Icons.Default.Menu, contentDescription = "Menú")
+            }
+        } else if (showBack) {
+            Log.d("MainScaffold", "🔙 Mostrando botón atrás")
+            IconButton(onClick = {
+                globalNavController.popBackStack()
+            }) {
+                Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+            }
+        }
+    }
+
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            DrawerContent(
-                usuario = usuario,
-                onItemSelected = { route ->
-                    coroutineScope.launch { drawerState.close() }
-                    when (route) {
-                        DrawerDestination.Home.route -> onNavigate(MainScreen.HOME)
-                        DrawerDestination.Clases.route -> onNavigate(MainScreen.CLASES)
-                        DrawerDestination.Perfil.route -> onNavigate(MainScreen.PERFIL)
-                        DrawerDestination.Usuarios.route -> onNavigate(MainScreen.USUARIOS)
-                        DrawerDestination.Logout.route -> {
-                            sesionViewModel.cerrarSesion()
-                        }
-                    }
-                },
-                navController = globalNavController,
-                onCloseDrawer = {
-                    coroutineScope.launch { drawerState.close() }
-                },
-                sesionViewModel = sesionViewModel
-            )
+            if (showDrawer) {
+                Log.d("MainScaffold", "📂 Renderizando DrawerContent")
+                DrawerContent(
+                    usuario = usuario,
+                    onItemSelected = { route ->
+                        coroutineScope.launch { drawerState.close() }
+                        onNavigate(
+                            when (route) {
+                                Screens.Home.route -> MainScreen.HOME
+                                Screens.Clases.route -> MainScreen.CLASES
+                                Screens.Usuarios.route -> MainScreen.USUARIOS
+                                Screens.Perfil.route -> MainScreen.PERFIL
+                                else -> MainScreen.HOME
+                            }
+                        )
+                    },
+                    navController = globalNavController,
+                    onCloseDrawer = {
+                        coroutineScope.launch { drawerState.close() }
+                    },
+                    sesionViewModel = sesionViewModel
+                )
+            } else {
+                Log.d("MainScaffold", "📂 Drawer oculto por ruta")
+            }
         }
     ) {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Bailoteca") },
+                    title = { Text(topBarTitle) },
+                    navigationIcon = topBarNavigationIcon,
                     actions = {
                         ThemeToggleButton(themeViewModel)
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                drawerState.open()
-                            }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menú")
-                        }
                     }
                 )
+            },
+            content = { padding ->
+                Log.d("MainScaffold", "📦 Renderizando contenido para: ${currentScreen.name}")
+                when (currentScreen) {
+                    MainScreen.HOME -> HomeScreen(
+                        navController = globalNavController,
+                        sesionViewModel = sesionViewModel,
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    MainScreen.CLASES -> ClaseListScreen(
+                        navController = globalNavController,
+                        viewModel = hiltViewModel(),
+                        sesionViewModel = sesionViewModel,
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    MainScreen.USUARIOS -> UserListScreen(
+                        navController = globalNavController,
+                        viewModel = hiltViewModel(),
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    MainScreen.PERFIL -> ProfileScreen(
+                        navController = globalNavController,
+                        sesionViewModel = sesionViewModel,
+                        modifier = Modifier.padding(padding)
+                    )
+                }
             }
-        ) { padding ->
-            // Aplicamos padding para respetar la barra superior y otros elementos del Scaffold
-            when (currentScreen) {
-                MainScreen.HOME -> HomeScreen(
-                    navController = globalNavController,
-                    sesionViewModel = sesionViewModel,
-                    modifier = Modifier.padding(padding)
-                )
-                MainScreen.CLASES -> ClaseListScreen(
-                    navController = globalNavController,
-                    viewModel = hiltViewModel(),
-                    sesionViewModel = sesionViewModel,
-                    modifier = Modifier.padding(padding)
-                )
-                MainScreen.USUARIOS -> UserListScreen(
-                    navController = globalNavController,
-                    viewModel = hiltViewModel(),
-                    modifier = Modifier.padding(padding)
-                )
-                MainScreen.PERFIL -> ProfileScreen(
-                    navController = globalNavController,
-                    sesionViewModel = sesionViewModel,
-                    modifier = Modifier.padding(padding)
-                )
-            }
-        }
+        )
     }
 }

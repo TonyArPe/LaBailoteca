@@ -16,14 +16,12 @@ import androidx.navigation.navArgument
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
-import com.example.bailotecaapp.ui.screens.clases.ClaseDetailProfesorScreen
-import com.example.bailotecaapp.ui.screens.clases.ClaseDetailScreen
-import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
-import com.example.bailotecaapp.ui.screens.clases.CrearEditarClaseScreen
+import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
+import com.example.bailotecaapp.ui.screens.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
@@ -37,24 +35,10 @@ fun AppNavigation(
 ) {
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
-    val usuario by sesionViewModel.usuario.collectAsState()
-    val yaCargado by sesionViewModel.yaCargado.collectAsState(initial = false)
-    var currentScreen by remember { mutableStateOf(MainScreen.HOME) }
-    val themeViewModel: ThemeViewModel = hiltViewModel()
-
-    // 🚫 Si aún no se ha cargado la sesión, no inicies navegación
-    if (!yaCargado) {
-        Box(modifier = Modifier.fillMaxSize()) { /* Carga inicial silenciosa */ }
-        return
-    }
-
-    val startDestination = remember(usuario) {
-        if (usuario != null) "main" else Screens.Login.route
-    }
 
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
-            Log.d("AppNavigation", "🔐 Sesión cerrada, redirigiendo al login")
+            Log.d("AppNavigation", "🔐 Sesión cerrada, navegando a login")
             navController.navigate(Screens.Login.route) {
                 popUpTo(0) { inclusive = true }
             }
@@ -62,45 +46,86 @@ fun AppNavigation(
         }
     }
 
+    val startDestination = Screens.Login.route // ← SIEMPRE login
+
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
         composable(Screens.Login.route) {
+            Log.d("AppNavigation", "📍 Login")
             LoginScreen(navController)
         }
 
         composable(Screens.Register.route) {
+            Log.d("AppNavigation", "📍 Registro")
             RegisterScreen(navController)
         }
 
-        // Pantalla con scaffold y navegación protegida
-        composable("main") {
+        composable(Screens.Home.route) {
+            Log.d("AppNavigation", "📍 Home")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 MainScaffold(
                     globalNavController = navController,
                     usuario = usuario,
                     sesionViewModel = sesionViewModel,
-                    currentScreen = currentScreen,
-                    onNavigate = { screen -> currentScreen = screen },
+                    currentScreen = MainScreen.HOME,
+                    onNavigate = {},
                     themeViewModel = themeViewModel
                 )
             }
         }
 
-        // Rutas del drawer
-        composable(Screens.Home.route) {
-            HomeScreen(navController, sesionViewModel)
-        }
         composable(Screens.Clases.route) {
-            ClaseListScreen(navController, hiltViewModel(), sesionViewModel)
+            Log.d("AppNavigation", "📍 Lista de Clases")
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                MainScaffold(
+                    globalNavController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sesionViewModel,
+                    currentScreen = MainScreen.CLASES,
+                    onNavigate = {},
+                    themeViewModel = themeViewModel
+                )
+            }
         }
+
         composable(Screens.Usuarios.route) {
-            UserListScreen(navController, hiltViewModel())
+            Log.d("AppNavigation", "📍 Usuarios")
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                MainScaffold(
+                    globalNavController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sesionViewModel,
+                    currentScreen = MainScreen.USUARIOS,
+                    onNavigate = {},
+                    themeViewModel = themeViewModel
+                )
+            }
         }
+
         composable(Screens.Perfil.route) {
-            ProfileScreen(navController, sesionViewModel)
+            Log.d("AppNavigation", "📍 Perfil")
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                MainScaffold(
+                    globalNavController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sesionViewModel,
+                    currentScreen = MainScreen.PERFIL,
+                    onNavigate = {},
+                    themeViewModel = themeViewModel
+                )
+            }
+        }
+
+        composable(Screens.EditProfile.route) {
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                EditProfileScreen(
+                    navController = navController,
+                    sesionViewModel = sesionViewModel
+                )
+            }
         }
 
         composable(
@@ -108,6 +133,8 @@ fun AppNavigation(
             arguments = listOf(navArgument("claseId") { type = NavType.LongType })
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+            Log.d("AppNavigation", "📍 Detalle clase ID: $claseId")
+
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 if (usuario.rol == Rol.PROFESOR) {
                     ClaseDetailProfesorScreen(navController, claseId)
@@ -118,6 +145,7 @@ fun AppNavigation(
         }
 
         composable("crearEditarClase") {
+            Log.d("AppNavigation", "📍 Crear nueva clase")
             CrearEditarClaseScreen(navController = navController)
         }
 
@@ -126,11 +154,12 @@ fun AppNavigation(
             arguments = listOf(navArgument("claseId") { type = NavType.LongType })
         ) { backStackEntry ->
             val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+            Log.d("AppNavigation", "📍 Editar clase ID: $claseId")
             CrearEditarClaseScreen(navController = navController, claseId = claseId)
         }
 
-        // Modo invitado
         composable(Screens.InvitadoHome.route) {
+            Log.d("AppNavigation", "📍 Home invitado")
             InvitadoHomeScreen(
                 navController = navController,
                 sesionViewModel = hiltViewModel(),

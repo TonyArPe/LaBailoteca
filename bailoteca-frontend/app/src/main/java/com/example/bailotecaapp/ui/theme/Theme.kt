@@ -38,6 +38,7 @@ fun BailotecaTheme(
     MaterialTheme(
         colorScheme = colors,
         typography = Typography,
+        shapes = Shapes,
         content = content
     )
 }

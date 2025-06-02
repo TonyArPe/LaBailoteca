@@ -25,14 +25,8 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.FirebaseAuth
 
 /**
- * Composable del menú lateral (Drawer).
- * Muestra opciones distintas según el rol del usuario y permite navegar o cerrar sesión.
- *
- * @param usuario Usuario actualmente autenticado.
- * @param onItemSelected Callback con la ruta seleccionada.
- * @param navController Controlador de navegación global.
- * @param onCloseDrawer Función a ejecutar al cerrar el Drawer.
- * @param sesionViewModel ViewModel de sesión para cerrar sesión correctamente.
+ * Componente visual para el menú lateral (Drawer).
+ * Muestra las secciones disponibles según el rol del usuario.
  */
 @Composable
 fun DrawerContent(
@@ -43,9 +37,8 @@ fun DrawerContent(
     sesionViewModel: SesionViewModel
 ) {
     val rol = usuario.rol
-    Log.d("DrawerContent", "📦 Renderizando menú para rol: $rol")
+    Log.d("DrawerContent", "🧑‍🎤 Rol activo: $rol")
 
-    // Opciones por rol
     val opciones = when (rol) {
         Rol.ADMIN -> listOf(
             DrawerDestination.Home,
@@ -54,12 +47,14 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
+
         Rol.PROFESOR, Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
+
         Rol.INVITADO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases
@@ -67,7 +62,7 @@ fun DrawerContent(
     }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
+    val currentRoute = currentBackStackEntry?.destination?.route ?: ""
     Log.d("DrawerContent", "📍 Ruta actual: $currentRoute")
 
     Column(
@@ -76,13 +71,14 @@ fun DrawerContent(
             .width(280.dp)
             .background(MaterialTheme.colorScheme.surface)
     ) {
-        // Cabecera con datos de usuario
+        // Cabecera
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.primaryContainer)
                 .padding(top = 48.dp, bottom = 16.dp)
                 .clickable(enabled = rol != Rol.INVITADO) {
+                    Log.d("DrawerContent", "👤 Click en cabecera -> Perfil")
                     onItemSelected(DrawerDestination.Perfil.route)
                     onCloseDrawer()
                 }
@@ -122,9 +118,9 @@ fun DrawerContent(
                     label = { Text(item.label) },
                     selected = currentRoute == item.route,
                     onClick = {
-                        Log.d("DrawerContent", "🧭 Selección de ítem: ${item.route}")
+                        Log.d("DrawerContent", "🧭 Click en ${item.route}")
                         if (item == DrawerDestination.Logout) {
-                            Log.d("DrawerContent", "🔒 Logout solicitado")
+                            Log.d("DrawerContent", "🚪 Cerrando sesión")
                             sesionViewModel.cerrarSesion()
                             FirebaseAuth.getInstance().signOut()
                             navController.navigate(Screens.Login.route) {
@@ -132,7 +128,13 @@ fun DrawerContent(
                             }
                         } else {
                             if (item.route != currentRoute) {
+                                navController.navigate(item.route) {
+                                    popUpTo(Screens.Home.route) { inclusive = false }
+                                    launchSingleTop = true
+                                }
                                 onItemSelected(item.route)
+                            } else {
+                                Log.d("DrawerContent", "⏸ Ya estás en esta ruta, ignorando navegación")
                             }
                         }
                         onCloseDrawer()

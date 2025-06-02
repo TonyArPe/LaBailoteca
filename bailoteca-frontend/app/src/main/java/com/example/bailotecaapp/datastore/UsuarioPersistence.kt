@@ -18,10 +18,22 @@ import kotlinx.serialization.json.Json
 data class UsuarioPersistente(
     val id: Long,
     val nombre: String,
-    val apellido: String = "",
+    val apellido: String? = "",
     val correo: String,
-    val rol: Rol
+    val contrasenna: String = "",
+    val rol: Rol,
+    val fotoPerfil: String? = null,
+    val telefono: String? = null,
+    val direccion: String? = null,
+    val fechaNacimiento: String? = null,
+    val genero: String? = null,
+    val dni: String? = null,
+    val fechaRegistro: String? = null,
+    val activo: Boolean,
+    val pagado: Boolean
 )
+
+
 
 private val Context.dataStore by preferencesDataStore(name = "usuario_prefs")
 private val USUARIO_KEY = stringPreferencesKey("usuario_json")

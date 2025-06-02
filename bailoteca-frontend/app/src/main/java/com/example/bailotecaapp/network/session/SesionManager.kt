@@ -123,7 +123,16 @@ class SesionManager @Inject constructor(
                                 nombre = usuarioApi.nombre,
                                 apellido = usuarioApi.apellido,
                                 correo = usuarioApi.correo,
-                                rol = usuarioApi.rol
+                                rol = usuarioApi.rol,
+                                fotoPerfil = usuarioApi.fotoPerfil,
+                                telefono = usuarioApi.telefono,
+                                direccion = usuarioApi.direccion,
+                                fechaNacimiento = usuarioApi.fechaNacimiento,
+                                genero = usuarioApi.genero,
+                                dni = usuarioApi.dni,
+                                fechaRegistro = usuarioApi.fechaRegistro,
+                                activo = usuarioApi.activo,
+                                pagado = usuarioApi.pagado
                             )
                         )
 
@@ -186,7 +195,7 @@ fun UsuarioPersistente.toUsuario(): Usuario {
     return Usuario(
         id = this.id,
         nombre = this.nombre,
-        apellido = this.apellido,
+        apellido = this.apellido.toString(),
         correo = this.correo,
         contrasenna = "",
         rol = this.rol,

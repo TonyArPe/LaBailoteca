@@ -1,6 +1,7 @@
 package com.example.bailotecaapp.ui.screens.perfil
 
 import android.net.Uri
+import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
@@ -20,13 +21,14 @@ import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 /**
- * Pantalla para que el usuario pueda editar sus datos personales.
- * Incluye la selección de imagen desde la galería y campos editables.
- *
- * @param navController Controlador de navegación para volver atrás.
- * @param sesionViewModel ViewModel que contiene al usuario autenticado.
+ * Pantalla para editar datos del perfil del usuario autenticado.
+ * Incluye imagen, nombre, dirección, teléfono y más.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,39 +37,41 @@ fun EditProfileScreen(
     sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
-    val usuario by sesionViewModel.usuario.collectAsState()
+    val scope = rememberCoroutineScope()
 
-    if (usuario == null) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
+    val isLoading by sesionViewModel.isLoading.collectAsState()
+
+    Log.d("EditProfileScreen", "🎯 usuario=$usuario, cargado=$usuarioCargado, loading=$isLoading")
+
+    // ⏳ Mostrar loader si aún se está cargando o no hay usuario disponible
+    if (usuario == null || !usuarioCargado || isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
         return
     }
 
+    val usuarioActual = usuario!!
+
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
-    // Estados locales editables
-    var nombre by remember { mutableStateOf(usuario!!.nombre) }
-    var telefono by remember { mutableStateOf(usuario!!.telefono ?: "") }
-    var direccion by remember { mutableStateOf(usuario!!.direccion ?: "") }
-    var fechaNacimiento by remember { mutableStateOf(usuario!!.fechaNacimiento ?: "") }
-    var genero by remember { mutableStateOf(usuario!!.genero ?: "") }
-    // No se ve el boton por lo cual que se pueda scrollear
-    val scrollState = rememberScrollState()
-
+    var nombre by remember { mutableStateOf(usuarioActual.nombre) }
+    var telefono by remember { mutableStateOf(usuarioActual.telefono ?: "") }
+    var direccion by remember { mutableStateOf(usuarioActual.direccion ?: "") }
+    var fechaNacimiento by remember { mutableStateOf(usuarioActual.fechaNacimiento ?: "") }
+    var genero by remember { mutableStateOf(usuarioActual.genero ?: "") }
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        if (uri != null) {
-            imagenUri = uri
-        }
+        imagenUri = uri
     }
+
+    val scrollState = rememberScrollState()
 
     Scaffold(
         topBar = {
@@ -85,9 +89,8 @@ fun EditProfileScreen(
         ) {
             Text("Edita tu información", style = MaterialTheme.typography.titleMedium)
 
-            // Imagen actual o nueva
             Image(
-                painter = rememberAsyncImagePainter(imagenUri ?: usuario!!.fotoPerfil),
+                painter = rememberAsyncImagePainter(imagenUri ?: usuarioActual.fotoPerfil),
                 contentDescription = "Foto de perfil",
                 modifier = Modifier
                     .size(120.dp)
@@ -136,19 +139,29 @@ fun EditProfileScreen(
 
             Button(
                 onClick = {
-                    val usuarioActualizado = UsuarioUpdateRequest(
+                    val actualizado = UsuarioUpdateRequest(
                         nombre = nombre,
                         telefono = telefono,
                         direccion = direccion,
                         fechaNacimiento = fechaNacimiento,
                         genero = genero,
-                        fotoPerfil = imagenUri?.toString() ?: usuario!!.fotoPerfil
+                        fotoPerfil = imagenUri?.toString() ?: usuarioActual.fotoPerfil
                     )
 
+                    Log.d("EditProfileScreen", "📤 Enviando actualización: $actualizado")
+
                     sesionViewModel.actualizarPerfil(
-                        usuarioActualizado = usuarioActualizado,
+                        usuarioActualizado = actualizado,
                         onSuccess = {
-                            navController.popBackStack()
+                            Log.i("EditProfileScreen", "✅ Perfil actualizado correctamente")
+
+                            scope.launch {
+                                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                                token?.let {
+                                    sesionViewModel.iniciarSesionConTokenYSincronizar(it)
+                                }
+                                navController.popBackStack()
+                            }
                         },
                         onError = { errorMsg ->
                             errorMessage = errorMsg

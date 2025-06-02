@@ -2,6 +2,7 @@ package com.example.bailotecaapp.viewmodel
 
 import android.app.Application
 import android.util.Log
+import androidx.compose.runtime.Composable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.filterNotNull
@@ -86,8 +87,9 @@ class SesionViewModel @Inject constructor(
             delay(500)
             if (sesionManager.estaSesionActiva()) {
                 cargarMisInscripciones()
-                _usuarioCargado.value = true
             }
+            _isLoading.value = false
+            _usuarioCargado.value = true
         }
     }
 

@@ -65,6 +65,7 @@ fun SesionGuard(
      * Solo redirige si ya se intentó cargar y aún no hay sesión activa ni modo invitado.
      */
     LaunchedEffect(usuario, modoInvitado, modoInvitadoForzado, isLoading, usuarioCargado) {
+        Log.d("SesionGuard", "🧪 Validando redirección: cargado=$usuarioCargado, usuario=$usuario, invitado=$modoInvitado, forzado=$modoInvitadoForzado, loading=$isLoading")
         if (usuarioCargado && usuario == null && !modoInvitado && !modoInvitadoForzado && !isLoading) {
             Log.d("SesionGuard", "❌ Sin sesión ni invitado. Redirigiendo a login")
             if (navController.currentDestination?.route != "login") {

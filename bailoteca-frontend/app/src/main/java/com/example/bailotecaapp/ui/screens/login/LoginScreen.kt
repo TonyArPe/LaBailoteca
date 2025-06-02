@@ -38,16 +38,38 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-
     val usuario by sesionViewModel.usuario.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     val sesionCargando by sesionViewModel.isLoading.collectAsState()
     val coroutineScope = rememberCoroutineScope()
+    val modoInvitado by sesionViewModel.modoInvitado.collectAsState()
+    var redireccionado by remember { mutableStateOf(false) }
+
+    LaunchedEffect(usuario, usuarioCargado) {
+        Log.d("LoginScreen", "🔁 LaunchedEffect revisando usuario=${usuario}, cargado=$usuarioCargado, redir=$redireccionado")
+        if (!redireccionado && usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
+            redireccionado = true
+            Log.d("LoginScreen", "✅ Redirigiendo a Home")
+            navController.navigate(Screens.Home.route) {
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
+            }
+        }
+    }
+
+    // Si el usuario ya está cargado, no hacemos nada
+    if ((usuario != null && usuarioCargado) || modoInvitado) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            CircularProgressIndicator()
+        }
+        return
+    }
 
     // Redirige al Home una vez el usuario esté cargado
     LaunchedEffect(usuarioCargado, usuario) {
-        if (usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
-            navController.navigate("main") {
+        if (!redireccionado && usuario != null && usuario!!.rol != Rol.INVITADO && usuarioCargado) {
+            redireccionado = true
+            navController.navigate(Screens.Home.route) {
                 popUpTo(0) { inclusive = true }
                 launchSingleTop = true
             }

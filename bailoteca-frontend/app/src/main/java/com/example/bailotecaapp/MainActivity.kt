@@ -9,7 +9,6 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.bailotecaapp.navigation.AppNavigation
 import com.example.bailotecaapp.ui.theme.BailotecaTheme
