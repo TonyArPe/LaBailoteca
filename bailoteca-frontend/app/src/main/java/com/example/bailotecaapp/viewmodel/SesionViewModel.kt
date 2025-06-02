@@ -2,11 +2,8 @@ package com.example.bailotecaapp.viewmodel
 
 import android.app.Application
 import android.util.Log
-import androidx.compose.runtime.Composable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.first
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.model.enums.Rol
@@ -16,16 +13,14 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
- * ViewModel principal que gestiona la sesión del usuario.
- * Se apoya en SesionManager para centralizar token/usuario.
+ * ViewModel principal que gestiona la sesión del usuario en la aplicación Bailoteca.
+ * Encargado de iniciar sesión, cerrar sesión, restaurar sesiones previas y gestionar inscripciones.
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
@@ -74,35 +69,41 @@ class SesionViewModel @Inject constructor(
         _isLoading.value = true
         sesionManager.iniciarSesionConToken(token)
         viewModelScope.launch {
-            delay(500)
-            cargarMisInscripciones()
-            _usuarioCargado.value = true
-            _isLoading.value = false
+            sesionManager.usuario.filterNotNull().first {
+                cargarMisInscripciones()
+                _usuarioCargado.value = true
+                _isLoading.value = false
+                true
+            }
         }
     }
 
     fun recuperarSesionDesdePreferencias() {
+        _isLoading.value = true
         sesionManager.restaurarSesionDesdePreferencias()
         viewModelScope.launch {
-            delay(500)
-            if (sesionManager.estaSesionActiva()) {
-                cargarMisInscripciones()
+            sesionManager.usuario.filterNotNull().first {
+                Log.d("SesionViewModel", "📦 usuario restaurado: ${it.correo}")
+                if (sesionManager.estaSesionActiva()) {
+                    cargarMisInscripciones()
+                }
+                _usuarioCargado.value = true
+                _isLoading.value = false
+                true
             }
-            _isLoading.value = false
-            _usuarioCargado.value = true
         }
     }
 
     fun iniciarSesionConTokenYSincronizar(token: String) {
+        _isLoading.value = true
         viewModelScope.launch {
             sesionManager.iniciarSesionConToken(token)
-
-            sesionManager.usuario
-                .filterNotNull()
-                .first {
-                    sincronizarDesdeSesionManager()
-                    true
-                }
+            sesionManager.usuario.filterNotNull().first {
+                Log.d("SesionViewModel", "🧠 usuario recibido desde manager: ${it.correo}")
+                sincronizarDesdeSesionManager()
+                _isLoading.value = false
+                true
+            }
         }
     }
 
@@ -134,7 +135,7 @@ class SesionViewModel @Inject constructor(
 
     fun entrarComoInvitado(onPropagado: (() -> Unit)? = null) {
         viewModelScope.launch {
-            sesionManager.cerrarSesion() // limpiamos
+            sesionManager.cerrarSesion()
             _modoInvitado.value = true
             _modoInvitadoForzado.value = true
             _usuarioCargado.value = true

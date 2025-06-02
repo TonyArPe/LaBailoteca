@@ -4,13 +4,16 @@ import com.bailoteca.models.usuario.Usuario;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 /**
- * Implementación personalizada de UserDetails que encapsula el objeto Usuario completo.
+ * Implementación de UserDetails que expone el rol del usuario
+ * como GrantedAuthority con el prefijo "ROLE_".
  */
 @Getter
 @AllArgsConstructor
@@ -20,7 +23,7 @@ public class UsuarioDetails implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList(); // Puedes mapear roles si quieres usar authorities
+        return List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()));
     }
 
     @Override

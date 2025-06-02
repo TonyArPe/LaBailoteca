@@ -6,20 +6,24 @@ import com.bailoteca.models.clase.HorarioClase;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.clase.ClaseRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
+import com.bailoteca.security.UsuarioDetails;
 import com.bailoteca.service.ClaseService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 /**
- * Controlador REST para gestionar Clases.
+ * Controlador REST para la gestión de Clases y Horarios.
+ * Sólo profesores pueden gestionar sus propias clases.
+ * Admin puede acceder a todas.
  */
 @RestController
 @RequestMapping("/api/clases")
@@ -27,35 +31,35 @@ import java.util.List;
 public class ClaseController {
 
     private final ClaseRepo claseRepo;
-    private final UsuarioRepo usuarioRepo;
     private final ClaseService claseService;
-
-    private Usuario getUsuarioAutenticado() {
-        try {
-            String correo = ((UserDetails) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal()).getUsername();
-            return usuarioRepo.findByCorreo(correo).orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
-    }
+    private final UsuarioRepo usuarioRepo;
 
     /**
-     * Devuelve todas las clases disponibles (acceso público o autenticado).
+     * Obtiene el usuario autenticado extraído del token JWT de Firebase.
+     * 
+     * @return El usuario autenticado, o null si no hay sesión válida.
      */
+    private Usuario getUsuarioAutenticado() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof UsuarioDetails)) {
+            return null;
+        }
+        return ((UsuarioDetails) authentication.getPrincipal()).getUsuario();
+    }
+
     @GetMapping
     public List<Clase> getAll() {
         return claseRepo.findAll();
     }
 
-    /**
-     * Devuelve una clase por su ID.
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Clase> getById(@PathVariable Long id) {
         return ResponseEntity.of(claseRepo.findById(id));
+    }
+
+    @GetMapping("/publicas")
+    public List<Clase> obtenerClasesPublicas() {
+        return claseService.obtenerTodasLasClasesVisiblesParaInvitados();
     }
 
     @PreAuthorize("hasRole('PROFESOR')")
@@ -64,117 +68,85 @@ public class ClaseController {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
         return ResponseEntity.ok(claseRepo.findByProfesorId(actual.getId()));
     }
 
-    /**
-     * Buscar clases por nombre.
-     */
     @GetMapping("/buscar")
     public List<Clase> buscarPorNombre(@RequestParam String nombre) {
         return claseRepo.findByNombreContainingIgnoreCase(nombre);
     }
 
-    /**
-     * Devuelve clases por ID del profesor.
-     */
     @GetMapping("/profesor/{profesorId}")
     public List<Clase> getByProfesor(@PathVariable Long profesorId) {
         return claseRepo.findByProfesorId(profesorId);
     }
 
-    /**
-     * Crea una nueva clase (solo ADMIN o PROFESOR).
-     */
     @PostMapping
+    @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
     public ResponseEntity<Clase> createClase(@RequestBody ClaseRequest claseRequest) {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        if (actual.getRol().name().equals("ADMIN") || actual.getRol().name().equals("PROFESOR")) {
-            List<HorarioClase> horarios = claseRequest.getHorarioClases().stream()
-                    .map(req -> new HorarioClase(null, req.getDiaSemana(), req.getHoraInicio(), req.getHoraFin(), null))
-                    .toList();
-
-            Clase clase = new Clase();
-            clase.setNombre(claseRequest.getNombre());
-            clase.setDescripcion(claseRequest.getDescripcion());
-            clase.setUbicacion(claseRequest.getUbicacion());
-            clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
-            clase.setDificultad(claseRequest.getDificultad());
-            clase.setPublica(claseRequest.isPublica());
-            clase.setProfesor(actual);
-
-            Clase claseGuardada = claseService.guardarClaseConHorarios(clase, horarios);
-            return ResponseEntity.ok(claseGuardada);
+        Usuario profesorAsignado = actual;
+        if (actual.getRol().name().equals("ADMIN") && claseRequest.getProfesorId() != null) {
+            profesorAsignado = usuarioRepo.findById(claseRequest.getProfesorId())
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Profesor no encontrado"));
         }
 
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        Clase clase = new Clase();
+        clase.setNombre(claseRequest.getNombre());
+        clase.setDescripcion(claseRequest.getDescripcion());
+        clase.setUbicacion(claseRequest.getUbicacion());
+        clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
+        clase.setDificultad(claseRequest.getDificultad());
+        clase.setPublica(claseRequest.getPublica());
+        clase.setProfesor(profesorAsignado);
+
+        List<HorarioClase> horarios = claseRequest.getHorarioClases().stream()
+                .map(req -> new HorarioClase(null, req.getDiaSemana(), req.getHoraInicio(), req.getHoraFin(), null))
+                .toList();
+
+        Clase guardada = claseService.guardarClaseConHorarios(clase, horarios);
+        return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> updateClase(@PathVariable Long id, @RequestBody ClaseRequest claseRequest) {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        try {
+            Clase actualizada = claseService.actualizarClaseYHorarios(id, claseRequest, actual);
+            return ResponseEntity.ok(actualizada);
+        } catch (ResponseStatusException e) {
+            return ResponseEntity.status(e.getStatusCode()).body(e.getReason());
+        }
     }
 
     /**
-     * Actualiza una clase si el usuario autenticado es el profesor asignado o
-     * ADMIN.
+     * Elimina una clase si el usuario autenticado es su propietario o ADMIN.
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<Clase> updateClase(@PathVariable Long id, @RequestBody ClaseRequest claseRequest) {
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
+    public ResponseEntity<?> eliminarClase(@PathVariable Long id) {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         return claseRepo.findById(id).map(clase -> {
-            if (actual.getRol().name().equals("ADMIN") || clase.getProfesor().getId().equals(actual.getId())) {
-                clase.setNombre(claseRequest.getNombre());
-                clase.setDescripcion(claseRequest.getDescripcion());
-                clase.setUbicacion(claseRequest.getUbicacion());
-                clase.setVideoPresentacion(claseRequest.getVideoPresentacion());
-                clase.setDificultad(claseRequest.getDificultad());
-                clase.setPublica(claseRequest.isPublica());
+            boolean esPropietario = clase.getProfesor().getId().equals(actual.getId());
+            boolean esAdmin = actual.getRol().name().equals("ADMIN");
 
-                List<HorarioClase> horarios = claseRequest.getHorarioClases().stream()
-                        .map(req -> new HorarioClase(null, req.getDiaSemana(), req.getHoraInicio(), req.getHoraFin(),
-                                null))
-                        .toList();
-
-                Clase claseActualizada = claseService.actualizarClaseYHorarios(clase, horarios);
-                return ResponseEntity.ok(claseActualizada);
+            if (esAdmin || esPropietario) {
+                claseRepo.delete(clase);
+                return ResponseEntity.noContent().build();
+            } else {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
             }
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).<Clase>build();
         }).orElse(ResponseEntity.notFound().build());
-    }
-
-    /**
-     * Devuelve todas las clases visibles públicamente para usuarios invitados.
-     */
-    @GetMapping("/publicas")
-    public List<Clase> obtenerClasesPublicas() {
-        return claseService.obtenerTodasLasClasesVisiblesParaInvitados();
-    }
-
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
-    public ResponseEntity<Void> eliminarClase(@PathVariable Long id) {
-        Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        var claseOptional = claseRepo.findById(id);
-        if (claseOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Clase clase = claseOptional.get();
-        boolean esPropietario = clase.getProfesor().getId().equals(actual.getId());
-        boolean esAdmin = actual.getRol().name().equals("ADMIN");
-
-        if (esAdmin || esPropietario) {
-            claseRepo.delete(clase);
-            return ResponseEntity.noContent().build(); // 204
-        } else {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build(); // 403
-        }
     }
 
 }

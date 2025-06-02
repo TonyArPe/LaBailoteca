@@ -128,8 +128,8 @@ fun CrearEditarClaseScreen(
                             ubicacion = ubicacion.text,
                             dificultad = dificultad,
                             videoPresentacion = video.text,
-                            horarioClases = emptyList(),
-                            publica = true
+                            horarioClases = if (isEditing) null else listOf(),
+                            publica = publica
                         )
 
                         scope.launch {
@@ -166,7 +166,7 @@ fun DropdownMenuBox(selected: Dificultad?, onSelected: (Dificultad) -> Unit) {
             Text("Dificultad: ${selected?.name?.lowercase()?.replaceFirstChar { it.uppercase() }}")
         }
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            Dificultad.values().forEach {
+            Dificultad.entries.forEach {
                 DropdownMenuItem(text = { Text(it.name) }, onClick = {
                     onSelected(it)
                     expanded = false

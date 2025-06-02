@@ -11,7 +11,6 @@ import com.google.firebase.auth.FirebaseAuth
 class LoginViewModel : ViewModel() {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-
     /**
      * Inicia sesión con email y contraseña usando Firebase.
      *

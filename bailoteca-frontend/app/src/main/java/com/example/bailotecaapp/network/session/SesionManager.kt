@@ -34,7 +34,12 @@ class SesionManager @Inject constructor(
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private val _usuario = MutableStateFlow<Usuario?>(null)
-    val usuario: StateFlow<Usuario?> = _usuario
+    val usuario: StateFlow<Usuario?> get() {
+        if (_usuario.value == null) {
+            restaurarSesionDesdePreferencias()
+        }
+        return _usuario
+    }
 
     private val _token = MutableStateFlow<String?>(null)
     val token: StateFlow<String?> = _token
@@ -87,6 +92,7 @@ class SesionManager @Inject constructor(
                     _token.value = savedToken
                     _usuario.value = savedUsuario.toUsuario()
                     _yaCargado.value = true
+                    Log.d("SesionManager", "📦 Usuario recuperado de preferencias: $savedUsuario")
                 } else {
                     Log.d("SesionManager", "⚠️ No se encontró usuario/token en preferencias")
                     _yaCargado.value = false
@@ -107,51 +113,48 @@ class SesionManager @Inject constructor(
     fun iniciarSesionConToken(tokenNuevo: String) {
         coroutineScope.launch {
             try {
-                _token.value = tokenNuevo
                 TokenPreferences.guardarToken(context, tokenNuevo)
+                _token.value = tokenNuevo
 
                 val response = apiService.getUsuarioActual("Bearer $tokenNuevo")
                 if (response.isSuccessful) {
                     val usuarioApi = response.body()
                     if (usuarioApi != null) {
-                        _usuario.value = usuarioApi
-
-                        UsuarioPreferences.guardarUsuario(
-                            context,
-                            UsuarioPersistente(
-                                id = usuarioApi.id ?: -1,
-                                nombre = usuarioApi.nombre,
-                                apellido = usuarioApi.apellido,
-                                correo = usuarioApi.correo,
-                                rol = usuarioApi.rol,
-                                fotoPerfil = usuarioApi.fotoPerfil,
-                                telefono = usuarioApi.telefono,
-                                direccion = usuarioApi.direccion,
-                                fechaNacimiento = usuarioApi.fechaNacimiento,
-                                genero = usuarioApi.genero,
-                                dni = usuarioApi.dni,
-                                fechaRegistro = usuarioApi.fechaRegistro,
-                                activo = usuarioApi.activo,
-                                pagado = usuarioApi.pagado
-                            )
+                        val persistente = UsuarioPersistente(
+                            id = usuarioApi.id ?: -1,
+                            nombre = usuarioApi.nombre,
+                            apellido = usuarioApi.apellido,
+                            correo = usuarioApi.correo,
+                            rol = usuarioApi.rol,
+                            fotoPerfil = usuarioApi.fotoPerfil,
+                            telefono = usuarioApi.telefono,
+                            direccion = usuarioApi.direccion,
+                            fechaNacimiento = usuarioApi.fechaNacimiento,
+                            genero = usuarioApi.genero,
+                            dni = usuarioApi.dni,
+                            fechaRegistro = usuarioApi.fechaRegistro,
+                            activo = usuarioApi.activo,
+                            pagado = usuarioApi.pagado
                         )
+                        UsuarioPreferences.guardarUsuario(context, persistente)
+                        _usuario.value = persistente.toUsuario()
 
-                        _yaCargado.value = true
                         Log.d("SesionManager", "✅ Sesión iniciada con ${usuarioApi.correo}")
                     } else {
                         Log.e("SesionManager", "⚠️ Respuesta sin cuerpo al iniciar sesión")
-                        _yaCargado.value = false
                     }
                 } else {
                     Log.e("SesionManager", "❌ Error al obtener usuario: ${response.code()}")
-                    _yaCargado.value = false
                 }
+
+                _yaCargado.value = true
             } catch (e: Exception) {
                 Log.e("SesionManager", "❌ Error al iniciar sesión: ${e.message}", e)
-                _yaCargado.value = false
+                _yaCargado.value = true
             }
         }
     }
+
 
     /**
      * Cierra la sesión actual, eliminando token y usuario tanto de memoria
@@ -195,11 +198,11 @@ fun UsuarioPersistente.toUsuario(): Usuario {
     return Usuario(
         id = this.id,
         nombre = this.nombre,
-        apellido = this.apellido.toString(),
+        apellido = this.apellido ?: "",
         correo = this.correo,
         contrasenna = "",
         rol = this.rol,
-        activo = true,
-        pagado = false
+        activo = this.activo,
+        pagado = this.pagado
     )
 }
