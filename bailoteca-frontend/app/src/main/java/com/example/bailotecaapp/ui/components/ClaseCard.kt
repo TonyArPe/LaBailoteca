@@ -3,6 +3,7 @@ package com.example.bailotecaapp.ui.components
 import android.content.Intent
 import android.net.Uri
 import android.util.Log
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -37,49 +38,68 @@ fun ClaseCard(
     onVerDetalle: (Long) -> Unit
 ) {
     val context = LocalContext.current
+    val colorFondo = if (yaInscrito)
+        MaterialTheme.colorScheme.secondaryContainer
+    else
+        MaterialTheme.colorScheme.surfaceVariant
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .animateContentSize()
             .clickable { onVerDetalle(clase.id) },
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = colorFondo),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = clase.nombre, style = MaterialTheme.typography.titleLarge)
+        Column(Modifier.padding(20.dp)) {
+            Text(
+                text = clase.nombre,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.primary
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = clase.descripcion,
+                style = MaterialTheme.typography.bodyMedium
+            )
+
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(text = clase.descripcion, style = MaterialTheme.typography.bodyMedium)
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(text = "Ubicación: ${clase.ubicacion}", style = MaterialTheme.typography.labelMedium)
+            Text("📍 ${clase.ubicacion}", style = MaterialTheme.typography.labelSmall)
             clase.dificultad?.let {
-                Text(
-                    text = "Dificultad: ${it.name.lowercase().replaceFirstChar { c -> c.uppercase() }}",
-                    style = MaterialTheme.typography.labelMedium
-                )
+                Text("🔥 Dificultad: ${it.name.lowercase().replaceFirstChar { c -> c.uppercase() }}",
+                    style = MaterialTheme.typography.labelSmall)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Profesor: ${clase.profesor.nombre}", style = MaterialTheme.typography.labelMedium)
+                Text("👤 ${clase.profesor.nombre}", style = MaterialTheme.typography.labelSmall)
 
                 when (usuarioActual?.rol) {
                     Rol.USUARIO -> {
                         Button(
                             onClick = { if (!yaInscrito) onInscribirse(clase.id) },
                             enabled = !yaInscrito,
+                            shape = MaterialTheme.shapes.medium,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (yaInscrito) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+                                containerColor = if (yaInscrito)
+                                    MaterialTheme.colorScheme.secondary
+                                else
+                                    MaterialTheme.colorScheme.primary
                             )
                         ) {
                             Text(if (yaInscrito) "Ya inscrito" else "Inscribirse")
                         }
                     }
+
                     Rol.INVITADO -> {
                         IconButton(onClick = {
                             val asunto = Uri.encode("Consulta sobre la clase: ${clase.nombre}")
@@ -90,7 +110,8 @@ fun ClaseCard(
                             Icon(Icons.Default.Email, contentDescription = "Contactar")
                         }
                     }
-                    else -> {} // ADMIN, PROFESOR: no acción específica
+
+                    else -> {}
                 }
             }
 

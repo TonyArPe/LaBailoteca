@@ -35,6 +35,9 @@ fun AppNavigation(
 ) {
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val cargado by sesionViewModel.yaCargado.collectAsState()
+    val invitado by sesionViewModel.modoInvitado.collectAsState()
 
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
@@ -46,7 +49,11 @@ fun AppNavigation(
         }
     }
 
-    val startDestination = Screens.Login.route // ← SIEMPRE login
+    val startDestination = when {
+        cargado && usuario?.rol != Rol.INVITADO -> Screens.Home.route
+        cargado && usuario?.rol == Rol.INVITADO -> Screens.InvitadoHome.route
+        else -> Screens.Login.route
+    }
 
     NavHost(
         navController = navController,

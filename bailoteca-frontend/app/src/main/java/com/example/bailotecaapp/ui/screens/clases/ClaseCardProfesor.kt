@@ -38,52 +38,56 @@ fun ClaseCardProfesor(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
-            .clickable {
-                navController.navigate(Screens.ClaseDetail.createRoute(clase.id))
-            },
-        elevation = CardDefaults.cardElevation(4.dp)
+            .clickable { navController.navigate(Screens.ClaseDetail.createRoute(clase.id)) },
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text(clase.nombre, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        Column(Modifier.padding(20.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    clase.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
 
-                if (clase.profesor.id == usuarioActual.id) {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.Edit, contentDescription = "Opciones")
-                    }
-                    DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                        DropdownMenuItem(
-                            text = { Text("Editar") },
-                            onClick = {
-                                expanded = false
-                                navController.navigate("crearEditarClase/${clase.id}")
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Eliminar") },
-                            onClick = {
-                                expanded = false
-                                scope.launch {
-                                    val token = sesionViewModel.token.value ?: return@launch
-                                    val response = claseViewModel.eliminarClase(token, clase.id)
-                                    if (response.isSuccessful) {
-                                        sesionViewModel.marcarClasesComoActualizadas()
-                                    }
+                IconButton(onClick = { expanded = true }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Opciones")
+                }
+
+                DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                    DropdownMenuItem(
+                        text = { Text("✏️ Editar") },
+                        onClick = {
+                            expanded = false
+                            navController.navigate("crearEditarClase/${clase.id}")
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("🗑️ Eliminar") },
+                        onClick = {
+                            expanded = false
+                            scope.launch {
+                                val token = sesionViewModel.token.value ?: return@launch
+                                val response = claseViewModel.eliminarClase(token, clase.id)
+                                if (response.isSuccessful) {
+                                    sesionViewModel.marcarClasesComoActualizadas()
                                 }
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
             Text(clase.descripcion, style = MaterialTheme.typography.bodyMedium)
-            Text("Ubicación: ${clase.ubicacion}", style = MaterialTheme.typography.bodySmall)
-            Text("Dificultad: ${clase.dificultad?.name?.lowercase()?.replaceFirstChar { it.uppercase() }}", style = MaterialTheme.typography.bodySmall)
+            Spacer(Modifier.height(8.dp))
+            Text("📍 ${clase.ubicacion}", style = MaterialTheme.typography.labelSmall)
+            Text("🔥 Dificultad: ${clase.dificultad?.name?.lowercase()?.replaceFirstChar(Char::uppercase)}", style = MaterialTheme.typography.labelSmall)
         }
     }
 }

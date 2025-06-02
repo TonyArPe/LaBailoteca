@@ -4,6 +4,9 @@ package com.example.bailotecaapp.ui.screens.clases
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +27,7 @@ import kotlinx.coroutines.launch
  * Pantalla para crear o editar una clase por parte de un profesor.
  * El ViewModel se reutiliza, y se determina si es edición por el ID recibido (si hay).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CrearEditarClaseScreen(
     navController: NavController,
@@ -65,19 +69,38 @@ fun CrearEditarClaseScreen(
             }
         }
 
-        Scaffold { padding ->
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = if (isEditing) "Editar clase" else "Nueva clase",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
+                )
+            }
+        ) { padding ->
             Column(
-                modifier = Modifier.padding(padding).padding(16.dp),
+                modifier = Modifier
+                    .padding(padding)
+                    .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(if (isEditing) "Editar Clase" else "Nueva Clase", style = MaterialTheme.typography.headlineSmall)
-
                 OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
                 OutlinedTextField(value = descripcion, onValueChange = { descripcion = it }, label = { Text("Descripción") })
                 OutlinedTextField(value = ubicacion, onValueChange = { ubicacion = it }, label = { Text("Ubicación") })
                 OutlinedTextField(value = video, onValueChange = { video = it }, label = { Text("Video presentación") })
 
-                // Selector de dificultad (enum)
                 DropdownMenuBox(selected = dificultad, onSelected = { dificultad = it })
 
                 Button(

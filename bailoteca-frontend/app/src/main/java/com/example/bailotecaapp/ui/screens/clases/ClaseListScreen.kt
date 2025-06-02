@@ -23,6 +23,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.example.bailotecaapp.ui.components.personalizacion.ClaseFAB
 
 /**
  * Pantalla que muestra el listado de clases disponibles para inscribirse.
@@ -93,11 +94,7 @@ fun ClaseListScreen(
     Scaffold(
         floatingActionButton = {
             if (usuario?.rol == Rol.PROFESOR) {
-                FloatingActionButton(onClick = {
-                    navController.navigate("crearEditarClase")
-                }) {
-                    Text("+")
-                }
+                ClaseFAB(onClick = { navController.navigate("crearEditarClase") })
             }
         }
     ) { padding ->
@@ -115,9 +112,16 @@ fun ClaseListScreen(
                     modifier = Modifier.align(Alignment.Center)
                 )
                 usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                else -> LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                else -> LazyColumn(
+                    contentPadding = PaddingValues(
+                        top = 16.dp,
+                        bottom = 100.dp
+                    ),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     items(clases, key = { it.id }) { clase ->
-                        val yaInscrito = inscripciones.any { it.clase?.id == clase.id }
+                        val yaInscrito = inscripciones.any { it.clase.id == clase.id }
 
                         if (usuario!!.rol == Rol.PROFESOR && clase.profesor.id == usuario!!.id) {
                             ClaseCardProfesor(
