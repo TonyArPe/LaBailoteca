@@ -34,7 +34,7 @@ public class Clase {
 
     private String videoPresentacion;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
     @JoinColumn(name = "profesor_id", nullable = false)
     private Usuario profesor;
 

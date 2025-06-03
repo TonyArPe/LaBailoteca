@@ -1,12 +1,11 @@
-// CRUD para profesores sobre sus propias clases (versión inicial sin UI refinada)
-
 package com.example.bailotecaapp.ui.screens.clases
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,10 +21,12 @@ import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.viewmodel.ClaseViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
+import android.util.Log
+import com.example.bailotecaapp.model.dto.HorarioClaseRequest
 
 /**
  * Pantalla para crear o editar una clase por parte de un profesor.
- * El ViewModel se reutiliza, y se determina si es edición por el ID recibido (si hay).
+ * Incluye soporte para modificar horarios de forma visual.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,6 @@ fun CrearEditarClaseScreen(
     sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
     SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
-
         if (usuario.id == null) return@SesionGuard
 
         val context = LocalContext.current
@@ -48,18 +48,20 @@ fun CrearEditarClaseScreen(
         var nombre by remember { mutableStateOf(TextFieldValue()) }
         var descripcion by remember { mutableStateOf(TextFieldValue()) }
         var ubicacion by remember { mutableStateOf(TextFieldValue()) }
-        var dificultad: Dificultad? by remember { mutableStateOf(Dificultad.INICIAL) }
+        var dificultad by remember { mutableStateOf<Dificultad?>(Dificultad.INICIAL) }
         var video by remember { mutableStateOf(TextFieldValue()) }
         var publica by remember { mutableStateOf(true) }
 
-        // Al cargar en edición
+        val horarios = remember { mutableStateListOf<HorarioClaseRequest>() }
+        var showHorarioDialog by remember { mutableStateOf(false) }
+        var horarioEditable by remember { mutableStateOf<HorarioClaseRequest?>(null) }
+
         LaunchedEffect(claseId) {
             if (isEditing && claseId != null) {
                 claseViewModel.cargarClase(claseId)
             }
         }
 
-        // Rellenar campos en edición
         LaunchedEffect(clase) {
             clase?.let {
                 nombre = TextFieldValue(it.nombre)
@@ -68,6 +70,14 @@ fun CrearEditarClaseScreen(
                 dificultad = it.dificultad
                 video = TextFieldValue(it.videoPresentacion)
                 publica = it.publica
+                horarios.clear()
+                horarios.addAll(it.horarioClases.map { h ->
+                    HorarioClaseRequest(
+                        diaSemana = h.diaSemana,
+                        horaInicio = h.horaInicio.toString(),
+                        horaFin = h.horaFin.toString()
+                    )
+                })
             }
         }
 
@@ -83,7 +93,7 @@ fun CrearEditarClaseScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -92,10 +102,13 @@ fun CrearEditarClaseScreen(
                 )
             }
         ) { padding ->
+
             Column(
                 modifier = Modifier
                     .padding(padding)
-                    .padding(16.dp),
+                    .padding(16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 OutlinedTextField(value = nombre, onValueChange = { nombre = it }, label = { Text("Nombre") })
@@ -104,6 +117,7 @@ fun CrearEditarClaseScreen(
                 OutlinedTextField(value = video, onValueChange = { video = it }, label = { Text("Video presentación") })
 
                 DropdownMenuBox(selected = dificultad, onSelected = { dificultad = it })
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -120,6 +134,33 @@ fun CrearEditarClaseScreen(
                     )
                 }
 
+                Text("Horarios", style = MaterialTheme.typography.titleMedium)
+                horarios.forEachIndexed { index, horario ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("- ${horario.diaSemana}: ${horario.horaInicio} - ${horario.horaFin}")
+                        TextButton(onClick = {
+                            horarioEditable = horario
+                            showHorarioDialog = true
+                        }) {
+                            Text("Editar")
+                        }
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        horarioEditable = null
+                        showHorarioDialog = true
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                ) {
+                    Text("Añadir horario")
+                }
+
                 Button(
                     onClick = {
                         val request = ClaseRequest(
@@ -128,7 +169,7 @@ fun CrearEditarClaseScreen(
                             ubicacion = ubicacion.text,
                             dificultad = dificultad,
                             videoPresentacion = video.text,
-                            horarioClases = if (isEditing) null else listOf(),
+                            horarioClases = horarios.toList(),
                             publica = publica
                         )
 
@@ -154,9 +195,37 @@ fun CrearEditarClaseScreen(
                     Text("Guardar")
                 }
             }
+
+            if (showHorarioDialog) {
+                HorarioEditor(
+                    horario = horarioEditable,
+                    onConfirm = { nuevo ->
+                        if (horarioEditable != null) {
+                            horarios.remove(horarioEditable)
+                        }
+                        horarios.add(nuevo)
+                        showHorarioDialog = false
+                        Log.d("CrearEditarClaseScreen", "✅ Horario confirmado: $nuevo")
+                    },
+                    onDismiss = {
+                        Log.d("CrearEditarClaseScreen", "❌ Diálogo de horario cancelado")
+                        showHorarioDialog = false
+                    },
+                    onChange = {
+                        horarioEditable = it
+                    },
+                    onDelete = {
+                        horarioEditable?.let { horarios.remove(it) }
+                        showHorarioDialog = false
+                        Log.d("CrearEditarClaseScreen", "🗑 Horario eliminado")
+                    }
+                )
+            }
         }
     }
 }
+
+
 
 @Composable
 fun DropdownMenuBox(selected: Dificultad?, onSelected: (Dificultad) -> Unit) {

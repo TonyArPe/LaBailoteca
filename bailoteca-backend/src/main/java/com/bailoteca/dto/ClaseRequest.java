@@ -1,21 +1,23 @@
 package com.bailoteca.dto;
 
-import java.util.List;
-
 import com.bailoteca.models.enums.Dificultad;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * DTO para recibir datos desde el frontend al crear o actualizar una clase.
- * No incluye el profesor, ya que se asigna automáticamente con el usuario autenticado.
+ * Este DTO se utiliza tanto para creación como para actualización parcial.
+ * El campo `publica` es Boolean (objeto) para permitir valores nulos en actualizaciones.
  */
 @Data
 public class ClaseRequest {
+    private Long profesorId;
     private String nombre;
     private String descripcion;
     private String ubicacion;
     private String videoPresentacion;
     private Dificultad dificultad;
-    private boolean publica;
+    private Boolean publica;
     private List<HorarioClaseRequest> horarioClases;
 }

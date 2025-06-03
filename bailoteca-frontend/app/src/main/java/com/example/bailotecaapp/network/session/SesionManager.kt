@@ -9,12 +9,14 @@ import com.example.bailotecaapp.datastore.UsuarioPreferences
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.network.ApiService
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
@@ -151,6 +153,21 @@ class SesionManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e("SesionManager", "❌ Error al iniciar sesión: ${e.message}", e)
                 _yaCargado.value = true
+            }
+        }
+    }
+
+    suspend fun renovarTokenFirebaseSiHaCambiado() {
+        val user = FirebaseAuth.getInstance().currentUser
+        if (user != null) {
+            try {
+                val tokenNuevo = user.getIdToken(true).await().token
+                if (tokenNuevo != null && tokenNuevo != token.value) {
+                    Log.d("SesionManager", "🔁 Token actualizado desde Firebase")
+                    guardarToken(tokenNuevo)
+                }
+            } catch (e: Exception) {
+                Log.e("SesionManager", "❌ Error al renovar token Firebase: ${e.message}", e)
             }
         }
     }

@@ -42,9 +42,12 @@ public class ClaseController {
     private Usuario getUsuarioAutenticado() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof UsuarioDetails)) {
+            System.err.println("⚠️ No se encontró usuario autenticado en el contexto de seguridad.");
             return null;
         }
-        return ((UsuarioDetails) authentication.getPrincipal()).getUsuario();
+        Usuario usuario = ((UsuarioDetails) authentication.getPrincipal()).getUsuario();
+        System.err.printf("🔐 Usuario autenticado: {} (ID: {})", usuario.getCorreo(), usuario.getId());
+        return usuario;
     }
 
     @GetMapping
@@ -119,6 +122,7 @@ public class ClaseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         try {
+            System.err.printf("📝 Petición PUT /clases/{} por usuario {}", id, actual.getCorreo());
             Clase actualizada = claseService.actualizarClaseYHorarios(id, claseRequest, actual);
             return ResponseEntity.ok(actualizada);
         } catch (ResponseStatusException e) {
