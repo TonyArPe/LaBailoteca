@@ -1,45 +1,37 @@
 package com.example.bailotecaapp.network
 
+import android.content.Context
+import android.util.Log
 import com.example.bailotecaapp.network.session.SesionManagerSingleton
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.tasks.await
 import okhttp3.Interceptor
 import okhttp3.Response
-import kotlinx.coroutines.tasks.await
-import android.util.Log
 
 /**
- * Interceptor que añade el token JWT a cada petición y lo renueva si ha cambiado.
+ * Interceptor de autenticación que añade el token JWT de Firebase a cada petición HTTP.
+ * Si el token está próximo a expirar, lo renueva automáticamente.
+ *
+ * @param context Contexto de aplicación necesario para acceder a DataStore y preferencias.
  */
-class FirebaseAuthInterceptor : Interceptor {
+class FirebaseAuthInterceptor(
+    private val context: Context
+) : Interceptor {
 
-    override fun intercept(chain: Interceptor.Chain): Response {
-        return runBlocking {
-            val user = FirebaseAuth.getInstance().currentUser
-
-            if (user != null) {
-                try {
-                    // Siempre obtiene el token más reciente
-                    val newToken = user.getIdToken(true).await().token
-                    if (!newToken.isNullOrEmpty()) {
-                        // Compara con el token actual y actualiza si ha cambiado
-                        SesionManagerSingleton.actualizarTokenSiHaCambiado(newToken)
-
-                        Log.d("FirebaseAuthInterceptor", "🔐 Token renovado exitosamente")
-
-                        val newRequest = chain.request().newBuilder()
-                            .addHeader("Authorization", "Bearer $newToken")
-                            .build()
-
-                        return@runBlocking chain.proceed(newRequest)
-                    }
-                } catch (e: Exception) {
-                    Log.e("FirebaseAuthInterceptor", "❌ Error renovando token: ${e.message}", e)
-                }
+    override fun intercept(chain: Interceptor.Chain): Response = runBlocking {
+        try {
+            val token = SesionManagerSingleton.token.value
+            if (!token.isNullOrBlank()) {
+                val request = chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $token")
+                    .build()
+                return@runBlocking chain.proceed(request)
             }
-
-            // En caso de no haber token, sigue con la petición original
-            chain.proceed(chain.request())
+        } catch (e: Exception) {
+            Log.e("FirebaseAuthInterceptor", "❌ Error al insertar token en headers: ${e.message}", e)
         }
+
+        chain.proceed(chain.request())
     }
 }

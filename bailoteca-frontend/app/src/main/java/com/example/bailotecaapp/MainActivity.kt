@@ -15,6 +15,7 @@ import com.example.bailotecaapp.network.session.SesionManagerSingleton
 import com.example.bailotecaapp.ui.theme.BailotecaTheme
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -30,6 +31,28 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "🚀 onCreate llamado, inicializando interfaz")
         SesionManagerSingleton.restaurarSesionDesdePreferencias(applicationContext)
 
+        FirebaseAuth.getInstance().addIdTokenListener(
+            FirebaseAuth.IdTokenListener { firebaseAuth ->
+                val user = firebaseAuth.currentUser
+                user?.getIdToken(true)?.addOnSuccessListener { result ->
+                    val nuevoToken = result.token
+                    val expiracion = result.expirationTimestamp
+
+                    if (nuevoToken != null && expiracion != null) {
+                        Log.d("MainActivity", "🆕 Token renovado por Firebase (expira en $expiracion)")
+                        SesionManagerSingleton.guardarTokenConExpiracion(
+                            applicationContext,
+                            nuevoToken,
+                            expiracion * 1000
+                        )
+                    } else {
+                        Log.w("MainActivity", "⚠️ Firebase renovó el token pero sin resultado válido")
+                    }
+                }?.addOnFailureListener { e ->
+                    Log.e("MainActivity", "❌ Error al obtener token renovado: ${e.message}", e)
+                }
+            }
+        )
         setContent {
             val navController = rememberNavController()
             val themeViewModel: ThemeViewModel = hiltViewModel()

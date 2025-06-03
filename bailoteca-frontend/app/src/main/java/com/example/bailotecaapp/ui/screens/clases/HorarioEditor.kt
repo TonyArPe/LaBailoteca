@@ -27,7 +27,7 @@ fun HorarioEditor(
     onChange: (HorarioClaseRequest) -> Unit,
     onDelete: (() -> Unit)? = null
 ) {
-    val horarioEditable = horario ?: HorarioClaseRequest("", "", "")
+    val horarioEditable = horario ?: HorarioClaseRequest(null, "", "", "")
 
     AlertDialog(
         onDismissRequest = onDismiss,

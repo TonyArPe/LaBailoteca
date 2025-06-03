@@ -30,6 +30,9 @@ object SesionManagerSingleton {
     private val _yaCargado = MutableStateFlow(false)
     val yaCargado: StateFlow<Boolean> = _yaCargado
 
+    private val _tokenExpirationTime = MutableStateFlow<Long?>(null)
+    val tokenExpirationTime: StateFlow<Long?> = _tokenExpirationTime
+
     /**
      * Restaura token y usuario desde DataStore. Llamar al iniciar la app.
      */
@@ -37,12 +40,14 @@ object SesionManagerSingleton {
         coroutineScope.launch {
             try {
                 val savedToken = TokenPreferences.obtenerToken(context)
+                val expirationTime = TokenPreferences.obtenerExpiracion(context)
                 val savedUsuario = UsuarioPreferences.obtenerUsuario(context)
 
                 if (savedToken != null && savedUsuario != null) {
                     Log.d("SesionManager", "✅ Sesión restaurada desde preferencias: ${savedUsuario.correo}")
                     _token.value = savedToken
                     _usuario.value = savedUsuario.toUsuarioCompat()
+                    _tokenExpirationTime.value = expirationTime
                     _yaCargado.value = true
                 } else {
                     Log.w("SesionManager", "⚠️ No se encontró token o usuario persistido")
@@ -56,7 +61,29 @@ object SesionManagerSingleton {
     }
 
     /**
-     * Guarda el nuevo token en memoria y preferencias.
+     * Guarda un token nuevo con tiempo de expiración.
+     */
+    fun guardarTokenConExpiracion(context: Context, nuevoToken: String, expirationTimeMs: Long) {
+        coroutineScope.launch {
+            TokenPreferences.guardarToken(context, nuevoToken)
+            TokenPreferences.guardarExpiracion(context, expirationTimeMs)
+            _token.value = nuevoToken
+            _tokenExpirationTime.value = expirationTimeMs
+            Log.d("SesionManager", "🔐 Token y expiración actualizados en memoria y preferencias")
+        }
+    }
+
+    /**
+     * Determina si el token está próximo a expirar (menos de 5 minutos).
+     */
+    fun deberiaRenovarToken(): Boolean {
+        val now = System.currentTimeMillis()
+        val expiration = _tokenExpirationTime.value
+        return expiration != null && expiration - now < 5 * 60 * 1000
+    }
+
+    /**
+     * Guarda el nuevo token en memoria y preferencias (sin expiración).
      */
     fun guardarToken(context: Context, nuevoToken: String) {
         coroutineScope.launch {
@@ -67,8 +94,7 @@ object SesionManagerSingleton {
     }
 
     /**
-     * Verifica si el nuevo token es diferente y lo guarda.
-     * Llamada por el interceptor.
+     * Verifica si el nuevo token es diferente y lo guarda en memoria.
      */
     fun actualizarTokenSiHaCambiado(nuevoToken: String) {
         if (_token.value != nuevoToken) {
