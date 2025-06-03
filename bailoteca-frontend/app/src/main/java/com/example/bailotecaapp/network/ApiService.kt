@@ -172,4 +172,49 @@ interface ApiService {
         @Path("id") id: Long
     ): Response<Void>
 
+    // EVENTOS
+    /**
+     * Obtiene todos los eventos disponibles (profesor o admin).
+     */
+    @GET("/api/eventos")
+    suspend fun getEventosPrivados(
+        @Header("Authorization") token: String
+    ): Response<List<Evento>>
+
+    /**
+     * Obtiene un evento por ID.
+     */
+    @GET("/api/eventos/{id}")
+    suspend fun getEventoPorId(
+        @Header("Authorization") token: String,
+        @Path("id") eventoId: Long
+    ): Response<Evento>
+
+    /**
+     * Crea un nuevo evento.
+     */
+    @POST("/api/eventos")
+    suspend fun crearEvento(
+        @Header("Authorization") token: String,
+        @Body evento: Evento
+    ): Response<Evento>
+
+    /**
+     * Actualiza un evento existente.
+     */
+    @PUT("/api/eventos/{id}")
+    suspend fun actualizarEvento(
+        @Header("Authorization") token: String,
+        @Path("id") eventoId: Long,
+        @Body evento: Evento
+    ): Response<Evento>
+
+    /**
+     * Elimina un evento por ID.
+     */
+    @DELETE("/api/eventos/{id}")
+    suspend fun eliminarEvento(
+        @Header("Authorization") token: String,
+        @Path("id") eventoId: Long
+    ): Response<Void>
 }

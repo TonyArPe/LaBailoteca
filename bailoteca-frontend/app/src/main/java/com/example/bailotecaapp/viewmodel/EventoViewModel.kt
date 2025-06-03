@@ -11,34 +11,84 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel para cargar eventos públicos que los usuarios invitados pueden visualizar.
- */
 @HiltViewModel
 class EventoViewModel @Inject constructor(
-    private val apiService: ApiService
+    private val api: ApiService
 ) : ViewModel() {
 
     private val _eventos = MutableStateFlow<List<Evento>>(emptyList())
     val eventos: StateFlow<List<Evento>> = _eventos
 
-    init {
-        obtenerEventosPublicos()
-    }
+    private val _eventoSeleccionado = MutableStateFlow<Evento?>(null)
+    val eventoSeleccionado: StateFlow<Evento?> = _eventoSeleccionado
 
     /**
-     * Obtiene la lista de eventos públicos desde la API.
+     * Carga eventos públicos (para invitados).
      */
     fun obtenerEventosPublicos() {
         viewModelScope.launch {
             try {
-                Log.d("EventoViewModel", "🔄 Cargando eventos públicos...")
-                val resultado = apiService.obtenerEventos()
+                val resultado = api.obtenerEventos()
                 _eventos.value = resultado
-                Log.d("EventoViewModel", "✅ Eventos públicos cargados: ${resultado.size}")
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "❌ Error al obtener eventos públicos", e)
+                Log.e("EventoViewModel", "Error cargando eventos públicos", e)
             }
+        }
+    }
+
+    /**
+     * Carga eventos autenticados (admin o profesor).
+     */
+    fun obtenerEventosPrivados(token: String) {
+        viewModelScope.launch {
+            try {
+                val res = api.getEventosPrivados("Bearer $token")
+                if (res.isSuccessful) {
+                    _eventos.value = res.body() ?: emptyList()
+                } else {
+                    Log.w("EventoViewModel", "Eventos no disponibles: ${res.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "Error cargando eventos privados", e)
+            }
+        }
+    }
+
+    fun seleccionarEvento(evento: Evento) {
+        _eventoSeleccionado.value = evento
+    }
+
+    fun limpiarEventoSeleccionado() {
+        _eventoSeleccionado.value = null
+    }
+
+    suspend fun crearEvento(token: String, evento: Evento): Boolean {
+        return try {
+            val res = api.crearEvento("Bearer $token", evento)
+            res.isSuccessful
+        } catch (e: Exception) {
+            Log.e("EventoViewModel", "Error al crear evento", e)
+            false
+        }
+    }
+
+    suspend fun actualizarEvento(token: String, evento: Evento): Boolean {
+        return try {
+            val res = api.actualizarEvento("Bearer $token", evento.id, evento)
+            res.isSuccessful
+        } catch (e: Exception) {
+            Log.e("EventoViewModel", "Error al actualizar evento", e)
+            false
+        }
+    }
+
+    suspend fun eliminarEvento(token: String, eventoId: Long): Boolean {
+        return try {
+            val res = api.eliminarEvento("Bearer $token", eventoId)
+            res.isSuccessful
+        } catch (e: Exception) {
+            Log.e("EventoViewModel", "Error al eliminar evento", e)
+            false
         }
     }
 }
