@@ -98,6 +98,20 @@ fun AppNavigation(
             }
         }
 
+        composable(Screens.Eventos.route) {
+            Log.d("AppNavigation", "📍 Lista de Eventos")
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                MainScaffold(
+                    globalNavController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sesionViewModel,
+                    currentScreen = MainScreen.EVENTOS,
+                    onNavigate = {},
+                    themeViewModel = themeViewModel
+                )
+            }
+        }
+
         composable(Screens.Usuarios.route) {
             Log.d("AppNavigation", "📍 Usuarios")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->

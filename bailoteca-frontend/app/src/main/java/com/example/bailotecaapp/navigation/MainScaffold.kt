@@ -19,6 +19,7 @@ import com.example.bailotecaapp.ui.screens.UserListScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventoListScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -95,6 +96,7 @@ fun MainScaffold(
                                 Screens.Clases.route -> MainScreen.CLASES
                                 Screens.Usuarios.route -> MainScreen.USUARIOS
                                 Screens.Perfil.route -> MainScreen.PERFIL
+                                Screens.Eventos.route -> MainScreen.EVENTOS
                                 else -> MainScreen.HOME
                             }
                         )
@@ -145,6 +147,12 @@ fun MainScaffold(
                     MainScreen.PERFIL -> ProfileScreen(
                         navController = globalNavController,
                         sesionViewModel = sesionViewModel,
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    MainScreen.EVENTOS -> EventoListScreen(
+                        navController = globalNavController,
+                        usuario = usuario,
                         modifier = Modifier.padding(padding)
                     )
                 }

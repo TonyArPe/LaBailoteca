@@ -43,12 +43,21 @@ fun DrawerContent(
         Rol.ADMIN -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
+            DrawerDestination.Eventos,
             DrawerDestination.Usuarios,
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
 
-        Rol.PROFESOR, Rol.USUARIO -> listOf(
+        Rol.PROFESOR -> listOf(
+            DrawerDestination.Home,
+            DrawerDestination.Clases,
+            DrawerDestination.Eventos,
+            DrawerDestination.Perfil,
+            DrawerDestination.Logout
+        )
+
+        Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
             DrawerDestination.Perfil,

@@ -14,6 +14,7 @@ sealed class Screens(val route: String) {
     object Home : Screens("home")
     object EditProfile : Screens("editProfile")
     object Perfil : Screens("perfil")
+    object Eventos : Screens("eventos")
 
     // Gestión de usuarios (solo admins)
     object Usuarios : Screens("usuarios")

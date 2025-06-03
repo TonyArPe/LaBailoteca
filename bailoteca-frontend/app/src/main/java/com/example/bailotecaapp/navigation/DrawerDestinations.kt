@@ -9,4 +9,5 @@ sealed class DrawerDestination(val route: String, val label: String) {
     object Usuarios : DrawerDestination("usuarios", "Usuarios")
     object Perfil : DrawerDestination("perfil", "Mi perfil")
     object Logout : DrawerDestination("logout", "Cerrar sesión")
+    object Eventos : DrawerDestination("eventos", "Eventos")
 }
