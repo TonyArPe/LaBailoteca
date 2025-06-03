@@ -1,130 +1,94 @@
 package com.bailoteca.controller.evento;
 
-import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
-import com.bailoteca.repository.evento.EventoRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
+import com.bailoteca.service.EventoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
 /**
- * Controlador REST para gestionar los eventos
+ * Controlador REST para gestionar los eventos dentro de Bailoteca.
+ * Permite a administradores y profesores crear, modificar y eliminar eventos.
+ * Los usuarios pueden consultar los eventos en los que participan.
  */
 @RestController
 @RequestMapping("/api/eventos")
 @RequiredArgsConstructor
 public class EventoController {
 
-    private final EventoRepo eventoRepo;
+    private final EventoService eventoService;
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Obtiene todos los eventos registrados.
+     * Devuelve todos los eventos si el usuario es administrador o profesor.
+     * Si es usuario normal, solo los eventos donde es organizador.
      */
     @GetMapping
-    public List<Evento> getEventos() {
-        return eventoRepo.findAll();
+    public List<Evento> getAll(Authentication auth) {
+        Usuario u = getUsuario(auth);
+        if (u.getRol().name().equals("ADMIN") || u.getRol().name().equals("PROFESOR")) {
+            return eventoService.obtenerTodos();
+        }
+        return eventoService.obtenerPorOrganizador(u.getId());
     }
 
     /**
-     * Obtiene un evento por su ID
+     * Devuelve los detalles de un evento por ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Evento> getEvento(@PathVariable Long id) {
-        return ResponseEntity.of(eventoRepo.findById(id));
+    public Evento getOne(@PathVariable Long id) {
+        return eventoService.obtenerPorId(id);
     }
 
     /**
-     * Crea un nuevo evento si el usuario es ADMIN o PROFESOR
+     * Crea un evento si el usuario tiene permisos.
+     * Solo pueden crear eventos administradores o profesores.
      */
     @PostMapping
-    public ResponseEntity<Evento> createEvento(@RequestBody Evento evento) {
-        Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        if (actual.getRol().name().equals("ADMIN") || actual.getRol().name().equals("PROFESOR")) {
-            evento.setOrganizador(actual);
-            evento.setEstado(EstadoEvento.ACTIVO);
-            return ResponseEntity.ok(eventoRepo.save(evento));
-        }
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+    public Evento create(@RequestBody Evento evento, Authentication auth) {
+        Usuario u = getUsuario(auth);
+        return eventoService.obtenerEventosAutenticado(u);
+        
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes crear eventos");
     }
 
     /**
-     * Actualiza un evento si el usuario es el organizador o un ADMIN
+     * Actualiza un evento si el usuario es el organizador o admin.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEvento(@PathVariable Long id, @RequestBody Evento datosEvento) {
-        Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        return eventoRepo.findById(id).map(evento -> {
-            if (actual.getRol().name().equals("ADMIN") ||
-                    (evento.getOrganizador() != null && evento.getOrganizador().getId().equals(actual.getId()))) {
-
-                evento.setNombre(datosEvento.getNombre());
-                evento.setDescripcion(datosEvento.getDescripcion());
-                evento.setFecha(datosEvento.getFecha());
-                evento.setLugar(datosEvento.getLugar());
-                evento.setEstado(datosEvento.getEstado());
-
-                return ResponseEntity.ok(eventoRepo.save(evento));
-            }
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }).orElse(ResponseEntity.notFound().build());
+    public Evento update(@PathVariable Long id, @RequestBody Evento datos, Authentication auth) {
+        Usuario u = getUsuario(auth);
+        return eventoService.actualizarEvento(id, datos, u);
     }
 
     /**
-     * Elimina un evento si el usuario es el organizador o un ADMIN
+     * Elimina un evento si el usuario es el organizador o admin.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEvento(@PathVariable Long id) {
-        Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-
-        return eventoRepo.findById(id).map(evento -> {
-            if (actual.getRol().name().equals("ADMIN") ||
-                    (evento.getOrganizador() != null && evento.getOrganizador().getId().equals(actual.getId()))) {
-                eventoRepo.deleteById(id);
-                return ResponseEntity.ok().build();
-            }
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }).orElse(ResponseEntity.notFound().build());
+    public void delete(@PathVariable Long id, Authentication auth) {
+        Usuario u = getUsuario(auth);
+        eventoService.eliminarEvento(id, u);
     }
 
     /**
-     * Obtiene el usuario autenticado desde el JWT
-     */
-    private Usuario getUsuarioAutenticado() {
-        try {
-            String correo = ((UserDetails) SecurityContextHolder
-                    .getContext()
-                    .getAuthentication()
-                    .getPrincipal()).getUsername();
-            return usuarioRepo.findByCorreo(correo).orElse(null);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    /**
-     * Devuelve la lista de eventos públicos visibles para invitados.
-     * Solo se mostrarán los eventos en estado ACTIVO.
+     * Devuelve la lista de eventos públicos activos visibles para invitados.
      */
     @GetMapping("/publicos")
-    public List<Evento> getEventosPublicos() {
-        return eventoRepo.findByEstado(EstadoEvento.ACTIVO);
+    public List<Evento> getPublicos() {
+        return eventoService.obtenerPublicos();
     }
 
+    /**
+     * Extrae el usuario autenticado desde el contexto de seguridad JWT.
+     */
+    private Usuario getUsuario(Authentication auth) {
+        return usuarioRepo.findByCorreo(auth.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    }
 }

@@ -1,20 +1,29 @@
 package com.bailoteca.models.usuario;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.bailoteca.models.enums.Rol;
+import com.bailoteca.models.inscripcion.Inscripcion;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
+
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 /**
@@ -44,14 +53,23 @@ public class Usuario {
 
     private Rol rol;
 
-    private String fotoPerfil = "";
+    @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore // Evita recursion infinita en API REST
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private List<Inscripcion> inscripciones = new ArrayList<>();
 
+    private String fotoPerfil = "";
     private String telefono;
     private String direccion;
+
     private LocalDate fechaNacimiento;
+
     private String genero;
     private String dni;
+
     private LocalDate fechaRegistro;
+
     private boolean activo;
     private boolean pagado;
 }
