@@ -132,6 +132,10 @@ public class ClaseController {
 
     /**
      * Elimina una clase si el usuario autenticado es su propietario o ADMIN.
+     * 
+     * @param id ID de la clase a eliminar
+     * @return 204 No Content si se elimina correctamente, 403 si no tiene permisos,
+     *         404 si no existe
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
@@ -141,16 +145,24 @@ public class ClaseController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
         return claseRepo.findById(id).map(clase -> {
-            boolean esPropietario = clase.getProfesor().getId().equals(actual.getId());
+            Long profesorIdClase = clase.getProfesor() != null ? clase.getProfesor().getId() : null;
+            boolean esPropietario = profesorIdClase != null && profesorIdClase.equals(actual.getId());
             boolean esAdmin = actual.getRol().name().equals("ADMIN");
 
             if (esAdmin || esPropietario) {
                 claseRepo.delete(clase);
+                System.out.printf("🗑️ Clase ID %d eliminada por usuario %s (rol: %s)%n",
+                        clase.getId(), actual.getCorreo(), actual.getRol().name());
                 return ResponseEntity.noContent().build();
             } else {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                System.err.printf("🚫 Usuario %s intentó eliminar clase ID %d sin permisos%n",
+                        actual.getCorreo(), id);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("No tienes permisos para eliminar esta clase");
             }
-        }).orElse(ResponseEntity.notFound().build());
+        }).orElseGet(() -> {
+            System.err.printf("❌ Clase ID %d no encontrada para eliminación%n", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Clase no encontrada");
+        });
     }
 
 }
