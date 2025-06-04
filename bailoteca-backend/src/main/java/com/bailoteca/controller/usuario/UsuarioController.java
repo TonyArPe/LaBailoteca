@@ -90,8 +90,23 @@ public class UsuarioController {
         if (actual == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
 
-        if (actual.getRol().name().equals("ADMIN") || actual.getId().equals(id)) {
+        boolean esAdmin = actual.getRol().name().equals("ADMIN");
+        boolean esMismoUsuario = actual.getId().equals(id);
+
+        // ✅ ADMIN o el propio usuario siempre pueden acceder
+        if (esAdmin || esMismoUsuario) {
             return ResponseEntity.of(usuarioRepo.findById(id));
+        }
+
+        // ✅ Si es profesor, comprobar si el usuario pertenece a alguna clase suya
+        if (actual.getRol().name().equals("PROFESOR")) {
+            boolean inscrito = usuarioRepo.estaInscritoEnClaseDeProfesor(id, actual.getId());
+            if (inscrito) {
+                return ResponseEntity.of(usuarioRepo.findById(id));
+            } else {
+                log.warn("Acceso denegado. Profesor {} intentó ver usuario {} que no está en sus clases",
+                        actual.getCorreo(), id);
+            }
         }
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();

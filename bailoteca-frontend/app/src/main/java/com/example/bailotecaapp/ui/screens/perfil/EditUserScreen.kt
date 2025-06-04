@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -33,40 +32,31 @@ fun EditUserScreen(
     navController: NavController,
     viewModel: UsuarioViewModel = hiltViewModel()
 ) {
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val usuario by viewModel.usuarioDetalle.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMessage by viewModel.errorMessage.collectAsState()
 
-    var usuario by remember { mutableStateOf<Usuario?>(null) }
     var nombre by remember { mutableStateOf("") }
     var apellido by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
 
-    val isLoading by viewModel.isLoading.collectAsState()
-
     /**
-     * Efecto de carga al inicio de pantalla.
-     * Llama a la API para obtener el usuario por ID.
+     * Llama al ViewModel para cargar el usuario desde el backend.
      */
     LaunchedEffect(usuarioId) {
-        try {
-            val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@LaunchedEffect
-            val resultado = viewModel.obtenerUsuarioPorId(usuarioId, token)
-
-            resultado?.let {
-                val limpio = sanearUsuarioParaFormulario(it)
-                usuario = limpio
-                nombre = limpio.nombre
-                apellido = limpio.apellido
-                telefono = limpio.telefono ?: ""
-                direccion = limpio.direccion ?: ""
-            }
-        } catch (e: Exception) {
-            Log.e("EditUserScreen", "Error cargando usuario", e)
-        }
+        viewModel.cargarUsuarioPorId(usuarioId)
     }
 
     usuario?.let {
+        LaunchedEffect(it) {
+            nombre = it.nombre ?: ""
+            apellido = it.apellido ?: ""
+            telefono = it.telefono ?: ""
+            direccion = it.direccion ?: ""
+        }
+
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -77,7 +67,6 @@ fun EditUserScreen(
                         }
                     }
                 )
-
             }
         ) { padding ->
             Column(
@@ -123,6 +112,7 @@ fun EditUserScreen(
                                     direccion = direccion.ifBlank { null }
                                 )
                                 val success = viewModel.actualizarUsuario(token, usuarioId, actualizado)
+
                                 if (success) {
                                     navController.navigate("usuarios") {
                                         popUpTo("editar_usuario/{$usuarioId}") { inclusive = true }
@@ -146,21 +136,10 @@ fun EditUserScreen(
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
             }
+        } else if (errorMessage != null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("Error: $errorMessage")
+            }
         }
     }
-}
-
-/**
- * Sanea un objeto Usuario para asegurar que no haya campos nulos al cargar en el formulario.
- *
- * @param usuario Usuario original (con posibles nulos).
- * @return Usuario con campos transformados en cadenas vacías para evitar errores en TextField.
- */
-fun sanearUsuarioParaFormulario(usuario: Usuario): Usuario {
-    return usuario.copy(
-        nombre = usuario.nombre ?: "",
-        apellido = usuario.apellido ?: "",
-        telefono = usuario.telefono ?: "",
-        direccion = usuario.direccion ?: ""
-    )
 }

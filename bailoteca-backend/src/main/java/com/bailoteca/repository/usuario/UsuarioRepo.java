@@ -31,4 +31,19 @@ public interface UsuarioRepo extends JpaRepository<Usuario, Long> {
     @Query("SELECT new com.bailoteca.dto.UsuarioDTO(u.id, u.nombre, u.apellido, u.correo) FROM Inscripcion i JOIN i.usuario u WHERE i.clase.profesor.id = :idProfesor")
     List<UsuarioDTO> findAlumnosPorProfesorId(@Param("idProfesor") Long idProfesor);
 
+    /**
+     * Verifica si un usuario está inscrito en alguna clase de un profesor
+     * específico.
+     *
+     * @param usuarioId  ID del usuario a verificar.
+     * @param profesorId ID del profesor autenticado.
+     * @return true si el usuario está inscrito en alguna clase del profesor.
+     */
+    @Query("""
+                SELECT COUNT(i) > 0 FROM Inscripcion i
+                WHERE i.usuario.id = :usuarioId
+                  AND i.clase.profesor.id = :profesorId
+            """)
+    boolean estaInscritoEnClaseDeProfesor(@Param("usuarioId") Long usuarioId, @Param("profesorId") Long profesorId);
+
 }
