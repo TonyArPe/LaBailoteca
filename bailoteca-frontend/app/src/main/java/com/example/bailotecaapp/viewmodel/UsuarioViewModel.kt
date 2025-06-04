@@ -16,7 +16,7 @@ import javax.inject.Inject
 
 /**
  * ViewModel encargado de gestionar las operaciones relacionadas con los usuarios.
- * Solo accesible por usuarios autenticados, típicamente con rol ADMIN o PROFESOR.
+ * Es usado por roles con permisos de gestión como ADMIN o PROFESOR.
  */
 @HiltViewModel
 class UsuarioViewModel @Inject constructor(
@@ -26,6 +26,9 @@ class UsuarioViewModel @Inject constructor(
     private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
     val usuarios: StateFlow<List<Usuario>> = _usuarios
 
+    private val _usuarioDetalle = MutableStateFlow<Usuario?>(null)
+    val usuarioDetalle: StateFlow<Usuario?> = _usuarioDetalle
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
@@ -33,8 +36,7 @@ class UsuarioViewModel @Inject constructor(
     val errorMessage: StateFlow<String?> = _errorMessage
 
     /**
-     * Obtiene todos los usuarios desde el backend.
-     * Requiere autenticación previa con token JWT de Firebase.
+     * Carga la lista completa de usuarios desde el backend.
      */
     fun obtenerUsuarios() {
         viewModelScope.launch {
@@ -46,14 +48,14 @@ class UsuarioViewModel @Inject constructor(
                 val response = api.getUsuarios("Bearer $token")
                 if (response.isSuccessful && response.body() != null) {
                     _usuarios.value = response.body()!!
-                    Log.d("UsuarioViewModel", "Usuarios cargados correctamente")
+                    Log.d("UsuarioViewModel", "✅ Usuarios cargados correctamente")
                 } else {
                     _errorMessage.value = "Error ${response.code()}: ${response.message()}"
-                    Log.e("UsuarioViewModel", "Error: ${response.errorBody()?.string()}")
+                    Log.e("UsuarioViewModel", "❌ Error: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 _errorMessage.value = "Excepción: ${e.localizedMessage}"
-                Log.e("UsuarioViewModel", "Excepción: ${e.message}", e)
+                Log.e("UsuarioViewModel", "❌ Excepción: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
@@ -61,7 +63,37 @@ class UsuarioViewModel @Inject constructor(
     }
 
     /**
-     * Elimina un usuario dado su ID.
+     * Carga el detalle de un usuario por su ID.
+     * Actualiza el flujo `usuarioDetalle` si se encuentra.
+     *
+     * @param id ID del usuario a mostrar.
+     */
+    fun cargarUsuarioPorId(id: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
+                    ?: throw Exception("Token nulo")
+                val response = api.getUsuarioPorId("Bearer $token", id)
+                if (response.isSuccessful && response.body() != null) {
+                    _usuarioDetalle.value = response.body()
+                    Log.d("UsuarioViewModel", "👤 Usuario detalle cargado: ${_usuarioDetalle.value?.correo}")
+                } else {
+                    _errorMessage.value = "Error ${response.code()}"
+                    Log.e("UsuarioViewModel", "❌ Error al cargar usuario: ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Excepción: ${e.message}"
+                Log.e("UsuarioViewModel", "❌ Excepción al obtener usuario por ID", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Elimina un usuario por ID.
      */
     fun eliminarUsuario(id: Long) {
         viewModelScope.launch {
@@ -70,17 +102,18 @@ class UsuarioViewModel @Inject constructor(
                 val response = api.eliminarUsuario("Bearer $token", id)
                 if (response.isSuccessful) {
                     _usuarios.value = _usuarios.value.filterNot { it.id == id }
+                    Log.d("UsuarioViewModel", "🗑️ Usuario eliminado: $id")
                 } else {
-                    Log.e("UsuarioViewModel", "Error al eliminar: ${response.code()}")
+                    Log.e("UsuarioViewModel", "❌ Error al eliminar: ${response.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "Error al eliminar usuario", e)
+                Log.e("UsuarioViewModel", "❌ Error al eliminar usuario", e)
             }
         }
     }
 
     /**
-     * Alterna el estado de pago de un usuario si es profesor o administrador.
+     * Alterna el estado de pago del usuario (visible para profesores).
      */
     fun togglePagado(usuario: Usuario) {
         usuario.id?.let { id ->
@@ -94,45 +127,24 @@ class UsuarioViewModel @Inject constructor(
                         _usuarios.value = _usuarios.value.map {
                             if (it.id == id) actualizado else it
                         }
+                        Log.d("UsuarioViewModel", "💳 Pagado actualizado: $nuevoEstado")
                     }
                 } catch (e: Exception) {
-                    Log.e("UsuarioViewModel", "Error al actualizar pagado", e)
+                    Log.e("UsuarioViewModel", "❌ Error al actualizar pagado", e)
                 }
             }
-        } ?: Log.e("UsuarioViewModel", "ID de usuario es null en togglePagado")
+        } ?: Log.e("UsuarioViewModel", "⚠️ ID de usuario nulo en togglePagado")
     }
 
     /**
-     * Obtiene un usuario por su ID desde el backend.
-     *
-     * @param id Identificador del usuario a buscar.
-     * @param token Token JWT de autenticación.
-     * @return El usuario si se encuentra, o null si no.
-     */
-    suspend fun obtenerUsuarioPorId(id: Long, token: String): Usuario? {
-        return try {
-            val response = api.getUsuarioPorId("Bearer $token", id)
-            if (response.isSuccessful) {
-                response.body()
-            } else {
-                Log.e("UsuarioViewModel", "Error al obtener usuario: ${response.code()}")
-                null
-            }
-        } catch (e: Exception) {
-            Log.e("UsuarioViewModel", "Excepción al obtener usuario por ID", e)
-            null
-        }
-    }
-
-    /**
-     * Actualiza un usuario con nuevos datos.
+     * Actualiza un usuario desde la pantalla de edición (admin).
      */
     suspend fun actualizarUsuario(token: String, id: Long, usuario: Usuario): Boolean {
         return try {
             val response = api.actualizarUsuario("Bearer $token", id, usuario)
             response.isSuccessful
         } catch (e: Exception) {
-            Log.e("UsuarioViewModel", "Error al actualizar usuario", e)
+            Log.e("UsuarioViewModel", "❌ Error al actualizar usuario", e)
             false
         }
     }

@@ -72,6 +72,41 @@ class SesionManager @Inject constructor(
         _token.value = token
     }
 
+    /**
+     * Guarda el usuario actual en memoria y DataStore.
+     *
+     * @param usuario Objeto de dominio `Usuario` recibido tras login o registro.
+     */
+    suspend fun guardarUsuario(usuario: Usuario) {
+        try {
+            // Convertimos a forma persistente compatible con DataStore
+            val persistente = UsuarioPersistente(
+                id = usuario.id ?: -1,
+                nombre = usuario.nombre,
+                apellido = usuario.apellido,
+                correo = usuario.correo,
+                rol = usuario.rol,
+                fotoPerfil = usuario.fotoPerfil,
+                telefono = usuario.telefono,
+                direccion = usuario.direccion,
+                fechaNacimiento = usuario.fechaNacimiento,
+                genero = usuario.genero,
+                dni = usuario.dni,
+                fechaRegistro = usuario.fechaRegistro,
+                activo = usuario.activo,
+                pagado = usuario.pagado
+            )
+
+            // Guardamos en preferencias y actualizamos estado
+            UsuarioPreferences.guardarUsuario(context, persistente)
+            _usuario.value = usuario
+
+            Log.d("SesionManager", "✅ Usuario guardado correctamente: ${usuario.correo}")
+        } catch (e: Exception) {
+            Log.e("SesionManager", "❌ Error al guardar usuario: ${e.message}", e)
+        }
+    }
+
     suspend fun borrarToken() {
         TokenPreferences.borrarToken(context)
         _token.value = null

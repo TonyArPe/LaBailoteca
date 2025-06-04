@@ -19,10 +19,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
- * Filtro JWT de seguridad personalizado para validar tokens de Firebase.
- * Si el token es válido y el usuario está registrado, se autentica en el contexto de Spring.
+ * Filtro JWT que valida tokens Firebase y autentica al usuario en el contexto de Spring Security.
  */
 @Slf4j
 @Component
@@ -30,6 +30,16 @@ import java.io.IOException;
 public class FirebaseJwtFilter extends OncePerRequestFilter {
 
     private final UsuarioRepo usuarioRepo;
+
+    /**
+     * Lista de rutas que no deben ser filtradas (permitidas anónimamente).
+     */
+    private static final List<String> EXCLUDE_PATHS = List.of(
+            "/api/usuarios",        // Registro
+            "/api/auth/login",      // Login
+            "/api/eventos/publicos",
+            "/api/clases/publicas"
+    );
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -39,6 +49,12 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
         log.debug("🛡️ Ruta interceptada por filtro JWT: {}", path);
+
+        if (isExcluded(path, request.getMethod())) {
+            log.debug("🟢 Ruta pública, omitiendo filtro JWT");
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -79,5 +95,13 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    /**
+     * Determina si la ruta actual está excluida del filtro.
+     */
+    private boolean isExcluded(String path, String method) {
+        return EXCLUDE_PATHS.stream().anyMatch(path::equalsIgnoreCase)
+                && method.equalsIgnoreCase("POST");
     }
 }

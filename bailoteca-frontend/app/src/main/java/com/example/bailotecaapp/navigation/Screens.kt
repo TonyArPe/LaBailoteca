@@ -26,6 +26,10 @@ sealed class Screens(val route: String) {
         fun createRoute(claseId: Long) = "clase/$claseId"
     }
 
+    object UsuarioDetalle : Screens("usuario_detalle") {
+        fun routeWithArgs(id: Long) = "usuario_detalle/$id"
+    }
+
     // Rutas para el modo invitado
     object InvitadoHome : Screens("invitado_home")
 

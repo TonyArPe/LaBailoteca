@@ -23,6 +23,7 @@ import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
+import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 
@@ -96,6 +97,14 @@ fun AppNavigation(
                     themeViewModel = themeViewModel
                 )
             }
+        }
+
+        composable(
+            route = "usuario_detalle/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getLong("id") ?: return@composable
+            UsuarioDetalleScreen(userId = id, navController)
         }
 
         composable(Screens.Eventos.route) {

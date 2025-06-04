@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.navigation.Screens
 
 @Composable
 fun UsuarioCard(
@@ -46,7 +47,7 @@ fun UsuarioCard(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(onClick = { navController.navigate("editar_usuario/${usuario.id}") }) {
+                IconButton(onClick = { navController.navigate(Screens.UsuarioDetalle.routeWithArgs(usuario.id ?: -1)) }) {
                     Icon(Icons.Default.Edit, contentDescription = "Editar usuario")
                 }
 

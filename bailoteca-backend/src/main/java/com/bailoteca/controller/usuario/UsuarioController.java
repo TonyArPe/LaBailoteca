@@ -6,6 +6,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.bailoteca.dto.UsuarioDTO;
 import com.bailoteca.models.usuario.Usuario;
@@ -54,16 +55,30 @@ public class UsuarioController {
     }
 
     /**
-     * Crea un nuevo usuario en el sistema. La contraseña se codifica
-     * automáticamente.
+     * Crea un nuevo usuario en el sistema.
+     * No requiere autenticación. La contraseña se codifica automáticamente.
+     *
+     * @param usuario Objeto recibido desde el frontend.
+     * @return El usuario registrado.
      */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
+        log.info("Registrando nuevo usuario con correo: {}", usuario.getCorreo());
+
+        // Seguridad mínima para evitar duplicados
+        if (usuarioRepo.findByCorreo(usuario.getCorreo()).isPresent()) {
+            log.warn("Intento de registro con correo ya existente: {}", usuario.getCorreo());
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Ya existe un usuario con ese correo");
+        }
+
         usuario.setFechaRegistro(LocalDate.now());
         usuario.setActivo(true);
         usuario.setPagado(false);
         usuario.setContrasenna(passwordEncoder.encode(usuario.getContrasenna()));
-        return usuarioRepo.save(usuario);
+
+        Usuario registrado = usuarioRepo.save(usuario);
+        log.info("Usuario {} registrado correctamente con ID {}", registrado.getCorreo(), registrado.getId());
+        return registrado;
     }
 
     /**
