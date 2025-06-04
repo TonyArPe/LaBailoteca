@@ -3,8 +3,6 @@ package com.example.bailotecaapp.navigation
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -15,14 +13,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.SesionGuard
-import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
-import com.example.bailotecaapp.ui.screens.perfil.EditProfileScreen
-import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
+import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel

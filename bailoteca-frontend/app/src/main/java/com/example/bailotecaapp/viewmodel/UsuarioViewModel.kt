@@ -3,6 +3,7 @@ package com.example.bailotecaapp.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.network.ApiService
 import com.google.firebase.auth.ktx.auth
@@ -34,6 +35,12 @@ class UsuarioViewModel @Inject constructor(
 
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
+
+    private val _inscripcionesUsuario = MutableStateFlow<List<Inscripcion>>(emptyList())
+    val inscripcionesUsuario: StateFlow<List<Inscripcion>> = _inscripcionesUsuario
+
+    private val _inscripcionesDelUsuario = MutableStateFlow<List<Inscripcion>>(emptyList())
+    val inscripcionesDelUsuario: StateFlow<List<Inscripcion>> = _inscripcionesDelUsuario
 
     /**
      * Carga la lista completa de usuarios desde el backend.
@@ -146,6 +153,80 @@ class UsuarioViewModel @Inject constructor(
         } catch (e: Exception) {
             Log.e("UsuarioViewModel", "❌ Error al actualizar usuario", e)
             false
+        }
+    }
+
+    /**
+     * Obtiene todas las inscripciones del usuario, y filtra solo las que pertenecen al profesor autenticado.
+     */
+    fun obtenerInscripcionesDelUsuario(usuarioId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Token nulo")
+                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
+                if (response.isSuccessful && response.body() != null) {
+                    _inscripcionesDelUsuario.value = response.body()!!
+                    Log.d("UsuarioViewModel", "📚 Inscripciones cargadas: ${_inscripcionesDelUsuario.value.size}")
+                } else {
+                    _errorMessage.value = "Error ${response.code()} al obtener inscripciones"
+                    Log.e("UsuarioViewModel", "❌ Error: ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Excepción: ${e.message}"
+                Log.e("UsuarioViewModel", "❌ Excepción al obtener inscripciones", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Carga las inscripciones del usuario especificado (solo si el rol lo permite).
+     */
+    fun cargarInscripcionesDelUsuario(usuarioId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
+                    ?: throw Exception("Token nulo")
+                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
+                if (response.isSuccessful && response.body() != null) {
+                    _inscripcionesUsuario.value = response.body()!!
+                    Log.d("UsuarioViewModel", "📚 Inscripciones cargadas: ${_inscripcionesUsuario.value.size}")
+                } else {
+                    _errorMessage.value = "Error al obtener inscripciones: ${response.code()}"
+                    Log.e("UsuarioViewModel", "❌ Código: ${response.code()} - ${response.message()}")
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Excepción: ${e.message}"
+                Log.e("UsuarioViewModel", "❌ Excepción al obtener inscripciones", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Elimina una inscripción por su ID (si es profesor/admin/alumno).
+     */
+    fun eliminarInscripcion(inscripcionId: Long) {
+        viewModelScope.launch {
+            try {
+                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
+                val response = api.eliminarInscripcion("Bearer $token", inscripcionId)
+                if (response.isSuccessful) {
+                    _inscripcionesUsuario.value =
+                        _inscripcionesUsuario.value.filterNot { it.id == inscripcionId }
+                    Log.d("UsuarioViewModel", "🗑️ Inscripción eliminada: $inscripcionId")
+                } else {
+                    Log.e("UsuarioViewModel", "❌ Error al eliminar inscripción: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("UsuarioViewModel", "❌ Excepción al eliminar inscripción", e)
+            }
         }
     }
 }

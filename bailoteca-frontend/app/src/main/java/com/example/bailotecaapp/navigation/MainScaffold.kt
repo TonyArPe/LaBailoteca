@@ -17,7 +17,7 @@ import com.example.bailotecaapp.ui.components.DrawerContent
 import com.example.bailotecaapp.ui.screens.HomeScreen
 import com.example.bailotecaapp.ui.screens.UserListScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
-import com.example.bailotecaapp.ui.screens.perfil.ProfileScreen
+import com.example.bailotecaapp.ui.screens.usuarios.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.eventos.EventoListScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
