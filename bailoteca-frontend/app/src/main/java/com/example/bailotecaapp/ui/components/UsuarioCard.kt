@@ -2,6 +2,7 @@ package com.example.bailotecaapp.ui.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Money
@@ -60,8 +61,10 @@ fun UsuarioCard(
 
                 // Solo visible si el rol actual es PROFESOR
                 if (rolActual == "PROFESOR") {
-                    IconButton(onClick = { onModificarPagado(usuario) }) {
-                        Icon(Icons.Default.Money, contentDescription = "Marcar como pagado/no pagado")
+                    IconButton(onClick = {
+                        navController.navigate("clasesUsuario/${usuario.id}")
+                    }) {
+                        Icon(Icons.Default.CalendarToday, contentDescription = "Ver clases inscritas")
                     }
                 }
             }

@@ -145,6 +145,13 @@ class SesionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Actualiza el perfil del usuario autenticado.
+     *
+     * @param usuarioActualizado Objeto con los datos modificados del usuario.
+     * @param onSuccess Callback si la actualización fue exitosa.
+     * @param onError Callback con mensaje si hubo error.
+     */
     fun actualizarPerfil(
         usuarioActualizado: UsuarioUpdateRequest,
         onSuccess: () -> Unit,
@@ -157,16 +164,20 @@ class SesionViewModel @Inject constructor(
                 val userId = usuario.value?.id ?: return@launch
 
                 val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
+
                 if (response.isSuccessful) {
                     sesionManager.iniciarSesionConToken(token)
                     onSuccess()
                 } else {
-                    val mensaje = "Error ${response.code()}: ${response.message()}"
+                    val mensaje = "❌ Error ${response.code()}: ${response.message()}"
+                    Log.e("SesionViewModel", mensaje)
                     _error.value = mensaje
                     onError(mensaje)
                 }
+
             } catch (e: Exception) {
-                val mensaje = "Excepción: ${e.localizedMessage}"
+                val mensaje = "⚠️ Excepción al actualizar perfil: ${e.localizedMessage}"
+                Log.e("SesionViewModel", mensaje, e)
                 _error.value = mensaje
                 onError(mensaje)
             }

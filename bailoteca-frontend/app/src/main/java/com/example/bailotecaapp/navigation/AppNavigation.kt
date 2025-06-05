@@ -18,6 +18,7 @@ import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
+import com.example.bailotecaapp.ui.screens.usuarios.ClasesUsuarioScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
@@ -152,6 +153,11 @@ fun AppNavigation(
                     sesionViewModel = sesionViewModel
                 )
             }
+        }
+
+        composable("clasesUsuario/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+            ClasesUsuarioScreen(userId = id, navController = navController)
         }
 
         composable(

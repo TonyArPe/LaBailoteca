@@ -11,7 +11,7 @@ import kotlinx.serialization.Serializable
 data class Usuario(
     val id: Long? = null,
     val nombre: String,
-    val apellido: String = "",
+    val apellido: String?,
     val correo: String,
     val contrasenna: String,
     val rol: Rol = Rol.USUARIO,

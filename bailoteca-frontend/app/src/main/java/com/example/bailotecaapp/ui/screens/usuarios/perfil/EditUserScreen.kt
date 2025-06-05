@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
@@ -105,14 +106,21 @@ fun EditUserScreen(
                         scope.launch {
                             try {
                                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                                val actualizado = it.copy(
-                                    nombre = nombre,
-                                    apellido = apellido,
-                                    telefono = telefono.ifBlank { null },
-                                    direccion = direccion.ifBlank { null }
+                                val actualizado = UsuarioUpdateRequest(
+                                    nombre = usuario!!.nombre,
+                                    apellido = usuario!!.apellido,
+                                    correo = usuario!!.correo,
+                                    contrasenna = usuario!!.contrasenna,
+                                    rol = usuario!!.rol,
+                                    telefono = usuario!!.telefono,
+                                    direccion = usuario!!.direccion,
+                                    fechaNacimiento = usuario!!.fechaNacimiento,
+                                    genero = usuario!!.genero,
+                                    fotoPerfil = usuario!!.fotoPerfil,
+                                    activo = usuario!!.activo,
+                                    pagado = usuario!!.pagado
                                 )
                                 val success = viewModel.actualizarUsuario(token, usuarioId, actualizado)
-
                                 if (success) {
                                     navController.navigate("usuarios") {
                                         popUpTo("editar_usuario/{$usuarioId}") { inclusive = true }

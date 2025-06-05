@@ -5,27 +5,24 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.network.ApiService
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.example.bailotecaapp.network.session.SesionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
- * ViewModel encargado de gestionar las operaciones relacionadas con los usuarios.
- * Es usado por roles con permisos de gestión como ADMIN o PROFESOR.
+ * ViewModel encargado de gestionar los usuarios para profesores y administradores.
+ * Permite alternar estados de "activo" y "pagado", cargar datos, y actualizar al backend.
  */
 @HiltViewModel
 class UsuarioViewModel @Inject constructor(
-    private val api: ApiService
+    private val api: ApiService,
+    internal val sesionManager: SesionManager
 ) : ViewModel() {
-
-    private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
-    val usuarios: StateFlow<List<Usuario>> = _usuarios
 
     private val _usuarioDetalle = MutableStateFlow<Usuario?>(null)
     val usuarioDetalle: StateFlow<Usuario?> = _usuarioDetalle
@@ -36,6 +33,9 @@ class UsuarioViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    private val _usuarios = MutableStateFlow<List<Usuario>>(emptyList())
+    val usuarios: StateFlow<List<Usuario>> = _usuarios
+
     private val _inscripcionesUsuario = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripcionesUsuario: StateFlow<List<Inscripcion>> = _inscripcionesUsuario
 
@@ -43,56 +43,129 @@ class UsuarioViewModel @Inject constructor(
     val inscripcionesDelUsuario: StateFlow<List<Inscripcion>> = _inscripcionesDelUsuario
 
     /**
-     * Carga la lista completa de usuarios desde el backend.
+     * Alterna el estado activo del usuario (solo profesores).
      */
-    fun obtenerUsuarios() {
+    fun toggleActivo(usuario: Usuario) {
         viewModelScope.launch {
-            _isLoading.value = true
-            _errorMessage.value = null
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
-                    ?: throw Exception("Token nulo")
-                val response = api.getUsuarios("Bearer $token")
-                if (response.isSuccessful && response.body() != null) {
-                    _usuarios.value = response.body()!!
-                    Log.d("UsuarioViewModel", "✅ Usuarios cargados correctamente")
+                val token = sesionManager.getToken() ?: return@launch
+
+                val request = UsuarioUpdateRequest(
+                    nombre = usuario.nombre,
+                    apellido = usuario.apellido ?: "",
+                    correo = usuario.correo,
+                    contrasenna = usuario.contrasenna,
+                    rol = usuario.rol,
+                    telefono = usuario.telefono ?: "",
+                    direccion = usuario.direccion ?: "",
+                    activo = !usuario.activo,
+                    pagado = usuario.pagado
+                )
+
+                val response = api.actualizarUsuario("Bearer $token", usuario.id!!, request)
+                if (response.isSuccessful) {
+                    val actualizado = response.body()
+                    if (actualizado != null) {
+                        _usuarioDetalle.value = actualizado
+                        Log.d("UsuarioViewModel", "✅ Usuario actualizado (activo): ${actualizado.correo}")
+                    } else {
+                        Log.e("UsuarioViewModel", "❌ Respuesta sin cuerpo al actualizar activo")
+                    }
                 } else {
-                    _errorMessage.value = "Error ${response.code()}: ${response.message()}"
-                    Log.e("UsuarioViewModel", "❌ Error: ${response.errorBody()?.string()}")
+                    Log.e("UsuarioViewModel", "❌ Error al actualizar activo: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Excepción: ${e.localizedMessage}"
-                Log.e("UsuarioViewModel", "❌ Excepción: ${e.message}", e)
-            } finally {
-                _isLoading.value = false
+                Log.e("UsuarioViewModel", "❌ Excepción al actualizar activo", e)
             }
         }
     }
 
     /**
-     * Carga el detalle de un usuario por su ID.
-     * Actualiza el flujo `usuarioDetalle` si se encuentra.
-     *
-     * @param id ID del usuario a mostrar.
+     * Alterna el estado de pago del usuario (solo profesores).
+     */
+    fun togglePagado(usuario: Usuario) {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken() ?: return@launch
+
+                val request = UsuarioUpdateRequest(
+                    nombre = usuario.nombre,
+                    apellido = usuario.apellido ?: "",
+                    correo = usuario.correo,
+                    contrasenna = usuario.contrasenna,
+                    rol = usuario.rol,
+                    telefono = usuario.telefono ?: "",
+                    direccion = usuario.direccion ?: "",
+                    activo = usuario.activo,
+                    pagado = !usuario.pagado
+                )
+
+                val response = api.actualizarUsuario("Bearer $token", usuario.id!!, request)
+
+                if (response.isSuccessful) {
+                    val actualizado = response.body()
+                    if (actualizado != null) {
+                        // 🧠 Actualiza el detalle del usuario (para UsuarioDetalleScreen)
+                        _usuarioDetalle.value = actualizado
+
+                        // 🧠 Actualiza la lista de usuarios (para UserListScreen)
+                        _usuarios.value = _usuarios.value.map {
+                            if (it.id == actualizado.id) actualizado else it
+                        }
+
+                        Log.d("UsuarioViewModel", "✅ Pagado actualizado: ${actualizado.correo}")
+                    } else {
+                        Log.e("UsuarioViewModel", "❌ Cuerpo vacío al actualizar")
+                    }
+                } else {
+                    Log.e("UsuarioViewModel", "❌ Error HTTP: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("UsuarioViewModel", "❌ Excepción en togglePagado", e)
+            }
+        }
+    }
+
+    /**
+     * Elimina un usuario por su ID (solo ADMIN).
+     */
+    fun eliminarUsuario(id: Long) {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken() ?: return@launch
+                val response = api.eliminarUsuario("Bearer $token", id)
+                if (response.isSuccessful) {
+                    _usuarios.value = _usuarios.value.filterNot { it.id == id }
+                    Log.d("UsuarioViewModel", "🗑️ Usuario eliminado: $id")
+                } else {
+                    Log.e("UsuarioViewModel", "❌ Error al eliminar usuario: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("UsuarioViewModel", "❌ Excepción al eliminar usuario", e)
+            }
+        }
+    }
+
+    /**
+     * Carga el detalle de un usuario por ID.
      */
     fun cargarUsuarioPorId(id: Long) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
-                    ?: throw Exception("Token nulo")
+                val token = sesionManager.getToken() ?: return@launch
                 val response = api.getUsuarioPorId("Bearer $token", id)
-                if (response.isSuccessful && response.body() != null) {
+                if (response.isSuccessful) {
                     _usuarioDetalle.value = response.body()
-                    Log.d("UsuarioViewModel", "👤 Usuario detalle cargado: ${_usuarioDetalle.value?.correo}")
+                    Log.d("UsuarioViewModel", "👤 Usuario cargado: ${_usuarioDetalle.value?.correo}")
                 } else {
                     _errorMessage.value = "Error ${response.code()}"
-                    Log.e("UsuarioViewModel", "❌ Error al cargar usuario: ${response.message()}")
+                    Log.e("UsuarioViewModel", "❌ Código: ${response.code()} - ${response.message()}")
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Excepción: ${e.message}"
-                Log.e("UsuarioViewModel", "❌ Excepción al obtener usuario por ID", e)
+                _errorMessage.value = "❌ Excepción: ${e.message}"
+                Log.e("UsuarioViewModel", "❌ Error al cargar usuario", e)
             } finally {
                 _isLoading.value = false
             }
@@ -100,82 +173,20 @@ class UsuarioViewModel @Inject constructor(
     }
 
     /**
-     * Elimina un usuario por ID.
-     */
-    fun eliminarUsuario(id: Long) {
-        viewModelScope.launch {
-            try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                val response = api.eliminarUsuario("Bearer $token", id)
-                if (response.isSuccessful) {
-                    _usuarios.value = _usuarios.value.filterNot { it.id == id }
-                    Log.d("UsuarioViewModel", "🗑️ Usuario eliminado: $id")
-                } else {
-                    Log.e("UsuarioViewModel", "❌ Error al eliminar: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "❌ Error al eliminar usuario", e)
-            }
-        }
-    }
-
-    /**
-     * Alterna el estado de pago del usuario (visible para profesores).
-     */
-    fun togglePagado(usuario: Usuario) {
-        usuario.id?.let { id ->
-            viewModelScope.launch {
-                try {
-                    val nuevoEstado = !usuario.pagado
-                    val actualizado = usuario.copy(pagado = nuevoEstado)
-                    val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                    val response = api.actualizarUsuario("Bearer $token", id, actualizado)
-                    if (response.isSuccessful) {
-                        _usuarios.value = _usuarios.value.map {
-                            if (it.id == id) actualizado else it
-                        }
-                        Log.d("UsuarioViewModel", "💳 Pagado actualizado: $nuevoEstado")
-                    }
-                } catch (e: Exception) {
-                    Log.e("UsuarioViewModel", "❌ Error al actualizar pagado", e)
-                }
-            }
-        } ?: Log.e("UsuarioViewModel", "⚠️ ID de usuario nulo en togglePagado")
-    }
-
-    /**
-     * Actualiza un usuario desde la pantalla de edición (admin).
-     */
-    suspend fun actualizarUsuario(token: String, id: Long, usuario: Usuario): Boolean {
-        return try {
-            val response = api.actualizarUsuario("Bearer $token", id, usuario)
-            response.isSuccessful
-        } catch (e: Exception) {
-            Log.e("UsuarioViewModel", "❌ Error al actualizar usuario", e)
-            false
-        }
-    }
-
-    /**
-     * Obtiene todas las inscripciones del usuario, y filtra solo las que pertenecen al profesor autenticado.
+     * Obtiene todas las inscripciones de un usuario.
      */
     fun obtenerInscripcionesDelUsuario(usuarioId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
-            _errorMessage.value = null
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: throw Exception("Token nulo")
+                val token = sesionManager.getToken() ?: return@launch
                 val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
-                if (response.isSuccessful && response.body() != null) {
-                    _inscripcionesDelUsuario.value = response.body()!!
+                if (response.isSuccessful) {
+                    _inscripcionesDelUsuario.value = response.body() ?: emptyList()
                     Log.d("UsuarioViewModel", "📚 Inscripciones cargadas: ${_inscripcionesDelUsuario.value.size}")
-                } else {
-                    _errorMessage.value = "Error ${response.code()} al obtener inscripciones"
-                    Log.e("UsuarioViewModel", "❌ Error: ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Excepción: ${e.message}"
-                Log.e("UsuarioViewModel", "❌ Excepción al obtener inscripciones", e)
+                Log.e("UsuarioViewModel", "❌ Error al cargar inscripciones", e)
             } finally {
                 _isLoading.value = false
             }
@@ -183,26 +194,40 @@ class UsuarioViewModel @Inject constructor(
     }
 
     /**
-     * Carga las inscripciones del usuario especificado (solo si el rol lo permite).
+     * Filtra las inscripciones por clases del profesor.
      */
-    fun cargarInscripcionesDelUsuario(usuarioId: Long) {
+    fun obtenerInscripcionesFiltradasPorProfesor(profesorId: Long): List<Inscripcion> {
+        return _inscripcionesDelUsuario.value.filter {
+            it.clase.profesor.id == profesorId
+        }
+    }
+
+    /**
+     * Carga todos los usuarios visibles por un profesor (usuarios con clases impartidas por él).
+     */
+    fun obtenerUsuariosVisiblesParaProfesor(profesorId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
-                    ?: throw Exception("Token nulo")
-                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
-                if (response.isSuccessful && response.body() != null) {
-                    _inscripcionesUsuario.value = response.body()!!
-                    Log.d("UsuarioViewModel", "📚 Inscripciones cargadas: ${_inscripcionesUsuario.value.size}")
+                val token = sesionManager.getToken() ?: return@launch
+                val responseUsuarios = api.getUsuarios("Bearer $token")
+                val responseInscripciones = api.getInscripcionesProfesor("Bearer $token", profesorId)
+
+                if (responseUsuarios.isSuccessful && responseInscripciones.isSuccessful) {
+                    val usuarios = responseUsuarios.body() ?: emptyList()
+                    val inscripciones = responseInscripciones.body() ?: emptyList()
+                    val idsUsuariosConClases = inscripciones.mapNotNull { it.usuario.id }.toSet()
+
+                    _usuarios.value = usuarios.filter { it.id in idsUsuariosConClases }
+
+                    Log.d("UsuarioViewModel", "✅ Usuarios visibles cargados: ${_usuarios.value.size}")
                 } else {
-                    _errorMessage.value = "Error al obtener inscripciones: ${response.code()}"
-                    Log.e("UsuarioViewModel", "❌ Código: ${response.code()} - ${response.message()}")
+                    _errorMessage.value = "Error al cargar usuarios visibles"
                 }
             } catch (e: Exception) {
-                _errorMessage.value = "Excepción: ${e.message}"
-                Log.e("UsuarioViewModel", "❌ Excepción al obtener inscripciones", e)
+                _errorMessage.value = "Error: ${e.message}"
+                Log.e("UsuarioViewModel", "❌ Error cargando usuarios visibles", e)
             } finally {
                 _isLoading.value = false
             }
@@ -210,23 +235,71 @@ class UsuarioViewModel @Inject constructor(
     }
 
     /**
-     * Elimina una inscripción por su ID (si es profesor/admin/alumno).
+     * Carga las inscripciones del usuario y actualiza el flujo correspondiente.
+     */
+    fun cargarInscripcionesDelUsuario(usuarioId: Long) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val token = sesionManager.getToken() ?: return@launch
+                val response = api.getInscripcionesPorUsuario("Bearer $token", usuarioId)
+                if (response.isSuccessful) {
+                    _inscripcionesUsuario.value = response.body() ?: emptyList()
+                }
+            } catch (e: Exception) {
+                Log.e("UsuarioViewModel", "❌ Error al cargar inscripciones", e)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Elimina una inscripción por ID.
      */
     fun eliminarInscripcion(inscripcionId: Long) {
         viewModelScope.launch {
             try {
-                val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
+                val token = sesionManager.getToken() ?: return@launch
                 val response = api.eliminarInscripcion("Bearer $token", inscripcionId)
                 if (response.isSuccessful) {
                     _inscripcionesUsuario.value =
                         _inscripcionesUsuario.value.filterNot { it.id == inscripcionId }
-                    Log.d("UsuarioViewModel", "🗑️ Inscripción eliminada: $inscripcionId")
-                } else {
-                    Log.e("UsuarioViewModel", "❌ Error al eliminar inscripción: ${response.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "❌ Excepción al eliminar inscripción", e)
+                Log.e("UsuarioViewModel", "❌ Error al eliminar inscripción", e)
             }
+        }
+    }
+
+    /**
+     * Actualiza un usuario desde la pantalla de edición (usado por Admin).
+     *
+     * @param token Token JWT.
+     * @param id ID del usuario a actualizar.
+     * @param request Objeto con los nuevos datos.
+     * @return true si fue exitoso, false en caso contrario.
+     */
+    suspend fun actualizarUsuario(token: String, id: Long, request: UsuarioUpdateRequest): Boolean {
+        return try {
+            val response = api.actualizarUsuario("Bearer $token", id, request)
+            if (response.isSuccessful) {
+                val actualizado = response.body()
+                if (actualizado != null) {
+                    _usuarioDetalle.value = actualizado
+                    Log.d("UsuarioViewModel", "✅ Usuario actualizado correctamente: ${actualizado.correo}")
+                    true
+                } else {
+                    Log.e("UsuarioViewModel", "❌ Cuerpo vacío al actualizar usuario")
+                    false
+                }
+            } else {
+                Log.e("UsuarioViewModel", "❌ Error HTTP al actualizar usuario: ${response.code()}")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e("UsuarioViewModel", "❌ Excepción al actualizar usuario", e)
+            false
         }
     }
 }

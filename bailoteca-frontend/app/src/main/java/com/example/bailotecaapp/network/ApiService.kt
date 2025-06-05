@@ -70,13 +70,6 @@ interface ApiService {
         @Path("id") id: Long
     ): Response<Void>
 
-    @PUT("/api/usuarios/{id}")
-    suspend fun actualizarUsuario(
-        @Header("Authorization") token: String,
-        @Path("id") id: Long,
-        @Body usuario: Usuario
-    ): Response<Usuario>
-
     // CLASES
 
     /**
@@ -145,6 +138,14 @@ interface ApiService {
         @Body request: InscripcionRequest
     ): Response<Void>
 
+    /**
+     * Obtiene todas las inscripciones
+     */
+    @GET("/api/inscripciones/profesor/{profesorId}")
+    suspend fun getInscripcionesProfesor(
+        @Header("Authorization") token: String,
+        @Path("profesorId") profesorId: Long
+    ): Response<List<Inscripcion>>
 
     /**
      * Obtiene las inscripciones del usuario autenticado.

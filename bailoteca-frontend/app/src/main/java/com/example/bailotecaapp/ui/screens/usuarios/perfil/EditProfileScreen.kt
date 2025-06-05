@@ -141,12 +141,19 @@ fun EditProfileScreen(
                 onClick = {
                     val actualizado = UsuarioUpdateRequest(
                         nombre = nombre,
+                        apellido = usuarioActual.apellido ?: "",
+                        correo = usuarioActual.correo,
+                        contrasenna = usuarioActual.contrasenna,
+                        rol = usuarioActual.rol,
                         telefono = telefono,
                         direccion = direccion,
                         fechaNacimiento = fechaNacimiento,
                         genero = genero,
-                        fotoPerfil = imagenUri?.toString() ?: usuarioActual.fotoPerfil
+                        fotoPerfil = imagenUri?.toString() ?: usuarioActual.fotoPerfil,
+                        activo = usuarioActual.activo,
+                        pagado = usuarioActual.pagado
                     )
+
 
                     Log.d("EditProfileScreen", "📤 Enviando actualización: $actualizado")
 

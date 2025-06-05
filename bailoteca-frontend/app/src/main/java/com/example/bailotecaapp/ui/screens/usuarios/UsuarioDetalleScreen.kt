@@ -3,6 +3,7 @@ package com.example.bailotecaapp.ui.screens.usuarios
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,7 +15,6 @@ import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bailotecaapp.ui.components.InscripcionCard
 import com.example.bailotecaapp.ui.theme.Magenta
-import com.example.bailotecaapp.ui.theme.Lima
 import kotlinx.coroutines.launch
 
 /**
@@ -32,10 +32,16 @@ fun UsuarioDetalleScreen(
     viewModel: UsuarioViewModel = hiltViewModel()
 ) {
     val usuario by viewModel.usuarioDetalle.collectAsState()
+    val usuarioSesion by viewModel.sesionManager.usuario.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuarioInscripciones by viewModel.inscripcionesUsuario.collectAsState()
 
+    val inscripcionesVisibles = remember(usuario, usuarioInscripciones) {
+        usuarioInscripciones.filter { it.clase.profesor.id == usuarioSesion?.id }
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
@@ -44,12 +50,24 @@ fun UsuarioDetalleScreen(
     }
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Detalle del usuario") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = {
+                        coroutineScope.launch {
+                            viewModel.cargarUsuarioPorId(userId)
+                            viewModel.obtenerInscripcionesDelUsuario(userId)
+                            snackbarHostState.showSnackbar("Datos actualizados")
+                        }
+                    }) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Actualizar")
                     }
                 }
             )
@@ -63,52 +81,32 @@ fun UsuarioDetalleScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             when {
-                isLoading -> {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
-                    }
+                isLoading -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
 
-                error != null -> {
-                    Text(
-                        text = error ?: "Error desconocido",
-                        color = MaterialTheme.colorScheme.error,
-                        textAlign = TextAlign.Center
-                    )
-                }
+                error != null -> Text(
+                    text = error ?: "Error desconocido",
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center
+                )
 
                 usuario != null -> {
-                    UsuarioDetalleContent(usuario!!)
+                    val puedeEditarActivo = usuarioSesion?.rol?.name == "ADMIN"
+                    val puedeEditarPagado = usuarioSesion?.rol?.name == "PROFESOR"
+
+                    UsuarioDetalleContent(
+                        usuario = usuario!!,
+                        onToggleActivo = if (puedeEditarActivo) { { viewModel.toggleActivo(usuario!!) } } else null,
+                        onTogglePagado = if (puedeEditarPagado) { { viewModel.togglePagado(usuario!!) } } else null
+                    )
 
                     Text(
                         text = "Clases inscritas",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
                     )
-
-                    if (usuarioInscripciones.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "Este alumno no está inscrito en clases tuyas",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Magenta,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    } else {
-                        usuarioInscripciones.forEach { inscripcion ->
-                            InscripcionCard(
-                                inscripcion = inscripcion,
-                                esPagado = usuario!!.pagado,
-                                onTogglePagado = { viewModel.togglePagado(usuario!!) },
-                                onEliminarInscripcion = { viewModel.eliminarInscripcion(inscripcion.id) },
-                                scope = coroutineScope
-                            )
-                        }
-                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }

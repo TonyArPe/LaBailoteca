@@ -14,15 +14,16 @@ import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.components.UsuarioCard
 import com.example.bailotecaapp.viewmodel.SesionViewModel
+import android.util.Log
 
 /**
- * Pantalla que muestra la lista de usuarios.
- * Solo accesible por usuarios ADMIN o PROFESOR.
- * ADMIN puede ver y gestionar todos los usuarios.
- * PROFESOR solo puede ver y editar el estado 'pagado' de los usuarios de sus clases.
+ * Pantalla que muestra la lista de usuarios disponibles según el rol del usuario autenticado.
  *
- * @param navController controlador de navegación
- * @param viewModel ViewModel de usuarios inyectado con Hilt
+ * - Un ADMIN verá y podrá editar todos los usuarios.
+ * - Un PROFESOR verá y podrá modificar el estado de pago de los alumnos inscritos en sus clases.
+ *
+ * @param navController Controlador de navegación para transiciones entre pantallas.
+ * @param viewModel ViewModel de usuario inyectado con Hilt.
  */
 @Composable
 fun UserListScreen(
@@ -38,22 +39,41 @@ fun UserListScreen(
 
     var usuarioAEliminar by remember { mutableStateOf<Usuario?>(null) }
 
-    LaunchedEffect(Unit) {
-        viewModel.obtenerUsuarios()
+    /**
+     * Al iniciar la pantalla, se obtiene el listado de usuarios visibles al profesor actual.
+     * En caso de ser ADMIN, el backend también puede devolver todos los usuarios.
+     */
+    LaunchedEffect(usuarioActual) {
+        val profesorId = usuarioActual?.id ?: return@LaunchedEffect
+        Log.d("UserListScreen", "🔍 Cargando usuarios visibles para profesor ID: $profesorId")
+        viewModel.obtenerUsuariosVisiblesParaProfesor(profesorId)
     }
 
     Scaffold { padding ->
-        Box(modifier = Modifier
-            .fillMaxSize()
-            .padding(padding)
-            .padding(16.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
         ) {
             when {
-                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                error != null -> Text(error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
+                isLoading -> {
+                    Log.d("UserListScreen", "⏳ Cargando usuarios...")
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+
+                error != null -> {
+                    Log.e("UserListScreen", "❌ Error cargando usuarios: $error")
+                    Text(error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
+                }
+
                 else -> {
-                    LazyColumn {
-                        items(usuarios) { usuario ->
+                    // Elimina duplicados por ID
+                    val usuariosUnicos = usuarios.distinctBy { it.id }
+                    Log.d("UserListScreen", "✅ Mostrando ${usuariosUnicos.size} usuarios únicos")
+
+                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        items(usuariosUnicos) { usuario ->
                             UsuarioCard(
                                 usuario = usuario,
                                 rolActual = usuarioActual?.rol?.name ?: "",
@@ -71,7 +91,7 @@ fun UserListScreen(
                         }
                     }
 
-                    // Confirmación de eliminación
+                    // Diálogo de confirmación de eliminación
                     usuarioAEliminar?.let { user ->
                         AlertDialog(
                             onDismissRequest = { usuarioAEliminar = null },
