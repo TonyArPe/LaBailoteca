@@ -166,4 +166,5 @@ public class ClaseService {
     public List<Clase> obtenerTodasLasClasesVisiblesParaInvitados() {
         return claseRepo.findByPublicaTrue();
     }
+    
 }
