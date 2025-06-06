@@ -1,4 +1,3 @@
-
 package com.bailoteca.dto;
 
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.bailoteca.models.dtos;
+package com.bailoteca.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

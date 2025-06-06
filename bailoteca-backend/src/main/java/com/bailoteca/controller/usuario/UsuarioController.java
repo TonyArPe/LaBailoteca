@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.bailoteca.dto.UsuarioDTO;
+import com.bailoteca.dto.UsuarioUpdateRequest;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
 import com.bailoteca.security.UsuarioDetails;
@@ -238,4 +239,54 @@ public class UsuarioController {
             return null;
         }
     }
+
+    /**
+     * Actualiza únicamente campos 'activo' y/o 'pagado'.
+     * - ADMIN puede modificar ambos.
+     * - PROFESOR solo 'pagado' si el alumno está en su clase.
+     */
+    @PutMapping("/{id}/estado")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
+    public ResponseEntity<Usuario> actualizarEstadoUsuario(
+            @PathVariable Long id,
+            @RequestBody UsuarioUpdateRequest request) {
+        Usuario actual = getUsuarioAutenticado();
+        if (actual == null)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+
+        var optionalUsuario = usuarioRepo.findById(id);
+        if (optionalUsuario.isEmpty()) {
+            log.warn("❌ Usuario ID={} no encontrado", id);
+            return ResponseEntity.notFound().build();
+        }
+
+        Usuario usuario = optionalUsuario.get();
+        boolean esAdmin = actual.getRol().name().equals("ADMIN");
+        boolean esProfesor = actual.getRol().name().equals("PROFESOR");
+
+        if (esAdmin) {
+            if (request.getActivo() != null)
+                usuario.setActivo(request.getActivo());
+            if (request.getPagado() != null)
+                usuario.setPagado(request.getPagado());
+            log.info("✅ ADMIN actualizó usuario ID={} [activo={}, pagado={}]", id, request.getActivo(),
+                    request.getPagado());
+        } else if (esProfesor) {
+            boolean inscrito = usuarioRepo.estaInscritoEnClaseDeProfesor(id, actual.getId());
+            if (!inscrito) {
+                log.warn("⛔ Profesor no autorizado para usuario ID={}", id);
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+            if (request.getPagado() != null) {
+                usuario.setPagado(request.getPagado());
+                log.info("🔄 PROFESOR cambió pagado ID={} a {}", id, request.getPagado());
+            }
+        } else {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        Usuario actualizado = usuarioRepo.save(usuario);
+        return ResponseEntity.ok(actualizado);
+    }
+
 }
