@@ -53,4 +53,6 @@ public class Evento {
     @Column(nullable = false)
     private boolean publico;
 
+    @Column(name = "url_imagen")
+    private String urlImagen;
 }
