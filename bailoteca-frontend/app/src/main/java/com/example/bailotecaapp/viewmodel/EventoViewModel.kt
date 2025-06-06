@@ -4,7 +4,9 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Evento
+import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
 import com.example.bailotecaapp.network.ApiService
+import com.example.bailotecaapp.network.session.SesionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +15,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class EventoViewModel @Inject constructor(
-    private val api: ApiService
+    private val api: ApiService,
+    private val sesionManager: SesionManager
 ) : ViewModel() {
 
     private val _eventos = MutableStateFlow<List<Evento>>(emptyList())
@@ -91,4 +94,34 @@ class EventoViewModel @Inject constructor(
             false
         }
     }
+
+    fun registrarAsistencia(
+        eventoId: Long,
+        asistira: Boolean,
+        pagado: Boolean
+    ) {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken()
+                if (token == null) {
+                    Log.e("EventoViewModel", "Token no disponible.")
+                    return@launch
+                }
+
+                val request = AsistenciaEventoRequest(asistira, pagado)
+                val response = api.registrarAsistenciaEvento("Bearer $token", eventoId, request)
+
+                if (response.isSuccessful) {
+                    val asistencia = response.body()
+                    Log.d("EventoViewModel", "Asistencia registrada: $asistencia")
+                    // Aquí podrías actualizar estado interno o emitir evento UI
+                } else {
+                    Log.e("EventoViewModel", "Error al registrar asistencia: ${response.code()} - ${response.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "Excepción al registrar asistencia", e)
+            }
+        }
+    }
+
 }

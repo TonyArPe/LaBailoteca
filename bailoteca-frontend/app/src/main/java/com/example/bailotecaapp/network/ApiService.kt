@@ -1,6 +1,7 @@
 package com.example.bailotecaapp.network
 
 import com.example.bailotecaapp.model.*
+import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
 import com.example.bailotecaapp.model.dto.ClaseRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
@@ -226,4 +227,12 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") eventoId: Long
     ): Response<Void>
+
+    // EVENTOS
+    @POST("/api/asistencias/evento/{eventoId}")
+    suspend fun registrarAsistenciaEvento(
+        @Header("Authorization") token: String,
+        @Path("eventoId") eventoId: Long,
+        @Body request: AsistenciaEventoRequest
+    ): Response<AsistenciaEvento>
 }
