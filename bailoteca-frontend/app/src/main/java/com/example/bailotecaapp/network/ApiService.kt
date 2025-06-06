@@ -3,6 +3,7 @@ package com.example.bailotecaapp.network
 import com.example.bailotecaapp.model.*
 import com.example.bailotecaapp.model.dto.ClaseRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
+import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import retrofit2.http.*
 import retrofit2.Response
@@ -69,6 +70,13 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") id: Long
     ): Response<Void>
+
+    @PUT("/api/usuarios/{id}/estado")
+    suspend fun actualizarEstadoUsuario(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long,
+        @Body request: UsuarioEstadoUpdateRequest
+    ): Response<Usuario>
 
     // CLASES
 

@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.ui.screens.usuarios
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -8,22 +9,16 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
-import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.example.bailotecaapp.ui.components.InscripcionCard
 import com.example.bailotecaapp.ui.theme.Magenta
+import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import kotlinx.coroutines.launch
 
-/**
- * Pantalla que muestra el detalle de un usuario inscrito, solo accesible por profesores.
- * Se muestra el nombre, correo, estado de pago y las clases en las que está inscrito.
- *
- * @param userId ID del usuario a mostrar.
- * @param navController Controlador de navegación para volver atrás.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsuarioDetalleScreen(
@@ -36,10 +31,6 @@ fun UsuarioDetalleScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuarioInscripciones by viewModel.inscripcionesUsuario.collectAsState()
-
-    val inscripcionesVisibles = remember(usuario, usuarioInscripciones) {
-        usuarioInscripciones.filter { it.clase.profesor.id == usuarioSesion?.id }
-    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -95,20 +86,74 @@ fun UsuarioDetalleScreen(
                     val puedeEditarActivo = usuarioSesion?.rol?.name == "ADMIN"
                     val puedeEditarPagado = usuarioSesion?.rol?.name == "PROFESOR"
 
-                    UsuarioDetalleContent(
-                        usuario = usuario!!,
-                        onToggleActivo = if (puedeEditarActivo) { { viewModel.toggleActivo(usuario!!) } } else null,
-                        onTogglePagado = if (puedeEditarPagado) { { viewModel.togglePagado(usuario!!) } } else null
-                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        border = BorderStroke(2.dp, Color(0xFF8CD400)), // lima
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = usuario!!.nombre ?: "Sin nombre",
+                                style = MaterialTheme.typography.titleLarge,
+                                color = Magenta
+                            )
 
-                    Text(
-                        text = "Clases inscritas",
-                        style = MaterialTheme.typography.titleMedium,
-                        modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
+                            Text("Correo: ${usuario!!.correo}")
+                            Text("Teléfono: ${usuario!!.telefono ?: "No especificado"}")
+                            Text("Rol: ${usuario!!.rol.name}")
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = if (usuario!!.pagado) "Pagado: Sí ✅" else "Pagado: No ❌",
+                                    color = if (usuario!!.pagado) Color(0xFF8CD400) else MaterialTheme.colorScheme.error
+                                )
+
+                                Checkbox(
+                                    checked = usuario!!.pagado,
+                                    onCheckedChange = {
+                                        if (puedeEditarPagado) viewModel.togglePagado(usuario!!)
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = Color(0xFF8CD400),
+                                        uncheckedColor = MaterialTheme.colorScheme.error
+                                    )
+                                )
+                            }
+
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = if (usuario!!.activo) "Activo: Sí ✅" else "Activo: No ❌",
+                                    color = if (usuario!!.activo) Color(0xFF8CD400) else MaterialTheme.colorScheme.error
+                                )
+
+                                Checkbox(
+                                    checked = usuario!!.activo,
+                                    onCheckedChange = {
+                                        if (puedeEditarActivo) viewModel.toggleActivo(usuario!!)
+                                    },
+                                    colors = CheckboxDefaults.colors(
+                                        checkedColor = Color(0xFF8CD400),
+                                        uncheckedColor = MaterialTheme.colorScheme.error
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    }
                 }
             }
         }
     }
-}

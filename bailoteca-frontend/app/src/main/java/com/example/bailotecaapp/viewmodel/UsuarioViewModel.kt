@@ -8,6 +8,7 @@ import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
+import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,46 +83,33 @@ class UsuarioViewModel @Inject constructor(
 
     /**
      * Alterna el estado de pago del usuario (solo profesores).
+     * Utiliza endpoint parcial PUT /usuarios/{id}/estado.
      */
     fun togglePagado(usuario: Usuario) {
         viewModelScope.launch {
             try {
                 val token = sesionManager.getToken() ?: return@launch
+                val nuevoEstado = !usuario.pagado
 
-                val request = UsuarioUpdateRequest(
-                    nombre = usuario.nombre,
-                    apellido = usuario.apellido ?: "",
-                    correo = usuario.correo,
-                    contrasenna = usuario.contrasenna,
-                    rol = usuario.rol,
-                    telefono = usuario.telefono ?: "",
-                    direccion = usuario.direccion ?: "",
-                    activo = usuario.activo,
-                    pagado = !usuario.pagado
-                )
-
-                val response = api.actualizarUsuario("Bearer $token", usuario.id!!, request)
+                val request = UsuarioEstadoUpdateRequest(pagado = nuevoEstado)
+                val response = api.actualizarEstadoUsuario("Bearer $token", usuario.id!!, request)
 
                 if (response.isSuccessful) {
                     val actualizado = response.body()
                     if (actualizado != null) {
-                        // 🧠 Actualiza el detalle del usuario (para UsuarioDetalleScreen)
                         _usuarioDetalle.value = actualizado
-
-                        // 🧠 Actualiza la lista de usuarios (para UserListScreen)
                         _usuarios.value = _usuarios.value.map {
                             if (it.id == actualizado.id) actualizado else it
                         }
-
                         Log.d("UsuarioViewModel", "✅ Pagado actualizado: ${actualizado.correo}")
                     } else {
-                        Log.e("UsuarioViewModel", "❌ Cuerpo vacío al actualizar")
+                        Log.e("UsuarioViewModel", "❌ Respuesta sin cuerpo al actualizar pagado")
                     }
                 } else {
-                    Log.e("UsuarioViewModel", "❌ Error HTTP: ${response.code()}")
+                    Log.e("UsuarioViewModel", "❌ Error HTTP al actualizar pagado: ${response.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("UsuarioViewModel", "❌ Excepción en togglePagado", e)
+                Log.e("UsuarioViewModel", "❌ Excepción al actualizar pagado", e)
             }
         }
     }
