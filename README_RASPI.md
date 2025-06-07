@@ -1,170 +1,93 @@
-# Raspberry Pi como Túnel Remoto para Backend
+# CONFIGURACIÓN DE TÚNEL PÚBLICO CON NGROK EN BANANA PI PARA BACKEND LOCAL
 
-Este documento explica cómo configurar una Raspberry Pi para que funcione como túnel público hacia un backend local usando `ngrok`. El objetivo es que, al encender la Raspberry en casa, se conecte sola a la red Wi-Fi, habilite SSH y exponga tu backend automáticamente, sin teclado ni monitor.
+Aqui expongo un backend Spring Boot local desde un Banana Pi a través de internet usando Ngrok. Aunque inicialmente se pensó usar una Raspberry Pi, se descubrió que era una Banana Pi abriendo la cajetilla y viendo y analizando la placa comparandola con una placa de una Raspberry. Aquí se detallan los problemas encontrados y sus soluciones para lograr una app Android funcional desde cualquier red.
 
----
+## CONTEXTO INICIAL
 
-## Requisitos
+El objetivo era acceder al backend local desde fuera de la red doméstica (por ejemplo, usando datos móviles), especialmente para demostraciones. Para ello, se optó por un túnel público con Ngrok.
 
-### Hardware
-- Raspberry Pi (modelo 3, 4 o superior)
-- Tarjeta microSD (mínimo 8GB)
-- Fuente de alimentación (5V, 2.5A o superior)
-- Cable microUSB o USB-C para alimentación
+## OBJETIVO
 
-### Software necesario
-- [Raspberry Pi Imager](https://www.raspberrypi.com/software/)
-- [ngrok](https://ngrok.com/)
-- (Opcional) Notepad++ para editar archivos sin errores de codificación
+Exponer el backend local (Java Spring Boot) que corre en un Banana Pi mediante un túnel seguro, accesible desde cualquier lugar usando una URL del tipo `https://...ngrok-free.app`.
 
----
+## HARDWARE UTILIZADO
 
-## PASO 1: Grabar Raspberry Pi OS en la microSD
+- Banana Pi (modelo no identificado al principio, creo que es `Banana Pi BPI-M1`)
+- Tarjeta microSD con sistema pregrabado
+- Cable MicroUBS para alimentación
+- Conexión por Ethernet a router doméstico
 
-1. Abre **Raspberry Pi Imager**.
-2. Selecciona:
-    - `Raspberry Pi OS Lite (32-bit)`
-    - Las versiones de 64-bit muchas veces no crean correctamente
-      las particiones para Windows
-3. Pulsa `Ctrl + Shift + X` para abrir la configuración avanzada.
-4. Configura:
-    - Nombre de host: `raspberrypi`
-    - Habilitar SSH (con contraseña)
-    - Usuario: `pi` / Contraseña: la que prefieras
-    - Configura Wi-Fi:
-      - SSID: Tu red de casa
-      - Contraseña: Tu contraseña Wi-Fi
-      - País: `ES`
-    - Omitir asistente de inicio
-    - Guardar ajustes personalizados
-5. Escribe la imagen en la SD.
+## PROBLEMAS INICIALES
 
----
+- **Confusión con el modelo:** Se pensaba que era una Raspberry Pi, pero el análisis físico de la placa revelaron que era una Banana Pi.
+- **Sin pantalla ni teclado:** El dispositivo no mostraba señal por HDMI ni ofrecía forma gráfica de interactuar.
+- **Dificultades de conexión:** Aunque la microSD estaba bien insertada y la luz roja encendida, no aparecía como dispositivo conocido en el router.
+- **Sin acceso vía ping o SSH al principio.**
 
-## PASO 2: Preparar archivos en la partición `boot`
+## FASE DE PRUEBA Y DIAGNÓSTICO
 
-Una vez grabada la imagen, reinserta la tarjeta SD en el PC. Aparecerá una partición llamada `boot` (o `bootfs`).
+Se realizaron los siguientes intentos:
 
-### Archivos que debes colocar ahí:
+- Se grabó la SD con Raspberry Pi OS Lite (por si era compatible).
+- Se agregó el archivo `ssh` y la configuración `wpa_supplicant.conf` con la configuracion de mi router domestico.
+- Se monitorizó la red desde el router.
+- Finalmente, se detectó un nuevo dispositivo `bananaapi` con IP local `192.168.2.107`.
 
-#### `ssh` (activa el servidor SSH)
-- Crea un archivo vacío llamado `ssh` (sin extensión).
-- Desde Notepad++ o Bloc de notas:
-  - Guardar como: `ssh`
-  - Tipo: Todos los archivos
-  - Codificación: ANSI
+## CONFIGURACIÓN EFECTIVA PASO A PASO
 
-#### `wpa_supplicant.conf` (conexión a Wi-Fi)
-Guarda el siguiente contenido como `wpa_supplicant.conf` en la raíz de `boot`:
+1. **Identificación del backend:**  
+  Se confirmó que el backend Spring Boot corría en el puerto 8080 en el Banana Pi.
 
-```conf
-country=ES
-ctrl_interface=DIR=/var/run/wpa_supplicant GROUP=netdev
-update_config=1
+2. **Instalación de Ngrok:**  
+  Desde el Banana Pi o el equipo principal donde corre el backend:
+  ```bash
+  choco install ngrok
+  ```
 
-network={
-     ssid="NombreDeTuWiFi"
-     psk="ContraseñaDeTuWiFi"
-}
-```
+  Y despues confirmamos con `y`
 
-#### `firstboot.sh` (script para instalar ngrok y lanzar túnel)
-Guarda el siguiente script como `firstboot.sh` en la raíz de la SD:
+3. **Registro en Ngrok:**  
+  - Crear una cuenta en [ngrok.com](https://ngrok.com)(Usada cuenta GitHub)
+  - Acceder a la sección *Your Authtoken* desde el dashboard.
+  - Copiar el token y ejecutar:
+    ```bash
+    ngrok config add-authtoken TU_AUTHTOKEN
+    ```
 
-```bash
-#!/bin/bash
-cd /home/pi
+4. **Lanzar el túnel:**  
+  Una vez autenticado:
+  ```bash
+  ngrok http 8080
+  ```
+  Esto generará una salida como:
+  ```
+  Forwarding https://xxxx-xx-xx-xxx.ngrok-free.app -> http://localhost:8080
+  ```
+  Esta URL pública será la que debe usarse como `BASE_URL` en la app Android en la clase `NetworkModule`.
 
-# Instalar ngrok
-wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-arm.zip
-unzip ngrok-stable-linux-arm.zip
-chmod +x ngrok
-sudo mv ngrok /usr/local/bin
+## VALIDACIÓN DE FUNCIONAMIENTO
 
-# Autenticar ngrok
-ngrok config add-authtoken TU_TOKEN_NGROK
+- Se pudo acceder al backend mediante la URL pública generada por Ngrok desde datos móviles y otras redes.
+- El backend respondió correctamente a las peticiones, validando tokens Firebase y sirviendo datos.
 
-# Lanzar túnel
-ngrok http 8080 > /home/pi/ngrok.log &
-```
+## CONCLUSIONES
 
-- Reemplaza `TU_TOKEN_NGROK` por tu token personal de [ngrok](https://dashboard.ngrok.com/get-started/setup).
-- Codificación: ANSI o UTF-8 sin BOM
-- Fin de línea: LF (Unix)
+- Aunque inicialmente se planificó el uso de una Raspberry Pi, el proceso fue adaptable al uso de un Banana Pi.
+- El túnel público con Ngrok permite acceso seguro y temporal al backend desde cualquier lugar.
 
----
+## RECURSOS ÚTILES
 
-## PASO 3: Encender la Raspberry en casa
+- [Ngrok Dashboard](https://dashboard.ngrok.com/)
+- [Documentación oficial Ngrok](https://ngrok.com/docs)
+- Ver logs de Ngrok:
+  ```powershell
+  type C:\Users\<TU_USUARIO>\ngrok.log
+  ```
+  > Cambia `<TU_USUARIO>` por tu nombre de usuario de Windows.
 
-1. Inserta la tarjeta SD en la Raspberry Pi.
-2. Conéctala a la corriente (microUSB o USB-C).
-3. Espera 1-2 minutos.
+## ESTADO FINAL
 
-**¿Qué ocurre automáticamente?**
-- Se conecta a la red Wi-Fi configurada.
-- Activa el servicio SSH.
-- Si configuras el script en `rc.local`, ejecuta el túnel automáticamente.
+El sistema está completamente funcional para exposición remota del backend. El Banana Pi inicia y se conecta automáticamente por red local, y Ngrok expone el backend por una URL pública utilizable desde cualquier red o red móvil.
 
----
+> 💡 **Recomendación:** Usar un archivo `.env` o cambiar el `BASE_URL` mediante variable de entorno si el proyecto pasa a producción.
 
-## PASO 4 (opcional): Acceder por SSH desde tu PC
-
-Desde otro PC conectado a la misma red:
-
-```sh
-ssh pi@raspberrypi.local
-# o con la IP local
-ssh pi@192.168.1.XXX
-```
-
-Si es la primera vez, ejecuta:
-
-```sh
-sudo mv /boot/firstboot.sh /home/pi/
-sudo chmod +x /home/pi/firstboot.sh
-sudo bash /home/pi/firstboot.sh
-```
-
----
-
-## PASO 5 (opcional): Automatizar la ejecución al arrancar
-
-Para que el túnel se inicie automáticamente cada vez que arranques la Raspberry:
-
-```sh
-sudo nano /etc/rc.local
-```
-
-Antes de `exit 0`, añade:
-
-```sh
-bash /home/pi/firstboot.sh
-```
-
-Guarda (Ctrl+O), luego (Ctrl+X).
-
----
-
-## Resultado
-
-Una vez ejecutado el script, obtendrás algo como:
-
-```
-Forwarding https://2ff7-80-xx-xxx-101.ngrok.io → http://localhost:8080
-```
-
-Ese será el enlace público que debes poner como `BASE_URL` en tu app móvil para conectarte a tu backend local de casa desde cualquier lugar del mundo.
-
----
-
-## Validaciones desde CMD (Windows)
-
-Puedes comprobar los archivos en la SD desde CMD:
-
-```cmd
-D:
-dir
-type ssh
-type wpa_supplicant.conf
-type firstboot.sh
-```
