@@ -22,7 +22,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://66b9-84-122-0-141.ngrok-free.app/"
+    private const val BASE_URL = "https://4586-84-122-0-141.ngrok-free.app/"
 
     /**
      * Proporciona el interceptor que añade y renueva el token JWT de Firebase.

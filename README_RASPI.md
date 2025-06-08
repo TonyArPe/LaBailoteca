@@ -89,5 +89,5 @@ Se realizaron los siguientes intentos:
 
 El sistema está completamente funcional para exposición remota del backend. El Banana Pi inicia y se conecta automáticamente por red local, y Ngrok expone el backend por una URL pública utilizable desde cualquier red o red móvil.
 
-> 💡 **Recomendación:** Usar un archivo `.env` o cambiar el `BASE_URL` mediante variable de entorno si el proyecto pasa a producción.
+> **Recomendación:** Usar un archivo `.env` o cambiar el `BASE_URL` mediante variable de entorno si el proyecto pasa a producción.
 
