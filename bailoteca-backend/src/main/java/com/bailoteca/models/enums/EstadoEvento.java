@@ -5,4 +5,3 @@ public enum EstadoEvento {
     CANCELADO,
     POSPUESTO
 }
-
