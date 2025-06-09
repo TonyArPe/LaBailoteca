@@ -1,28 +1,33 @@
 package com.example.bailotecaapp.ui.screens.eventos
 
+import android.net.Uri
 import android.os.Build
-import android.util.Log
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.AsyncImage
 import com.example.bailotecaapp.model.Evento
 import com.example.bailotecaapp.model.enums.EstadoEvento
 import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+import com.example.bailotecaapp.utils.DropdownMenuBox
+
 
 /**
  * Pantalla para crear o editar un evento.
@@ -47,13 +52,18 @@ fun CrearEditarEventoScreen(
     val token by sesionViewModel.token.collectAsState()
     val evento = eventoViewModel.eventoSeleccionado.collectAsState().value
 
-    // Estado local de los campos del formulario
     var nombre by remember { mutableStateOf(evento?.nombre ?: "") }
     var descripcion by remember { mutableStateOf(evento?.descripcion ?: "") }
     var fecha by remember { mutableStateOf(evento?.fecha ?: LocalDateTime.now().toString()) }
     var lugar by remember { mutableStateOf(evento?.lugar ?: "") }
     var publico by remember { mutableStateOf(evento?.publico ?: true) }
     var estado by remember { mutableStateOf(evento?.estado ?: EstadoEvento.ACTIVO) }
+    var imagenUri by remember { mutableStateOf<Uri?>(null) }
+
+    // Launcher para galería
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri -> imagenUri = uri }
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -69,7 +79,8 @@ fun CrearEditarEventoScreen(
             modifier = Modifier
                 .padding(padding)
                 .padding(16.dp)
-                .fillMaxSize(),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             OutlinedTextField(
@@ -101,21 +112,38 @@ fun CrearEditarEventoScreen(
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Evento público")
                 Spacer(modifier = Modifier.width(8.dp))
                 Switch(checked = publico, onCheckedChange = { publico = it })
             }
 
-            // Solo editable en modo edición
             if (evento != null) {
                 Text("Estado del evento")
                 DropdownMenuBox(
-                    value = estado,
-                    onValueChange = { estado = it },
+                    selected = estado,
+                    onSelected = { estado = it },
                     opciones = EstadoEvento.entries
+                )
+            }
+
+            // Selector de imagen
+            OutlinedButton(
+                onClick = { launcher.launch("image/*") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Seleccionar imagen")
+            }
+
+            // Previsualización
+            imagenUri?.let { uri ->
+                AsyncImage(
+                    model = uri,
+                    contentDescription = "Imagen del evento",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                        .clip(MaterialTheme.shapes.medium)
                 )
             }
 
@@ -123,10 +151,7 @@ fun CrearEditarEventoScreen(
                 onClick = {
                     if (nombre.isBlank() || descripcion.isBlank() || lugar.isBlank() || fecha.isBlank()) {
                         scope.launch {
-                            snackbarHostState.showSnackbar(
-                                "Por favor, completa todos los campos",
-                                duration = SnackbarDuration.Short
-                            )
+                            snackbarHostState.showSnackbar("Por favor, completa todos los campos")
                         }
                         return@Button
                     }
@@ -157,7 +182,6 @@ fun CrearEditarEventoScreen(
                         }
 
                         if (exito) {
-                            Log.d("CrearEditarEvento", "✅ Evento guardado correctamente")
                             Toast.makeText(context, "Guardado", Toast.LENGTH_SHORT).show()
                             navController.popBackStack()
                         } else {
@@ -168,48 +192,6 @@ fun CrearEditarEventoScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Guardar")
-            }
-        }
-    }
-}
-
-/**
- * Componente genérico para seleccionar un valor de un enum en un Dropdown.
- */
-@Composable
-fun <T : Enum<T>> DropdownMenuBox(
-    value: T,
-    onValueChange: (T) -> Unit,
-    opciones: List<T>
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box {
-        OutlinedTextField(
-            value = value.name,
-            onValueChange = {},
-            readOnly = true,
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Estado") },
-            trailingIcon = {
-                IconButton(onClick = { expanded = !expanded }) {
-                    Icon(Icons.Default.ArrowDropDown, contentDescription = null)
-                }
-            }
-        )
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            opciones.forEach {
-                DropdownMenuItem(
-                    text = { Text(it.name.lowercase().replaceFirstChar { c -> c.uppercase() }) },
-                    onClick = {
-                        onValueChange(it)
-                        expanded = false
-                    }
-                )
             }
         }
     }
