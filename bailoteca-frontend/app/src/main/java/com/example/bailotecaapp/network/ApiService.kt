@@ -226,4 +226,21 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("id") eventoId: Long
     ): Response<Void>
+
+    @GET("api/eventos/asistidos")
+    suspend fun getEventosAsistidos(
+        @Header("Authorization") token: String
+    ): List<Evento>
+
+    @POST("api/eventos/{id}/asistir")
+    suspend fun asistirEvento(
+        @Header("Authorization") token: String,
+        @Path("id") eventoId: Long
+    )
+
+    @DELETE("api/eventos/{id}/asistir")
+    suspend fun cancelarAsistencia(
+        @Header("Authorization") token: String,
+        @Path("id") eventoId: Long
+    )
 }

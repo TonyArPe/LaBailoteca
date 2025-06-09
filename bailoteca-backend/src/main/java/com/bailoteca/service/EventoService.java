@@ -1,5 +1,7 @@
 package com.bailoteca.service;
 
+import com.bailoteca.dto.EventoDTO;
+import com.bailoteca.dto.EventoRequest;
 import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
@@ -13,9 +15,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
- * Servicio que gestiona la lógica de negocio de eventos.
+ * Servicio que gestiona la lógica de negocio relacionada con los eventos.
  */
 @Service
 @RequiredArgsConstructor
@@ -24,32 +27,36 @@ public class EventoService {
 
     private final EventoRepo eventoRepo;
 
-    public List<Evento> obtenerEventosAutenticado(Usuario usuario) {
+    /**
+     * Devuelve los eventos visibles para el usuario autenticado según su rol.
+     */
+    public List<EventoDTO> obtenerEventosAutenticado(Usuario usuario) {
+        List<Evento> eventos;
         switch (usuario.getRol()) {
-            case ADMIN -> {
-                return eventoRepo.findAll();
-            }
-            case PROFESOR -> {
-                return eventoRepo.findByOrganizadorId(usuario.getId());
-            }
+            case ADMIN -> eventos = eventoRepo.findAll();
+            case PROFESOR -> eventos = eventoRepo.findByOrganizadorId(usuario.getId());
             case USUARIO -> {
                 List<Long> profesorIds = usuario.getInscripciones().stream()
                         .filter(i -> i.getClase() != null && i.getClase().getProfesor() != null)
                         .map(i -> i.getClase().getProfesor().getId())
                         .distinct()
                         .toList();
-                return eventoRepo.findAll().stream()
+                eventos = eventoRepo.findAll().stream()
                         .filter(e -> profesorIds.contains(e.getOrganizador().getId()))
                         .toList();
             }
             default -> {
                 log.warn("Rol desconocido: {}", usuario.getRol());
-                return List.of();
+                eventos = List.of();
             }
         }
+        return eventos.stream().map(this::mapToDto).collect(Collectors.toList());
     }
 
-    public Optional<Evento> obtenerEventoPorIdYUsuario(Long id, Usuario usuario) {
+    /**
+     * Devuelve un evento específico si el usuario tiene permiso de acceso.
+     */
+    public Optional<EventoDTO> obtenerEventoPorIdYUsuario(Long id, Usuario usuario) {
         Optional<Evento> eventoOpt = eventoRepo.findById(id);
         if (eventoOpt.isEmpty()) return Optional.empty();
 
@@ -57,18 +64,30 @@ public class EventoService {
         boolean autorizado = usuario.getRol().name().equals("ADMIN") ||
                 (evento.getOrganizador() != null && evento.getOrganizador().getId().equals(usuario.getId()));
 
-        return autorizado ? Optional.of(evento) : Optional.empty();
+        return autorizado ? Optional.of(mapToDto(evento)) : Optional.empty();
     }
 
-    public Evento crearEvento(Evento evento, Usuario organizador) {
+    /**
+     * Crea un nuevo evento a partir de un EventoRequest.
+     */
+    public Evento crearEventoDesdeRequest(EventoRequest request, Usuario organizador) {
+        Evento evento = new Evento();
+        evento.setNombre(request.getNombre());
+        evento.setDescripcion(request.getDescripcion());
+        evento.setFecha(request.getFecha());
+        evento.setLugar(request.getLugar());
+        evento.setEstado(request.getEstado());
+        evento.setPublico(request.isPublico());
         evento.setOrganizador(organizador);
-        evento.setEstado(EstadoEvento.ACTIVO);
         log.info("Evento '{}' creado por {}", evento.getNombre(), organizador.getCorreo());
         return eventoRepo.save(evento);
     }
 
+    /**
+     * Actualiza un evento existente si el usuario tiene permisos.
+     */
     @Transactional
-    public Evento actualizarEvento(Long id, Evento nuevosDatos, Usuario actual) {
+    public Evento actualizarEventoDesdeRequest(Long id, EventoRequest nuevosDatos, Usuario actual) {
         Evento evento = eventoRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
 
@@ -87,9 +106,13 @@ public class EventoService {
         evento.setEstado(nuevosDatos.getEstado());
         evento.setPublico(nuevosDatos.isPublico());
 
+        log.info("Evento con id {} actualizado por {}", id, actual.getCorreo());
         return evento;
     }
 
+    /**
+     * Elimina un evento si el usuario es admin o su organizador.
+     */
     public void eliminarEvento(Long id, Usuario actual) {
         Evento evento = eventoRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
@@ -106,18 +129,29 @@ public class EventoService {
         log.info("Evento con id {} eliminado por {}", id, actual.getCorreo());
     }
 
-    public List<Evento> obtenerPublicos() {
+    /**
+     * Devuelve todos los eventos públicos activos.
+     */
+    public List<EventoDTO> obtenerPublicos() {
         return eventoRepo.findByEstado(EstadoEvento.ACTIVO).stream()
                 .filter(Evento::isPublico)
+                .map(this::mapToDto)
                 .toList();
     }
 
-    public Evento obtenerPorId(Long id) {
-        return eventoRepo.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
-    }
-
-    public List<Evento> obtenerPorOrganizador(Long id) {
-        return eventoRepo.findByOrganizadorId(id);
+    /**
+     * Convierte un Evento a su representación DTO para exponer al frontend.
+     */
+    public EventoDTO mapToDto(Evento evento) {
+        EventoDTO dto = new EventoDTO();
+        dto.setId(evento.getId());
+        dto.setNombre(evento.getNombre());
+        dto.setDescripcion(evento.getDescripcion());
+        dto.setFecha(evento.getFecha());
+        dto.setLugar(evento.getLugar());
+        dto.setPublico(evento.isPublico());
+        dto.setEstado(evento.getEstado().name());
+        dto.setOrganizadorNombre(evento.getOrganizador() != null ? evento.getOrganizador().getNombre() : "Desconocido");
+        return dto;
     }
 }

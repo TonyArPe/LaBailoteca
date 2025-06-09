@@ -1,32 +1,37 @@
-package com.example.bailotecaapp.ui.screens.eventos
+package com.example.bailotecaapp.ui.screens.eventos;
 
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Public
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.*
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import com.example.bailotecaapp.model.Evento
-import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.model.enums.Rol
-import com.example.bailotecaapp.viewmodel.EventoViewModel
+import androidx.compose.foundation.layout.*;
+import androidx.compose.foundation.shape.RoundedCornerShape;
+import androidx.compose.material.icons.Icons;
+import androidx.compose.material.icons.filled.Lock;
+import androidx.compose.material.icons.filled.Public;
+import androidx.compose.material.icons.filled.Visibility;
+import androidx.compose.material3.*;
+import androidx.compose.runtime.*;
+import androidx.compose.ui.*;
+import androidx.compose.ui.draw.clip;
+import androidx.compose.ui.graphics.Color;
+import androidx.compose.ui.platform.LocalContext;
+import androidx.compose.ui.unit.dp;
+import coil.compose.AsyncImage;
+import coil.request.ImageRequest;
+import com.example.bailotecaapp.model.Evento;
+import com.example.bailotecaapp.model.Usuario;
+import com.example.bailotecaapp.model.enums.Rol;
+import com.example.bailotecaapp.viewmodel.EventoViewModel;
+import android.util.Log;
 
 /**
- * Tarjeta que muestra un evento con sus datos y un botón para marcar/cancelar asistencia.
+ * Componente visual que representa una tarjeta con información de un evento.
+ * Muestra el nombre, descripción, fecha, lugar, visibilidad (público o privado) y
+ * permite al usuario autenticado marcar o cancelar su asistencia al evento.
+ *
+ * También se muestra la imagen del organizador si está disponible.
  *
  * @param evento Evento a mostrar
  * @param usuario Usuario autenticado (puede ser ADMIN, PROFESOR, USUARIO, etc.)
- * @param token Token JWT para llamadas autenticadas
- * @param eventoViewModel ViewModel que gestiona la lógica de eventos
+ * @param token Token JWT válido para las llamadas protegidas
+ * @param eventoViewModel ViewModel encargado de la lógica de asistencia
  */
 @Composable
 fun EventoCard(
@@ -38,8 +43,9 @@ fun EventoCard(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val yaAsiste by remember { derivedStateOf { eventoViewModel.yaAsiste(evento.id) } }
-
     val puedeAsistir = usuario?.rol?.name == Rol.USUARIO.name
+
+    Log.d("EventoCard", "Renderizando evento: ${evento.nombre} (${evento.id})")
 
     Card(
         modifier = Modifier
@@ -82,28 +88,31 @@ fun EventoCard(
                 style = MaterialTheme.typography.labelSmall
             )
 
-            // Imagen (si se implementa en el futuro)
-            evento.organizador.fotoPerfil?.takeIf { it.isNotBlank() }?.let { url ->
+            // Imagen del organizador (si se implementa y existe)
+            evento.organizador?.fotoPerfil?.takeIf { it.isNotBlank() }?.let { url ->
+                Log.d("EventoCard", "Cargando imagen desde URL: $url")
                 Spacer(modifier = Modifier.height(12.dp))
                 AsyncImage(
                     model = ImageRequest.Builder(context).data(url).crossfade(true).build(),
-                    contentDescription = "Imagen del evento",
+                    contentDescription = "Imagen del evento u organizador",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(160.dp)
                         .clip(RoundedCornerShape(10.dp))
                 )
-            }
+            } ?: Log.d("EventoCard", "No hay imagen de perfil del organizador")
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Botón de asistir/cancelar
+            // Botón de asistir o cancelar asistencia
             if (puedeAsistir && token != null) {
                 Button(
                     onClick = {
                         if (yaAsiste) {
+                            Log.i("EventoCard", "Cancelando asistencia a ${evento.nombre}")
                             eventoViewModel.cancelarAsistencia(evento.id, token)
                         } else {
+                            Log.i("EventoCard", "Marcando asistencia a ${evento.nombre}")
                             eventoViewModel.asistirEvento(evento.id, token)
                         }
                     },
