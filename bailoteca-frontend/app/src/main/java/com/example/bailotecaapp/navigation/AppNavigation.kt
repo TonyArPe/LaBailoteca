@@ -16,6 +16,7 @@ import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.eventos.CrearEditarEventoScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventoDetailScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
@@ -137,6 +138,22 @@ fun AppNavigation(
             }
         }
 
+        composable(
+            route = Screens.EventoDetalle.route,
+            arguments = listOf(navArgument("eventoId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val eventoId = backStackEntry.arguments?.getLong("eventoId") ?: return@composable
+            val eventoViewModel = hiltViewModel<EventoViewModel>()
+
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                EventoDetailScreen(
+                    eventoId = eventoId,
+                    navController = navController,
+                    sesionViewModel = sesionViewModel,
+                    eventoViewModel = eventoViewModel
+                )
+            }
+        }
 
         composable(Screens.Usuarios.route) {
             Log.d("AppNavigation", "📍 Usuarios")

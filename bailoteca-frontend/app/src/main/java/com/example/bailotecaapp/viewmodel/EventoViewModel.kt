@@ -110,7 +110,6 @@ class EventoViewModel @Inject constructor(
      * Cancela la asistencia del usuario al evento.
      *
      * @param eventoId ID del evento.
-     * @param token JWT del usuario autenticado.
      */
     fun cancelarAsistencia(eventoId: Long, token: String) {
         viewModelScope.launch {
@@ -137,9 +136,15 @@ class EventoViewModel @Inject constructor(
     /**
      * Marca un evento como seleccionado para edición.
      */
-    fun seleccionarEvento(evento: Evento) {
-        _eventoSeleccionado.value = evento
-        Log.d("EventoViewModel", "📝 Evento seleccionado: ${evento.nombre}")
+    fun seleccionarEvento(id: Long) {
+        val evento = _eventos.value.find { it.id == id }
+        if (evento != null) {
+            Log.d("EventoViewModel", "✅ Evento seleccionado: ${evento.nombre}")
+            _eventoSeleccionado.value = evento
+        } else {
+            Log.e("EventoViewModel", "❌ No se encontró el evento con ID: $id")
+            _eventoSeleccionado.value = null
+        }
     }
 
     /**

@@ -20,6 +20,9 @@ import com.example.bailotecaapp.model.Usuario;
 import com.example.bailotecaapp.model.enums.Rol;
 import com.example.bailotecaapp.viewmodel.EventoViewModel;
 import android.util.Log;
+import androidx.compose.foundation.clickable
+import androidx.navigation.NavController
+import com.example.bailotecaapp.navigation.Screens
 
 /**
  * Componente visual que representa una tarjeta con información de un evento.
@@ -38,7 +41,8 @@ fun EventoCard(
     evento: Evento,
     usuario: Usuario?,
     token: String?,
-    eventoViewModel: EventoViewModel
+    eventoViewModel: EventoViewModel,
+    navController: NavController
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -50,7 +54,11 @@ fun EventoCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 4.dp)
+            .clickable {
+                Log.d("EventoCard", "🖱️ Click en evento ${evento.id}")
+                navController.navigate(Screens.EventoDetalle.createRoute(evento.id))
+            },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)

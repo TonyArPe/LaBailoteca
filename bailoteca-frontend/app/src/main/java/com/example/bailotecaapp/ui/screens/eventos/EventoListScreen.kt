@@ -110,7 +110,8 @@ fun EventoListScreen(
                             evento = evento,
                             usuario = usuario,
                             token = token,
-                            eventoViewModel = eventoViewModel
+                            eventoViewModel = eventoViewModel,
+                            navController = navController
                         )
                     }
                 }
