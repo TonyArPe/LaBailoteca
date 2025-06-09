@@ -6,7 +6,7 @@ data class Evento(
     val id: Long,
     val nombre: String,
     val descripcion: String,
-    val fecha: String, // formato ISO
+    val fecha: String,
     val lugar: String,
     val estado: EstadoEvento,
     val organizador: Usuario,

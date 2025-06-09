@@ -23,6 +23,7 @@ import android.util.Log;
 import androidx.compose.foundation.clickable
 import androidx.navigation.NavController
 import com.example.bailotecaapp.navigation.Screens
+import kotlinx.coroutines.launch
 
 /**
  * Componente visual que representa una tarjeta con información de un evento.
@@ -96,7 +97,7 @@ fun EventoCard(
                 style = MaterialTheme.typography.labelSmall
             )
 
-            // Imagen del organizador (si se implementa y existe)
+            // Verificar si el organizador existe antes de intentar acceder a su imagen
             evento.organizador?.fotoPerfil?.takeIf { it.isNotBlank() }?.let { url ->
                 Log.d("EventoCard", "Cargando imagen desde URL: $url")
                 Spacer(modifier = Modifier.height(12.dp))
@@ -117,11 +118,11 @@ fun EventoCard(
                 Button(
                     onClick = {
                         if (yaAsiste) {
-                            Log.i("EventoCard", "Cancelando asistencia a ${evento.nombre}")
                             eventoViewModel.cancelarAsistencia(evento.id, token)
+                            eventoViewModel.mostrarToast(context, "Asistencia cancelada a ${evento.nombre}")
                         } else {
-                            Log.i("EventoCard", "Marcando asistencia a ${evento.nombre}")
                             eventoViewModel.asistirEvento(evento.id, token)
+                            eventoViewModel.mostrarToast(context, "Asistencia registrada a ${evento.nombre}")
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),

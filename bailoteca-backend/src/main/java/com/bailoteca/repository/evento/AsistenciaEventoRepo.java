@@ -17,4 +17,5 @@ public interface AsistenciaEventoRepo extends JpaRepository<AsistenciaEvento, Lo
     boolean existsByUsuarioIdAndEventoId(Long usuarioId, Long eventoId);
 
     void deleteByUsuarioIdAndEventoId(Long usuarioId, Long eventoId);
+
 }

@@ -17,6 +17,7 @@ import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.eventos.CrearEditarEventoScreen
 import com.example.bailotecaapp.ui.screens.eventos.EventoDetailScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventosUsuarioScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
@@ -153,6 +154,10 @@ fun AppNavigation(
                     eventoViewModel = eventoViewModel
                 )
             }
+        }
+
+        composable(Screens.Eventos.route) {
+            EventosUsuarioScreen(navController)
         }
 
         composable(Screens.Usuarios.route) {

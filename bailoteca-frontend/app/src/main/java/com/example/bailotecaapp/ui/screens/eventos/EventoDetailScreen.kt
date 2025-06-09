@@ -48,10 +48,15 @@ fun EventoDetailScreen(
     val usuario by sesionViewModel.usuario.collectAsState()
     val evento by eventoViewModel.eventoSeleccionado.collectAsState()
 
-    // Carga el evento seleccionado al entrar en la pantalla
+    /**
+     * Lógica para cargar el evento desde el backend
+     */
     LaunchedEffect(eventoId) {
-        Log.d("EventoDetailScreen", "🔍 Buscando evento con ID $eventoId")
-        eventoViewModel.seleccionarEvento(eventoId)
+        if (!token.isNullOrBlank()) {
+            eventoViewModel.cargarEventoPorId(token!!, eventoId)
+        } else {
+            Log.w("EventoDetailScreen", "❌ Token nulo o vacío, no se puede cargar el evento.")
+        }
     }
 
     if (evento == null) {
@@ -75,7 +80,6 @@ fun EventoDetailScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     FloatingActionButton(
                         onClick = {
-                            // No es necesario volver a seleccionar: ya está seleccionado
                             navController.navigate(Screens.CrearEvento.route)
                         },
                         containerColor = MaterialTheme.colorScheme.primary

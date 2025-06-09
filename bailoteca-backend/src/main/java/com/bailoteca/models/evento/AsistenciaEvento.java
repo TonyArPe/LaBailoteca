@@ -5,14 +5,14 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
-*
-* Entidad que representa la asistencia de un usuario a un evento.
-*
-* Solo puede haber una asistencia por usuario-evento.
-*/
+ *
+ * Entidad que representa la asistencia de un usuario a un evento.
+ *
+ * Solo puede haber una asistencia por usuario-evento.
+ */
 @Entity
 @Table(name = "asistencias_eventos", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"evento_id", "usuario_id"})
+        @UniqueConstraint(columnNames = { "evento_id", "usuario_id" })
 })
 @Data
 @NoArgsConstructor
@@ -37,4 +37,10 @@ public class AsistenciaEvento {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evento_id", nullable = false)
     private Evento evento;
+
+    /**
+     * Indicador de si el usuario realmente asistirá al evento.
+     */
+    @Column(nullable = false)
+    private Boolean asistira = true;
 }
