@@ -233,4 +233,16 @@ interface ApiService {
         @Path("eventoId") eventoId: Long,
         @Body request: AsistenciaEventoRequest
     ): Response<AsistenciaEvento>
+
+    @GET("/api/eventos/usuario/{usuarioId}")
+    suspend fun getEventosUsuario(
+        @Header("Authorization") token: String,
+        @Path("usuarioId") usuarioId: Long
+    ): Response<List<Evento>>
+
+    @GET("/api/eventos/profesor/{profesorId}")
+    suspend fun getEventosProfesor(
+        @Header("Authorization") token: String,
+        @Path("profesorId") profesorId: Long
+    ): Response<List<Evento>>
 }

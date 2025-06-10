@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -39,6 +40,16 @@ fun EventoListScreen(
     val showCreateButton = usuario.rol == Rol.ADMIN || usuario.rol == Rol.PROFESOR
     val eventos = viewModel.eventos.collectAsState().value
 
+    // ✅ Esta llamada asegura que siempre recargamos eventos desde backend al entrar en pantalla
+    LaunchedEffect(Unit) {
+        when (usuario.rol) {
+            Rol.ADMIN -> viewModel.getEventosAdmin()
+            Rol.PROFESOR -> usuario.id?.let { viewModel.getEventosProfesor(it) }
+            else -> usuario.id?.let { viewModel.getEventosVisibles(it) }
+        }
+    }
+
+
     Box(modifier = modifier.fillMaxSize()) {
         LazyColumn(
             contentPadding = PaddingValues(16.dp),
@@ -58,7 +69,11 @@ fun EventoListScreen(
                 containerColor = MaterialTheme.colorScheme.primary,
                 shape = Shapes.medium
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Crear evento", tint = MaterialTheme.colorScheme.onPrimary)
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Crear evento",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }

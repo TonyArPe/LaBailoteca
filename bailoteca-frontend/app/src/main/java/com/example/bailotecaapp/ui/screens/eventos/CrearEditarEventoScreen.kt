@@ -2,6 +2,7 @@ package com.example.bailotecaapp.ui.screens.eventos
 
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -33,11 +34,11 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import android.util.Log
 
 /**
- * Pantalla para crear un nuevo evento.
- * Solo accesible por usuarios con rol ADMIN o PROFESOR.
+ * Pantalla reutilizable para crear o editar eventos en Bailoteca.
+ * Si hay un evento seleccionado en el ViewModel, se entra en modo edición.
+ * En caso contrario, se crea un nuevo evento desde cero.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -50,14 +51,21 @@ fun CrearEditarEventoScreen(
     val context = LocalContext.current
     val token = sesionViewModel.token.collectAsState().value
     val usuario = sesionViewModel.usuario.collectAsState().value
+    val eventoSeleccionado = eventoViewModel.eventoSeleccionado.collectAsState().value
     val scope = rememberCoroutineScope()
 
-    var nombre by remember { mutableStateOf("") }
-    var descripcion by remember { mutableStateOf("") }
-    var fecha by remember { mutableStateOf(LocalDate.now()) }
-    var lugar by remember { mutableStateOf("") }
-    var estado by remember { mutableStateOf(EstadoEvento.ACTIVO) }
-    var publico by remember { mutableStateOf(true) }
+    // Inicializamos los campos con datos del evento si estamos en modo edición
+    var nombre by remember { mutableStateOf(eventoSeleccionado?.nombre ?: "") }
+    var descripcion by remember { mutableStateOf(eventoSeleccionado?.descripcion ?: "") }
+    var fecha by remember {
+        mutableStateOf(
+            eventoSeleccionado?.fecha?.substringBefore("T")?.let { LocalDate.parse(it) }
+                ?: LocalDate.now()
+        )
+    }
+    var lugar by remember { mutableStateOf(eventoSeleccionado?.lugar ?: "") }
+    var estado by remember { mutableStateOf(eventoSeleccionado?.estado ?: EstadoEvento.ACTIVO) }
+    var publico by remember { mutableStateOf(eventoSeleccionado?.publico ?: true) }
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
@@ -78,7 +86,7 @@ fun CrearEditarEventoScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                "Crear o editar evento",
+                if (eventoSeleccionado != null) "Editar evento" else "Crear evento",
                 style = MaterialTheme.typography.headlineSmall,
                 color = Lima
             )
@@ -102,7 +110,7 @@ fun CrearEditarEventoScreen(
             OutlinedTextField(
                 value = descripcion,
                 onValueChange = { descripcion = it },
-                label = { Text("Descripcion") },
+                label = { Text("Descripción") },
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = LocalTextStyle.current.copy(color = Color.White),
                 colors = TextFieldDefaults.outlinedTextFieldColors(
@@ -114,7 +122,6 @@ fun CrearEditarEventoScreen(
                     unfocusedLabelColor = Color.White
                 )
             )
-
 
             OutlinedTextField(
                 value = lugar,
@@ -191,15 +198,20 @@ fun CrearEditarEventoScreen(
                     )
 
                     scope.launch {
-                        val ok = eventoViewModel.crearEvento(token, eventoRequest)
+                        val ok = if (eventoSeleccionado != null) {
+                            eventoViewModel.actualizarEvento(token, eventoSeleccionado.id, eventoRequest)
+                        } else {
+                            eventoViewModel.crearEvento(token, eventoRequest)
+                        }
+
                         if (ok) {
                             Toast.makeText(context, "✅ Evento guardado", Toast.LENGTH_SHORT).show()
-                            Log.d("CrearEventoScreen", "🎉 Evento creado correctamente")
+                            Log.d("CrearEditarEventoScreen", "🎉 Evento guardado correctamente")
+                            eventoViewModel.limpiarEventoSeleccionado()
                             navController.popBackStack()
                         } else {
-                            Toast.makeText(context, "❌ Error al guardar evento", Toast.LENGTH_SHORT)
-                                .show()
-                            Log.e("CrearEventoScreen", "Error al crear evento desde ViewModel")
+                            Toast.makeText(context, "❌ Error al guardar evento", Toast.LENGTH_SHORT).show()
+                            Log.e("CrearEditarEventoScreen", "Error al guardar evento desde ViewModel")
                         }
                     }
                 },

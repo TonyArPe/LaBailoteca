@@ -14,6 +14,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+/**
+ * ViewModel que gestiona los eventos en la aplicación.
+ * Permite obtener, crear, actualizar y eliminar eventos,
+ * así como gestionar la asistencia del usuario.
+ */
 @HiltViewModel
 class EventoViewModel @Inject constructor(
     private val api: ApiService,
@@ -27,21 +32,22 @@ class EventoViewModel @Inject constructor(
     val eventoSeleccionado: StateFlow<Evento?> = _eventoSeleccionado
 
     /**
-     * Carga eventos públicos (para invitados).
+     * Carga los eventos públicos, disponibles para invitados.
      */
     fun obtenerEventosPublicos() {
         viewModelScope.launch {
             try {
                 val resultado = api.obtenerEventos()
                 _eventos.value = resultado
+                Log.d("EventoViewModel", "✅ Eventos públicos cargados correctamente")
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "Error cargando eventos públicos", e)
+                Log.e("EventoViewModel", "❌ Error cargando eventos públicos", e)
             }
         }
     }
 
     /**
-     * Carga eventos autenticados (admin o profesor).
+     * Carga eventos privados según el rol (admin/profesor).
      */
     fun obtenerEventosPrivados(token: String) {
         viewModelScope.launch {
@@ -49,45 +55,68 @@ class EventoViewModel @Inject constructor(
                 val res = api.getEventosPrivados("Bearer $token")
                 if (res.isSuccessful) {
                     _eventos.value = res.body() ?: emptyList()
+                    Log.d("EventoViewModel", "✅ Eventos privados cargados: ${_eventos.value.size}")
                 } else {
-                    Log.w("EventoViewModel", "Eventos no disponibles: ${res.code()}")
+                    Log.w("EventoViewModel", "⚠️ Fallo al obtener eventos: ${res.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "Error cargando eventos privados", e)
+                Log.e("EventoViewModel", "❌ Error cargando eventos privados", e)
             }
         }
     }
 
     /**
-     * Selecciona un evento de la lista para su detalle o edición.
+     * Marca un evento como seleccionado en el estado.
      */
     fun seleccionarEvento(evento: Evento) {
-        Log.d("EventoViewModel", "📌 Evento seleccionado: ${evento.id} - ${evento.nombre}")
         _eventoSeleccionado.value = evento
         Log.d("EventoViewModel", "📌 Evento seleccionado: ${evento.nombre}")
     }
 
     /**
-     * Limpia la selección del evento actual.
+     * Limpia el evento seleccionado.
      */
     fun limpiarEventoSeleccionado() {
-        Log.d("EventoViewModel", "🧹 Limpiando evento seleccionado")
         _eventoSeleccionado.value = null
+        Log.d("EventoViewModel", "🧹 Evento deseleccionado")
     }
 
-    suspend fun crearEvento(token: String, evento: Evento): Boolean {
+    /**
+     * Crea un nuevo evento en el sistema.
+     * @param token Token JWT del usuario autenticado.
+     * @param request Objeto EventoRequest con los datos del nuevo evento.
+     * @return true si fue creado correctamente, false si hubo error.
+     */
+    suspend fun crearEvento(token: String, request: EventoRequest): Boolean {
         return try {
-            val res = api.crearEvento("Bearer $token", evento)
-            res.isSuccessful
+            Log.d("EventoViewModel", "🛠️ Creando evento con nombre: ${request.nombre}")
+            val res = api.crearEvento("Bearer $token", request)
+            if (res.isSuccessful) {
+                Log.d("EventoViewModel", "✅ Evento creado correctamente")
+
+                // 🆕 Actualizar eventos si fue exitoso
+                obtenerEventosPrivados(token)
+
+                true
+            } else {
+                Log.e("EventoViewModel", "❌ Error en respuesta: ${res.code()} - ${res.message()}")
+                false
+            }
         } catch (e: Exception) {
-            Log.e("EventoViewModel", "Error al crear evento", e)
+            Log.e("EventoViewModel", "❌ Error al crear evento", e)
             false
         }
     }
 
-    suspend fun actualizarEvento(token: String, evento: Evento): Boolean {
+    /**
+     * Actualiza un evento ya existente.
+     * @param token Token JWT.
+     * @param evento Objeto Evento (incluye el ID y datos nuevos).
+     */
+    suspend fun actualizarEvento(token: String, eventoId: Long, evento: EventoRequest): Boolean {
         return try {
-            val res = api.actualizarEvento("Bearer $token", evento.id, evento)
+            Log.d("EventoViewModel", "📝 Actualizando evento con ID: $eventoId")
+            val res = api.actualizarEvento("Bearer $token", eventoId, evento)
             res.isSuccessful
         } catch (e: Exception) {
             Log.e("EventoViewModel", "❌ Error al actualizar evento", e)
@@ -96,16 +125,73 @@ class EventoViewModel @Inject constructor(
     }
 
     /**
-     * Elimina un evento específico.
-     * @param token Token JWT.
-     * @param eventoId ID del evento a eliminar.
-     * @return true si se elimina correctamente.
+     * Carga todos los eventos como administrador.
+     */
+    fun getEventosAdmin() {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken()
+                if (token != null) {
+                    obtenerEventosPrivados(token)
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error al cargar eventos para ADMIN", e)
+            }
+        }
+    }
+
+    /**
+     * Carga eventos creados por un profesor.
+     */
+    fun getEventosProfesor(profesorId: Long) {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken()
+                if (token != null) {
+                    val res = api.getEventosProfesor("Bearer $token", profesorId)
+                    if (res.isSuccessful) {
+                        _eventos.value = res.body() ?: emptyList()
+                        Log.d("EventoViewModel", "✅ Eventos del profesor $profesorId cargados")
+                    } else {
+                        Log.e("EventoViewModel", "❌ Fallo en eventos profesor: ${res.code()}")
+                    }
+                } else {
+                    Log.e("EventoViewModel", "❌ Token nulo al cargar eventos del profesor")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error al obtener eventos del profesor", e)
+            }
+        }
+    }
+
+    fun getEventosVisibles(usuarioId: Long) {
+        viewModelScope.launch {
+            try {
+                val token = sesionManager.getToken()
+                if (token != null) {
+                    val res = api.getEventosUsuario("Bearer $token", usuarioId)
+                    if (res.isSuccessful) {
+                        _eventos.value = res.body() ?: emptyList()
+                        Log.d("EventoViewModel", "✅ Eventos visibles cargados para usuario $usuarioId")
+                    } else {
+                        Log.w("EventoViewModel", "⚠️ Error eventos visibles: ${res.code()}")
+                    }
+                } else {
+                    Log.e("EventoViewModel", "❌ Token nulo al cargar eventos visibles")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error cargando eventos visibles", e)
+            }
+        }
+    }
+
+    /**
+     * Elimina un evento por su ID.
      */
     suspend fun eliminarEvento(token: String, eventoId: Long): Boolean {
         return try {
             Log.d("EventoViewModel", "🗑️ Eliminando evento con ID: $eventoId")
             val res = api.eliminarEvento("Bearer $token", eventoId)
-            Log.d("EventoViewModel", "🗑️ Evento eliminado: $eventoId")
             res.isSuccessful
         } catch (e: Exception) {
             Log.e("EventoViewModel", "❌ Error al eliminar evento", e)
@@ -113,6 +199,9 @@ class EventoViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Registra la asistencia del usuario actual a un evento.
+     */
     fun registrarAsistencia(
         eventoId: Long,
         asistira: Boolean,
@@ -122,7 +211,7 @@ class EventoViewModel @Inject constructor(
             try {
                 val token = sesionManager.getToken()
                 if (token == null) {
-                    Log.e("EventoViewModel", "⚠️ Token no disponible")
+                    Log.e("EventoViewModel", "❌ Token no disponible.")
                     return@launch
                 }
 
@@ -131,13 +220,12 @@ class EventoViewModel @Inject constructor(
 
                 if (response.isSuccessful) {
                     val asistencia = response.body()
-                    Log.d("EventoViewModel", "Asistencia registrada: $asistencia")
-                    // Aquí podrías actualizar estado interno o emitir evento UI
+                    Log.d("EventoViewModel", "✅ Asistencia registrada: $asistencia")
                 } else {
-                    Log.e("EventoViewModel", "Error al registrar asistencia: ${response.code()} - ${response.errorBody()?.string()}")
+                    Log.e("EventoViewModel", "❌ Error al registrar asistencia: ${response.code()} - ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "❌ Excepción al registrar asistencia", e)
+                Log.e("EventoViewModel", "❌ Excepción registrando asistencia", e)
             }
         }
     }
