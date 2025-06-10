@@ -8,13 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador REST para gestionar las notificaciones.
- * Define los endpoints relacionados con las operaciones de notificaciones.
- * Permite a los usuarios recibir, crear, marcar como leídas y eliminar notificaciones.
- * Este controlador proporciona funcionalidades para que los usuarios puedan interactuar
- * con sus notificaciones, incluyendo la obtención de notificaciones por receptor,
- * la creación de nuevas notificaciones, y la gestión del estado de lectura de las mismas.
- * 
+ * Controlador que maneja las operaciones relacionadas con las notificaciones.
+ * Permite crear, obtener, marcar como leídas y eliminar notificaciones de los usuarios.
+ *
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0

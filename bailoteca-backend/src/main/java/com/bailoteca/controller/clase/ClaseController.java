@@ -21,23 +21,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 /**
- * Controlador REST para la gestión de Clases y Horarios.
- * Sólo profesores pueden gestionar sus propias clases.
- * Admin puede acceder a todas.
- * Este controlador permite crear, actualizar, eliminar y consultar clases,
- * así como obtener clases públicas visibles para invitados.
+ * Controlador que maneja las operaciones relacionadas con las clases.
+ * Permite crear, actualizar, eliminar y consultar clases, así como obtener
+ * las clases públicas visibles para invitados.
+ * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
  * @see Clase
  * @see ClaseRequest
  * @see ClaseService
- * @see ClaseRepo
- * @see Usuario
- * @see UsuarioRepo
- * @see UsuarioDetails
- * @see HorarioClase
- * 
  */
 @RestController
 @RequestMapping("/api/clases")
@@ -64,21 +57,42 @@ public class ClaseController {
         return usuario;
     }
 
+    /**
+     * Obtiene todas las clases disponibles.
+     * 
+     * @return Lista de todas las clases.
+     */
     @GetMapping
     public List<Clase> getAll() {
         return claseRepo.findAll();
     }
 
+    /**
+     * Obtiene una clase por su ID.
+     * 
+     * @param id ID de la clase a buscar.
+     * @return Clase encontrada o 404 Not Found si no existe.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<Clase> getById(@PathVariable Long id) {
         return ResponseEntity.of(claseRepo.findById(id));
     }
 
+    /**
+     * Obtiene todas las clases públicas visibles para invitados.
+     * 
+     * @return Lista de clases públicas.
+     */
     @GetMapping("/publicas")
     public List<Clase> obtenerClasesPublicas() {
         return claseService.obtenerTodasLasClasesVisiblesParaInvitados();
     }
 
+    /**
+     * Obtiene las clases propias del usuario autenticado.
+     * 
+     * @return Lista de clases del profesor autenticado o 401 Unauthorized si no hay sesión.
+     */
     @PreAuthorize("hasRole('PROFESOR')")
     @GetMapping("/mias")
     public ResponseEntity<List<Clase>> getClasesPropias() {
@@ -88,16 +102,34 @@ public class ClaseController {
         return ResponseEntity.ok(claseRepo.findByProfesorId(actual.getId()));
     }
 
+    /**
+     * Busca clases por nombre, ignorando mayúsculas y minúsculas.
+     * 
+     * @param nombre Nombre o parte del nombre de la clase a buscar.
+     * @return Lista de clases que coinciden con el nombre proporcionado.
+     */
     @GetMapping("/buscar")
     public List<Clase> buscarPorNombre(@RequestParam String nombre) {
         return claseRepo.findByNombreContainingIgnoreCase(nombre);
     }
 
+    /**
+     * Obtiene las clases asociadas a un profesor específico.
+     * 
+     * @param profesorId ID del profesor cuyas clases se desean obtener.
+     * @return Lista de clases del profesor o 404 Not Found si no existe el profesor.
+     */
     @GetMapping("/profesor/{profesorId}")
     public List<Clase> getByProfesor(@PathVariable Long profesorId) {
         return claseRepo.findByProfesorId(profesorId);
     }
 
+    /**
+     * Crea una nueva clase asignada al usuario autenticado o a un profesor específico si es ADMIN.
+     * 
+     * @param claseRequest Datos de la clase a crear.
+     * @return Clase creada con estado 201 Created, o 401 Unauthorized si no hay sesión.
+     */
     @PostMapping
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
     public ResponseEntity<Clase> createClase(@RequestBody ClaseRequest claseRequest) {
@@ -128,6 +160,14 @@ public class ClaseController {
         return ResponseEntity.status(HttpStatus.CREATED).body(guardada);
     }
 
+    /**
+     * Actualiza una clase existente si el usuario autenticado es su propietario o ADMIN.
+     * 
+     * @param id ID de la clase a actualizar
+     * @param claseRequest Datos actualizados de la clase
+     * @return Clase actualizada con estado 200 OK, o 403 Forbidden si no tiene permisos,
+     *         404 Not Found si no existe
+     */
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
     public ResponseEntity<?> updateClase(@PathVariable Long id, @RequestBody ClaseRequest claseRequest) {
@@ -148,8 +188,8 @@ public class ClaseController {
      * Elimina una clase si el usuario autenticado es su propietario o ADMIN.
      * 
      * @param id ID de la clase a eliminar
-     * @return 204 No Content si se elimina correctamente, 403 si no tiene permisos,
-     *         404 si no existe
+     * @return 204 No Content si se eliminó correctamente, o 403 Forbidden si no tiene permisos,
+     *         404 Not Found si no existe
      */
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('PROFESOR') or hasRole('ADMIN')")
@@ -178,5 +218,4 @@ public class ClaseController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Clase no encontrada");
         });
     }
-
 }

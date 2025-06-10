@@ -1,16 +1,12 @@
 package com.bailoteca.exceptions;
 
 /**
- * Excepción personalizada para indicar que una entidad relacionada no fue encontrada.
- * Esta excepción se lanza cuando se intenta acceder a una entidad que
- * no existe en la base de datos o no está relacionada
- * con la entidad actual.
+ * Excepción que se lanza cuando no se encuentra una entidad relacionada en la base de datos.
+ * Esta excepción es una RuntimeException, lo que significa que no es necesario manejarla explícitamente.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see RuntimeException
- * @see EntidadRelacionadaNoEncontradaException
  */
 public class EntidadRelacionadaNoEncontradaException extends RuntimeException {
     public EntidadRelacionadaNoEncontradaException(String entidad, Long id) {

@@ -1,15 +1,12 @@
 package com.bailoteca.exceptions;
 
 /**
- * Excepción personalizada para indicar que una operación no está permitida.
- * Esta excepción se lanza cuando se intenta realizar
- * una operación que no es válida o no está permitida en el contexto actual.
+ * Excepción que se lanza cuando se intenta realizar una operación no permitida en la aplicación.
+ * Esta excepción es una RuntimeException, lo que significa que no es necesario manejarla explícitamente.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see RuntimeException
- * @see OperacionNoPermitidaException
  */
 public class OperacionNoPermitidaException extends RuntimeException {
     public OperacionNoPermitidaException(String mensaje) {

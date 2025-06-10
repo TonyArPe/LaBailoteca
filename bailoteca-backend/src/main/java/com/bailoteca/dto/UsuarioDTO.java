@@ -5,16 +5,12 @@ import lombok.Setter;
 
 
 /**
- * DTO de salida para exponer datos públicos del usuario.
- * Este objeto se utiliza para enviar información del usuario
- * desde el servidor al cliente,
- * incluyendo su ID, nombre, apellido y correo electrónico.
+ * Clase que representa un usuario en el sistema.
+ * Contiene información básica del usuario como su ID, nombre, apellido y correo electrónico.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see UsuarioDTO
- * @see Usuario
  */
 @Getter
 @Setter

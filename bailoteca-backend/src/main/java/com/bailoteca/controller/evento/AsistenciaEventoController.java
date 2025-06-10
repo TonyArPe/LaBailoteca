@@ -19,21 +19,14 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 
 /**
- * Controlador que gestiona las asistencias de los usuarios a los eventos.
- * Permite registrar, listar y eliminar asistencias.
- * Este controlador proporciona endpoints para que los usuarios puedan indicar
- * su asistencia a eventos específicos, así como para listar todas las asistencias
- * registradas a un evento o las asistencias del usuario autenticado.
+ * Controlador que maneja las operaciones relacionadas con las asistencias a eventos.
+ * Permite registrar, listar y eliminar asistencias de los usuarios a eventos específicos.
+ * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
  * @see AsistenciaEvento
- * @see AsistenciaEventoRequest
  * @see AsistenciaEventoService
- * @see Usuario
- * @see UsuarioRepo
- * @see UsuarioDetails
- * 
  */
 @RestController
 @RequestMapping("/api/asistencias")
@@ -53,17 +46,13 @@ public class AsistenciaEventoController {
     }
 
     /**
-     * Registra o actualiza la asistencia del usuario autenticado a un evento.
-     * Si el usuario ya tiene una asistencia registrada, se actualiza.
-     * Si no, se crea una nueva asistencia.
-     * Este endpoint permite a los usuarios indicar si asistirán al evento y si han pagado.
-     * 
-     * @param request     contiene los detalles de la asistencia (asistirá, pagado)
-     * @param eventoId    ID del evento
-     * @param asistira    true si asistirá
-     * @param pagado      true si ha pagado
-     * @param userDetails detalles del usuario autenticado
-     * @return Asistencia actualizada o creada
+     * Registra la asistencia de un usuario a un evento.
+     * Si ya existe una asistencia, la actualiza con los nuevos datos.
+     *
+     * @param eventoId ID del evento
+     * @param request  datos de la asistencia
+     * @param auth     autenticación del usuario
+     * @return la asistencia registrada o actualizada
      */
     @PostMapping("/{eventoId}")
     public AsistenciaEvento registrarAsistencia(
@@ -78,10 +67,10 @@ public class AsistenciaEventoController {
     }
 
     /**
-     * Lista todas las asistencias registradas a un evento.
+     * Lista todas las asistencias a un evento específico.
      *
      * @param eventoId ID del evento
-     * @return lista de asistencias
+     * @return lista de asistencias al evento
      */
     @GetMapping("/evento/{eventoId}")
     public ResponseEntity<List<AsistenciaEvento>> listarAsistenciasEvento(@PathVariable Long eventoId) {
@@ -90,10 +79,10 @@ public class AsistenciaEventoController {
     }
 
     /**
-     * Lista todas las asistencias del usuario autenticado.
+     * Lista las asistencias del usuario autenticado.
      *
      * @param userDetails detalles del usuario autenticado
-     * @return lista de asistencias
+     * @return lista de asistencias del usuario
      */
     @GetMapping("/mias")
     public ResponseEntity<List<AsistenciaEvento>> listarMisAsistencias(
@@ -104,11 +93,11 @@ public class AsistenciaEventoController {
     }
 
     /**
-     * Elimina la asistencia del usuario autenticado a un evento.
+     * Elimina la asistencia de un usuario a un evento.
      *
-     * @param eventoId    ID del evento
+     * @param eventoId ID del evento
      * @param userDetails detalles del usuario autenticado
-     * @return 204 No Content
+     * @return respuesta vacía con código 204 No Content
      */
     @DeleteMapping("/{eventoId}")
     public ResponseEntity<Void> eliminarAsistencia(

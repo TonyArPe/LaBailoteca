@@ -1,15 +1,12 @@
 package com.bailoteca.exceptions;
 
 /**
- * Excepción personalizada para indicar que un recurso no fue encontrado.
- * Esta excepción se lanza cuando se intenta acceder a un recurso
- * que no existe en la base de datos o no está disponible.
+ * Excepción que se lanza cuando no se encuentra un recurso en la base de datos.
+ * Esta excepción es una RuntimeException, lo que significa que no es necesario manejarla explícitamente.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see RuntimeException
- * @see RecursoNoEncontradoException
  */
 public class RecursoNoEncontradoException extends RuntimeException {
     public RecursoNoEncontradoException(String mensaje) {

@@ -6,9 +6,8 @@ import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
 
 /**
- * Clase utilitaria para convertir entre entidades Evento y DTOs.
- * Esta clase proporciona métodos estáticos para mapear
- * Evento a EventoDTO y EventoRequest a Evento.
+ * Mapper para convertir entre modelos de Evento y sus representaciones DTO.
+ * Facilita la transformación de datos entre la capa de persistencia y la capa de presentación.
  * 
  * @author Tony Aragón
  * @version 1.0
@@ -16,7 +15,6 @@ import com.bailoteca.models.usuario.Usuario;
  * @see Evento
  * @see EventoDTO
  * @see EventoRequest
- * @see Usuario
  */
 public class EventoMapper {
 
@@ -37,7 +35,11 @@ public class EventoMapper {
     }
 
     /**
-     * Convierte un EventoRequest en Evento, asignando el organizador.
+     * Convierte un EventoRequest en Evento para persistencia.
+     * 
+     * @param request El objeto EventoRequest que contiene los datos del evento.
+     * @param organizador El usuario que organiza el evento.
+     * @return Un objeto Evento con los datos del request y el organizador.
      */
     public static Evento fromRequest(EventoRequest request, Usuario organizador) {
         return Evento.builder()

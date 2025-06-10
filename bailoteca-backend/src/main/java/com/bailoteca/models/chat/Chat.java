@@ -24,7 +24,6 @@ import lombok.NoArgsConstructor;
  * @since 1.0
  * @see Clase
  * @see Usuario
- * @see Chat
  */
 @Entity
 @Table(name = "chats")

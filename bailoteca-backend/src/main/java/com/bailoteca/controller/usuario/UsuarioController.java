@@ -21,27 +21,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Controlador REST para gestionar usuarios.
- * Administra registros, actualizaciones, consultas y eliminaciones de usuarios.
- * Permite a administradores y profesores acceder a información de usuarios,
- * así como a los propios usuarios acceder a su perfil.
- * Este controlador proporciona endpoints para:
- * - Registrar nuevos usuarios.
- * - Consultar todos los usuarios o los alumnos de un profesor.
- * - Consultar un usuario por ID.
- * - Actualizar datos de un usuario.
- * - Eliminar un usuario.
- * - Consultar el perfil del usuario autenticado.
+ * Controlador que maneja las operaciones relacionadas con los usuarios.
+ * Permite registrar, consultar, actualizar y eliminar usuarios del sistema.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
  * @see Usuario
- * @see UsuarioRepo
- * @see UsuarioDetails
  * @see UsuarioDTO
- * @see UsuarioUpdateRequest
- * 
  */
 @Slf4j
 @RestController
@@ -53,9 +40,10 @@ public class UsuarioController {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Obtiene todos los usuarios del sistema.
-     * - ADMIN: ve todos.
-     * - PROFESOR: ve solo alumnos de sus clases.
+     * Obtiene el usuario autenticado del contexto de seguridad.
+     * Si no hay usuario autenticado, devuelve null.
+     *
+     * @return Usuario autenticado o null si no hay sesión válida.
      */
     @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
     @GetMapping
@@ -78,7 +66,12 @@ public class UsuarioController {
     }
 
     /**
-     * Registra un nuevo usuario (no requiere autenticación).
+     * Registra un nuevo usuario en el sistema.
+     * El usuario debe proporcionar un correo y una contraseña.
+     * El correo debe ser único.
+     *
+     * @param usuario Datos del usuario a registrar
+     * @return El usuario registrado
      */
     @PostMapping
     public Usuario createUsuario(@RequestBody Usuario usuario) {
@@ -100,8 +93,12 @@ public class UsuarioController {
     }
 
     /**
-     * Obtiene un usuario por su ID (ADMIN, PROFESOR si tiene inscripción o el
-     * propio usuario).
+     * Obtiene los detalles de un usuario por su ID.
+     * Permite a ADMIN y al propio usuario acceder a sus datos.
+     * PROFESOR puede acceder a los alumnos inscritos en sus clases.
+     *
+     * @param id ID del usuario a consultar
+     * @return Detalles del usuario o error 403 si no tiene permisos
      */
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
@@ -131,7 +128,11 @@ public class UsuarioController {
     }
 
     /**
-     * Elimina un usuario (ADMIN o el propio usuario).
+     * Elimina un usuario por su ID.
+     * Solo ADMIN y el propio usuario pueden eliminarse.
+     *
+     * @param id ID del usuario a eliminar
+     * @return Respuesta HTTP 200 OK si se eliminó correctamente, 403 Forbidden si no tiene permisos
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUsuario(@PathVariable Long id) {
@@ -212,8 +213,11 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    /**
-     * Devuelve el usuario autenticado actual.
+/**
+     * Obtiene el perfil del usuario autenticado.
+     * Devuelve 401 si no hay usuario autenticado.
+     *
+     * @return Detalles del usuario autenticado
      */
     @GetMapping("/me")
     public ResponseEntity<Usuario> getMiPerfil() {
@@ -226,7 +230,11 @@ public class UsuarioController {
     }
 
     /**
-     * Obtiene los alumnos inscritos en clases del profesor especificado.
+     * Obtiene los alumnos inscritos en las clases de un profesor específico.
+     * Solo PROFESOR puede acceder a esta información.
+     *
+     * @param id ID del profesor cuyas clases se desean consultar
+     * @return Lista de alumnos inscritos en las clases del profesor
      */
     @PreAuthorize("hasRole('PROFESOR')")
     @GetMapping("/profesor/{id}/alumnos")
@@ -243,8 +251,10 @@ public class UsuarioController {
     }
 
     /**
-     * Método auxiliar para extraer el usuario autenticado del contexto de
-     * seguridad.
+     * Obtiene el usuario autenticado del contexto de seguridad.
+     * Si no hay usuario autenticado, devuelve null.
+     *
+     * @return Usuario autenticado o null si no hay sesión válida.
      */
     private Usuario getUsuarioAutenticado() {
         try {
@@ -260,9 +270,13 @@ public class UsuarioController {
     }
 
     /**
-     * Actualiza únicamente campos 'activo' y/o 'pagado'.
-     * - ADMIN puede modificar ambos.
-     * - PROFESOR solo 'pagado' si el alumno está en su clase.
+     * Actualiza el estado de un usuario (activo, pagado).
+     * Solo ADMIN y PROFESOR pueden actualizar el estado.
+     * PROFESOR solo puede cambiar el estado pagado de sus alumnos.
+     *
+     * @param id      ID del usuario a actualizar
+     * @param request Datos de actualización (activo, pagado)
+     * @return Usuario actualizado o error 403 si no tiene permisos
      */
     @PutMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
@@ -307,5 +321,4 @@ public class UsuarioController {
         Usuario actualizado = usuarioRepo.save(usuario);
         return ResponseEntity.ok(actualizado);
     }
-
 }

@@ -8,15 +8,14 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 /**
- * Modelo que representa un mensaje en la aplicación.
- * Un mensaje puede ser parte de un chat privado entre dos usuarios
- * o de un chat grupal asociado a una clase.
+ * Modelo que representa un mensaje en el chat.
+ * Un mensaje puede ser privado entre dos usuarios o grupal en una clase.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see Clase
  * @see Usuario
+ * @see Clase
  */
 @Entity
 @Table(name = "mensajes")

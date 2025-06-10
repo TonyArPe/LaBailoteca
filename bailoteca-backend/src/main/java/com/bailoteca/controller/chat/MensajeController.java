@@ -8,10 +8,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * Controlador que gestiona los mensajes de chat.
- * Permite obtener mensajes privados entre dos usuarios o mensajes de un grupo.
- * Este controlador proporciona endpoints para acceder a los mensajes
- * de chat privados y grupales, facilitando la comunicación entre usuarios.
+ * Controlador que maneja las operaciones relacionadas con los mensajes en el chat.
+ * Permite obtener mensajes privados entre dos usuarios y mensajes de grupo en una clase.
+ * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
@@ -25,11 +24,24 @@ public class MensajeController {
 
     private final MensajeService mensajeService;
 
+    /**
+     * Obtiene los mensajes privados entre dos usuarios.
+     *
+     * @param user1 ID del primer usuario
+     * @param user2 ID del segundo usuario
+     * @return Lista de mensajes privados entre los dos usuarios
+     */
     @GetMapping("/privado/{user1}/{user2}")
     public List<Mensaje> obtenerMensajesPrivados(@PathVariable Long user1, @PathVariable Long user2) {
         return mensajeService.obtenerPrivados(user1, user2);
     }
 
+    /**
+     * Obtiene los mensajes de un grupo asociado a una clase.
+     *
+     * @param claseId ID de la clase
+     * @return Lista de mensajes del grupo
+     */
     @GetMapping("/grupo/{claseId}")
     public List<Mensaje> obtenerMensajesGrupo(@PathVariable Long claseId) {
         return mensajeService.obtenerMensajesGrupo(claseId);

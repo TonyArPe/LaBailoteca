@@ -1,15 +1,12 @@
 package com.bailoteca.exceptions;
 
 /**
- * Excepción personalizada para indicar que un acceso no está autorizado.
- * Esta excepción se lanza cuando un usuario intenta acceder a un recurso
- * o realizar una acción para la cual no tiene permisos adecuados.
+ * Excepción que se lanza cuando un usuario intenta acceder a un recurso sin la autorización adecuada.
+ * Esta excepción es una RuntimeException, lo que significa que no es necesario manejarla explícitamente.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see RuntimeException
- * @see AccesoNoAutorizadoException
  */
 public class AccesoNoAutorizadoException extends RuntimeException {
     public AccesoNoAutorizadoException(String mensaje) {

@@ -5,7 +5,6 @@ import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.evento.AsistenciaEventoRepo;
 import com.bailoteca.repository.evento.EventoRepo;
-import com.bailoteca.repository.usuario.UsuarioRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +34,6 @@ public class AsistenciaEventoService {
 
     private final AsistenciaEventoRepo asistenciaRepo;
     private final EventoRepo eventoRepo;
-    private final UsuarioRepo usuarioRepo;
 
     /**
      * Registra o actualiza la asistencia de un usuario a un evento.

@@ -23,15 +23,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Controlador global de manejo de excepciones.
- * Este controlador maneja las excepciones lanzadas
- * por la aplicación y devuelve respuestas
- * personalizadas con información sobre el error.
+ * Manejador global de excepciones para la aplicación.
+ * Captura y maneja las excepciones lanzadas por los controladores,
+ * proporcionando respuestas de error personalizadas.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see ErrorResponse
  */
 @ControllerAdvice
 @RestController

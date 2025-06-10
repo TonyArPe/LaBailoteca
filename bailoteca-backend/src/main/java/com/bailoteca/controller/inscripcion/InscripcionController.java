@@ -21,23 +21,15 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Controlador REST para gestionar inscripciones a clases.
- * Permite a los usuarios inscribirse en clases, consultar sus inscripciones,
- * y a los administradores y profesores consultar inscripciones de otros usuarios.
- * Este controlador proporciona endpoints para crear, listar y eliminar inscripciones,
- * con restricciones de acceso basadas en el rol del usuario autenticado.
+ * Controlador que maneja las operaciones relacionadas con las inscripciones a clases.
+ * Permite crear, consultar y eliminar inscripciones, así como obtener las inscripciones
+ * de un usuario o de una clase específica.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
  * @see Inscripcion
  * @see InscripcionRequest
- * @see EstadoInscripcion
- * @see Usuario
- * @see UsuarioDetails
- * @see InscripcionRepo
- * @see ClaseRepo
- * @see UsuarioRepo
  */
 @RestController
 @RequestMapping("/api/inscripciones")
@@ -47,9 +39,11 @@ public class InscripcionController {
     private final InscripcionRepo inscripcionRepo;
     private final ClaseRepo claseRepo;
     private final UsuarioRepo usuarioRepo;
-
     /**
-     * Devuelve todas las inscripciones (solo ADMIN).
+     * Obtiene el usuario autenticado del contexto de seguridad.
+     * Si no hay usuario autenticado, devuelve null.
+     *
+     * @return Usuario autenticado o null si no hay sesión válida.
      */
     @GetMapping
     public ResponseEntity<List<Inscripcion>> getAll() {
@@ -61,9 +55,12 @@ public class InscripcionController {
     }
 
     /**
-     * Devuelve las inscripciones de un usuario.
-     * Puede acceder el propio usuario, un admin, o un profesor si el usuario está inscrito en alguna de sus clases.
-     */
+     * Obtiene las inscripciones de un usuario específico.
+     * Solo puede acceder el ADMIN, el mismo usuario o un profesor que tenga clases con ese usuario inscrito.
+     *
+     * @param usuarioId ID del usuario cuyas inscripciones se desean consultar
+     * @return Lista de inscripciones del usuario o error 403 si no tiene permisos
+     */ 
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<Inscripcion>> getByUsuario(@PathVariable Long usuarioId) {
         Usuario actual = getUsuarioAutenticado();
@@ -81,7 +78,11 @@ public class InscripcionController {
     }
 
     /**
-     * Devuelve inscripciones por clase (ADMIN o profesor dueño).
+     * Obtiene las inscripciones de una clase específica.
+     * Solo puede acceder el ADMIN o el profesor dueño de la clase.
+     *
+     * @param claseId ID de la clase cuyas inscripciones se desean consultar
+     * @return Lista de inscripciones de la clase o error 403 si no tiene permisos
      */
     @GetMapping("/clase/{claseId}")
     public ResponseEntity<List<Inscripcion>> getByClase(@PathVariable Long claseId) {
@@ -99,7 +100,12 @@ public class InscripcionController {
     }
 
     /**
-     * Inscribe al usuario autenticado en una clase.
+     * Crea una nueva inscripción a una clase.
+     * Solo puede acceder el usuario autenticado y debe ser el mismo que el indicado en la solicitud.
+     * Verifica que la clase exista y que el usuario no esté ya inscrito.
+     *
+     * @param request Datos de la inscripción a crear
+     * @return Inscripción creada o error 401, 404 o 409 según corresponda
      */
     @PostMapping
     public ResponseEntity<Inscripcion> create(@RequestBody InscripcionRequest request) {
@@ -128,7 +134,11 @@ public class InscripcionController {
     }
 
     /**
-     * Elimina una inscripción si el usuario es el propietario, ADMIN o profesor dueño de la clase.
+     * Elimina una inscripción por su ID.
+     * Solo puede acceder el usuario autenticado, el profesor de la clase o un ADMIN.
+     *
+     * @param id ID de la inscripción a eliminar
+     * @return Respuesta HTTP 200 OK si se eliminó, 403 Forbidden si no tiene permisos, o 404 Not Found si no existe
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
@@ -149,7 +159,10 @@ public class InscripcionController {
     }
 
     /**
-     * Devuelve las inscripciones del usuario autenticado.
+     * Obtiene las inscripciones del usuario autenticado.
+     * Solo puede acceder el usuario autenticado.
+     *
+     * @return Lista de inscripciones del usuario o error 401 si no está autenticado
      */
     @GetMapping("/mias")
     public ResponseEntity<List<Inscripcion>> getInscripcionesDelAutenticado() {
@@ -159,8 +172,11 @@ public class InscripcionController {
     }
 
     /**
-     * Devuelve todas las inscripciones a clases impartidas por un profesor específico.
-     * Solo puede acceder el mismo profesor.
+     * Obtiene las inscripciones de un profesor específico.
+     * Solo puede acceder el ADMIN o el mismo profesor.
+     *
+     * @param profesorId ID del profesor cuyas inscripciones se desean consultar
+     * @return Lista de inscripciones del profesor o error 403 si no tiene permisos
      */
     @PreAuthorize("hasRole('PROFESOR')")
     @GetMapping("/profesor/{profesorId}")
@@ -179,7 +195,10 @@ public class InscripcionController {
     }
 
     /**
-     * Método auxiliar para obtener el usuario autenticado actual del contexto de seguridad.
+     * Obtiene el usuario autenticado del contexto de seguridad.
+     * Si no hay usuario autenticado, devuelve null.
+     *
+     * @return Usuario autenticado o null si no hay sesión válida.
      */
     private Usuario getUsuarioAutenticado() {
         try {

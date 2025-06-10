@@ -17,24 +17,16 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 /**
- * Controlador REST para gestionar eventos dentro del sistema Bailoteca.
- * Soporta operaciones CRUD con restricciones de rol:
- * - ADMIN: control total.
- * - PROFESOR: solo sus propios eventos.
- * - USUARIO/INVITADO: acceso solo lectura.
- * Este controlador permite a los usuarios autenticados listar, crear, actualizar y eliminar eventos,
- * así como obtener eventos públicos visibles para todos.
+ * Controlador que maneja las operaciones relacionadas con los eventos.
+ * Permite crear, actualizar, eliminar y consultar eventos, así como obtener
+ * los eventos públicos visibles para invitados.
+ *
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
  * @see Evento
  * @see EventoDTO
  * @see EventoRequest
- * @see EventoService
- * @see Usuario
- * @see UsuarioRepo
- * @see EventoMapper
- * 
  */
 @RestController
 @RequestMapping("/api/eventos")
@@ -46,7 +38,11 @@ public class EventoController {
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Obtiene todos los eventos visibles para el usuario autenticado.
+     * Obtiene el usuario autenticado a partir del contexto de seguridad.
+     * Si no se encuentra, lanza una excepción 404.
+     *
+     * @param auth Autenticación del usuario
+     * @return Usuario autenticado
      */
     @GetMapping
     public List<EventoDTO> getAll(Authentication auth) {
@@ -56,7 +52,12 @@ public class EventoController {
     }
 
     /**
-     * Obtiene un evento por ID, si el usuario tiene acceso.
+     * Obtiene un evento específico por su ID.
+     * Solo los usuarios con permisos pueden acceder a eventos privados.
+     *
+     * @param id   ID del evento
+     * @param auth Autenticación del usuario
+     * @return EventoDTO con los detalles del evento
      */
     @GetMapping("/{id}")
     public EventoDTO getOne(@PathVariable Long id, Authentication auth) {
@@ -68,7 +69,12 @@ public class EventoController {
     }
 
     /**
-     * Crea un nuevo evento si el usuario es ADMIN o PROFESOR.
+     * Crea un nuevo evento si el usuario tiene permisos.
+     * Solo los usuarios con rol ADMIN o PROFESOR pueden crear eventos.
+     *
+     * @param request Datos del evento a crear
+     * @param auth    Autenticación del usuario
+     * @return EventoDTO con los detalles del evento creado
      */
     @PostMapping
     public EventoDTO create(@RequestBody EventoRequest request, Authentication auth) {
@@ -85,7 +91,13 @@ public class EventoController {
     }
 
     /**
-     * Actualiza un evento si el usuario tiene permisos.
+     * Actualiza un evento existente si el usuario tiene permisos.
+     * Solo los usuarios con rol ADMIN o PROFESOR pueden actualizar eventos.
+     *
+     * @param id      ID del evento a actualizar
+     * @param request Nuevos datos del evento
+     * @param auth    Autenticación del usuario
+     * @return EventoDTO con los detalles del evento actualizado
      */
     @PutMapping("/{id}")
     public EventoDTO update(@PathVariable Long id, @RequestBody EventoRequest request, Authentication auth) {
@@ -96,7 +108,11 @@ public class EventoController {
     }
 
     /**
-     * Elimina un evento si el usuario tiene permisos.
+     * Elimina un evento por su ID.
+     * Solo los usuarios con rol ADMIN o PROFESOR pueden eliminar eventos.
+     *
+     * @param id   ID del evento a eliminar
+     * @param auth Autenticación del usuario
      */
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id, Authentication auth) {
@@ -106,7 +122,10 @@ public class EventoController {
     }
 
     /**
-     * Devuelve la lista de eventos públicos activos.
+     * Obtiene una lista de eventos públicos visibles para invitados.
+     * Estos eventos no requieren autenticación para ser consultados.
+     *
+     * @return Lista de eventos públicos
      */
     @GetMapping("/publicos")
     public List<EventoDTO> getPublicos() {

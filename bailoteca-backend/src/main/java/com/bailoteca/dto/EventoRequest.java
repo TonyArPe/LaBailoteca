@@ -8,30 +8,13 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * DTO de entrada para la creación o edición de eventos.
- * No debe incluir información del organizador directamente.
- * Este objeto se utiliza para enviar datos desde el cliente al servidor
- * para crear o actualizar un evento específico.
+ * Clase que representa una solicitud para crear o actualizar un evento.
+ * Contiene información sobre el nombre, descripción, fecha, lugar,
+ * estado del evento y si es público.
  * 
  * @author Tony Aragón
  * @version 1.0
  * @since 1.0
- * @see EstadoEvento
- * @see EventoDTO
- * @see EventoService
- * @see EventoRepo
- * @see Usuario
- * @see UsuarioRepo
- * @see UsuarioDetails
- * @see UsuarioDetailsService
- * @see EventoRequest
- * @see EventoController
- * @see EventoService
- * @see EventoRepo
- * @see Usuario
- * @see UsuarioRepo
- * @see UsuarioDetails
- * @see UsuarioDetailsService
  */
 @Data
 public class EventoRequest {
