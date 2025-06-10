@@ -15,12 +15,16 @@ import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
+import com.example.bailotecaapp.ui.screens.eventos.CrearEditarEventoScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventoDetailScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventoListScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.usuarios.ClasesUsuarioScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
+import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 
@@ -189,6 +193,27 @@ fun AppNavigation(
             Log.d("AppNavigation", "📍 Editar clase ID: $claseId")
             CrearEditarClaseScreen(navController = navController, claseId = claseId)
         }
+
+        composable(Screens.EventoList.route) {
+            val usuario = sesionViewModel.usuario.collectAsState().value
+            val eventoViewModel = hiltViewModel<EventoViewModel>()
+
+            if (usuario != null) {
+                EventoListScreen(
+                    navController = navController,
+                    usuario = usuario,
+                    viewModel = eventoViewModel
+                )
+            }
+        }
+
+        composable("evento/{id}") {
+            EventoDetailScreen(navController = navController)
+        }
+        composable("crear_evento") {
+            CrearEditarEventoScreen(navController)
+        }
+
 
         composable(Screens.InvitadoHome.route) {
             Log.d("AppNavigation", "📍 Home invitado")

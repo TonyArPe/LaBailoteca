@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.bailotecaapp.model.Evento
+import com.example.bailotecaapp.model.dto.EventoRequest
 import com.example.bailotecaapp.model.enums.EstadoEvento
 import com.example.bailotecaapp.ui.theme.Lima
 import com.example.bailotecaapp.ui.theme.Magenta
@@ -33,9 +33,11 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import android.util.Log
 
 /**
- * Pantalla para crear o editar un evento.
+ * Pantalla para crear un nuevo evento.
+ * Solo accesible por usuarios con rol ADMIN o PROFESOR.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @RequiresApi(Build.VERSION_CODES.O)
@@ -64,122 +66,148 @@ fun CrearEditarEventoScreen(
         imagenUri = uri
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
-            .background(Color.Black),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+            .background(Color.Black)
     ) {
-        Text("Crear o editar evento", style = MaterialTheme.typography.headlineSmall, color = Lima)
-
-        OutlinedTextField(
-            value = nombre,
-            onValueChange = { nombre = it },
-            label = { Text("Nombre del evento") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Magenta,
-                focusedLabelColor = Magenta
-            )
-        )
-
-        OutlinedTextField(
-            value = descripcion,
-            onValueChange = { descripcion = it },
-            label = { Text("Descripción") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Magenta,
-                focusedLabelColor = Magenta
-            )
-        )
-
-        OutlinedTextField(
-            value = lugar,
-            onValueChange = { lugar = it },
-            label = { Text("Lugar") },
-            modifier = Modifier.fillMaxWidth(),
-            colors = TextFieldDefaults.outlinedTextFieldColors(
-                focusedBorderColor = Magenta,
-                focusedLabelColor = Magenta
-            )
-        )
-
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Lima)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
             Text(
-                "Fecha: ${fecha.format(DateTimeFormatter.ISO_DATE)}",
-                modifier = Modifier.padding(start = 8.dp),
-                color = Color.White
+                "Crear o editar evento",
+                style = MaterialTheme.typography.headlineSmall,
+                color = Lima
             )
-        }
 
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Evento público", color = Color.White)
-            Switch(
-                checked = publico,
-                onCheckedChange = { publico = it },
-                colors = SwitchDefaults.colors(checkedThumbColor = Lima)
-            )
-        }
-
-        Button(
-            onClick = { imagePickerLauncher.launch("image/*") },
-            colors = ButtonDefaults.buttonColors(containerColor = Magenta),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Icon(Icons.Default.Image, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Seleccionar imagen")
-        }
-
-        imagenUri?.let { uri ->
-            Image(
-                painter = rememberAsyncImagePainter(uri),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .background(Color.Gray, RoundedCornerShape(8.dp)),
-                contentScale = ContentScale.Crop
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        Button(
-            onClick = {
-                if (token.isNullOrBlank() || usuario == null) {
-                    Toast.makeText(context, "Sesión no disponible", Toast.LENGTH_SHORT).show()
-                    return@Button
-                }
-
-                val evento = Evento(
-                    id = 0L,
-                    nombre = nombre,
-                    descripcion = descripcion,
-                    fecha = fecha.toString(),
-                    lugar = lugar,
-                    estado = estado,
-                    organizador = usuario,
-                    publico = publico
+            OutlinedTextField(
+                value = nombre,
+                onValueChange = { nombre = it },
+                label = { Text("Nombre del evento") },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    containerColor = Color.Transparent,
+                    cursorColor = Lima,
+                    focusedBorderColor = Magenta,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = Magenta,
+                    unfocusedLabelColor = Color.White
                 )
+            )
 
-                scope.launch {
-                    val ok = eventoViewModel.crearEvento(token, evento)
-                    if (ok) {
-                        Toast.makeText(context, "Evento guardado", Toast.LENGTH_SHORT).show()
-                        navController.popBackStack()
-                    } else {
-                        Toast.makeText(context, "Error al guardar evento", Toast.LENGTH_SHORT).show()
+            OutlinedTextField(
+                value = descripcion,
+                onValueChange = { descripcion = it },
+                label = { Text("Descripcion") },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    containerColor = Color.Transparent,
+                    cursorColor = Lima,
+                    focusedBorderColor = Magenta,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = Magenta,
+                    unfocusedLabelColor = Color.White
+                )
+            )
+
+
+            OutlinedTextField(
+                value = lugar,
+                onValueChange = { lugar = it },
+                label = { Text("Lugar") },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(color = Color.White),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    containerColor = Color.Transparent,
+                    cursorColor = Lima,
+                    focusedBorderColor = Magenta,
+                    unfocusedBorderColor = Color.White,
+                    focusedLabelColor = Magenta,
+                    unfocusedLabelColor = Color.White
+                )
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Lima)
+                Text(
+                    "Fecha: ${fecha.format(DateTimeFormatter.ISO_DATE)}",
+                    modifier = Modifier.padding(start = 8.dp),
+                    color = Color.White
+                )
+            }
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("Evento público", color = Color.White)
+                Switch(
+                    checked = publico,
+                    onCheckedChange = { publico = it },
+                    colors = SwitchDefaults.colors(checkedThumbColor = Lima)
+                )
+            }
+
+            Button(
+                onClick = { imagePickerLauncher.launch("image/*") },
+                colors = ButtonDefaults.buttonColors(containerColor = Magenta),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Icon(Icons.Default.Image, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Seleccionar imagen")
+            }
+
+            imagenUri?.let { uri ->
+                Image(
+                    painter = rememberAsyncImagePainter(uri),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp)
+                        .background(Color.Gray, RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = {
+                    if (token.isNullOrBlank() || usuario == null) {
+                        Toast.makeText(context, "Sesión no disponible", Toast.LENGTH_SHORT).show()
+                        return@Button
                     }
-                }
-            },
-            modifier = Modifier.align(Alignment.End),
-            colors = ButtonDefaults.buttonColors(containerColor = Lima)
-        ) {
-            Text("Guardar")
+
+                    val eventoRequest = EventoRequest(
+                        nombre = nombre,
+                        descripcion = descripcion,
+                        fecha = "${fecha}T00:00:00",
+                        lugar = lugar,
+                        estado = estado,
+                        publico = publico
+                    )
+
+                    scope.launch {
+                        val ok = eventoViewModel.crearEvento(token, eventoRequest)
+                        if (ok) {
+                            Toast.makeText(context, "✅ Evento guardado", Toast.LENGTH_SHORT).show()
+                            Log.d("CrearEventoScreen", "🎉 Evento creado correctamente")
+                            navController.popBackStack()
+                        } else {
+                            Toast.makeText(context, "❌ Error al guardar evento", Toast.LENGTH_SHORT)
+                                .show()
+                            Log.e("CrearEventoScreen", "Error al crear evento desde ViewModel")
+                        }
+                    }
+                },
+                modifier = Modifier.align(Alignment.End),
+                colors = ButtonDefaults.buttonColors(containerColor = Lima)
+            ) {
+                Text("Guardar")
+            }
         }
     }
 }

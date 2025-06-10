@@ -1,7 +1,11 @@
 package com.example.bailotecaapp.network
 
 import com.example.bailotecaapp.model.*
-import com.example.bailotecaapp.model.dto.*
+import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
+import com.example.bailotecaapp.model.dto.ClaseRequest
+import com.example.bailotecaapp.model.dto.InscripcionRequest
+import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
+import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import retrofit2.http.*
 import retrofit2.Response
 
@@ -203,14 +207,11 @@ interface ApiService {
         @Body evento: EventoRequest
     ): Response<Evento>
 
-    /**
-     * Actualiza un evento existente.
-     */
     @PUT("/api/eventos/{id}")
     suspend fun actualizarEvento(
         @Header("Authorization") token: String,
         @Path("id") eventoId: Long,
-        @Body evento: Evento
+        @Body evento: EventoRequest
     ): Response<Evento>
 
     /**

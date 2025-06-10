@@ -1,26 +1,27 @@
 package com.bailoteca.dto;
 
 import com.bailoteca.models.enums.EstadoEvento;
-import com.fasterxml.jackson.annotation.JsonFormat;
-
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
 /**
- * DTO de entrada para la creación o edición de eventos.
- * No debe incluir información del organizador directamente.
+ * DTO para exponer información de eventos al frontend.
  */
 @Data
-public class EventoRequest {
-
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class EventoDTO {
+    private Long id;
     private String nombre;
     private String descripcion;
-
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime fecha;
-    
     private String lugar;
     private EstadoEvento estado;
     private boolean publico;
+    private String nombreOrganizador;
 }

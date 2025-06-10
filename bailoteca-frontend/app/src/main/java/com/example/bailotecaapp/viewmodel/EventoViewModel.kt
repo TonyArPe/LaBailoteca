@@ -14,9 +14,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/**
- * ViewModel encargado de gestionar la lógica de presentación de eventos en la app.
- */
 @HiltViewModel
 class EventoViewModel @Inject constructor(
     private val api: ApiService,
@@ -30,22 +27,21 @@ class EventoViewModel @Inject constructor(
     val eventoSeleccionado: StateFlow<Evento?> = _eventoSeleccionado
 
     /**
-     * Carga eventos públicos visibles para cualquier usuario.
+     * Carga eventos públicos (para invitados).
      */
     fun obtenerEventosPublicos() {
         viewModelScope.launch {
             try {
                 val resultado = api.obtenerEventos()
                 _eventos.value = resultado
-                Log.d("EventoViewModel", "🎯 Eventos públicos cargados: ${resultado.size}")
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "❌ Error al cargar eventos públicos", e)
+                Log.e("EventoViewModel", "Error cargando eventos públicos", e)
             }
         }
     }
 
     /**
-     * Carga eventos accesibles para usuarios autenticados (ADMIN o PROFESOR).
+     * Carga eventos autenticados (admin o profesor).
      */
     fun obtenerEventosPrivados(token: String) {
         viewModelScope.launch {
@@ -53,12 +49,11 @@ class EventoViewModel @Inject constructor(
                 val res = api.getEventosPrivados("Bearer $token")
                 if (res.isSuccessful) {
                     _eventos.value = res.body() ?: emptyList()
-                    Log.d("EventoViewModel", "✅ Eventos privados cargados")
                 } else {
-                    Log.w("EventoViewModel", "⚠️ Error al cargar eventos privados: ${res.code()}")
+                    Log.w("EventoViewModel", "Eventos no disponibles: ${res.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "❌ Excepción al cargar eventos privados", e)
+                Log.e("EventoViewModel", "Error cargando eventos privados", e)
             }
         }
     }
@@ -67,6 +62,7 @@ class EventoViewModel @Inject constructor(
      * Selecciona un evento de la lista para su detalle o edición.
      */
     fun seleccionarEvento(evento: Evento) {
+        Log.d("EventoViewModel", "📌 Evento seleccionado: ${evento.id} - ${evento.nombre}")
         _eventoSeleccionado.value = evento
         Log.d("EventoViewModel", "📌 Evento seleccionado: ${evento.nombre}")
     }
@@ -75,36 +71,22 @@ class EventoViewModel @Inject constructor(
      * Limpia la selección del evento actual.
      */
     fun limpiarEventoSeleccionado() {
+        Log.d("EventoViewModel", "🧹 Limpiando evento seleccionado")
         _eventoSeleccionado.value = null
-        Log.d("EventoViewModel", "🧹 Evento deseleccionado")
     }
 
-    /**
-     * Crea un nuevo evento en el sistema a partir de los datos introducidos por el usuario.
-     * @param token Token JWT del usuario.
-     * @param request Objeto DTO con los datos del nuevo evento.
-     * @return true si se crea correctamente, false si hay error.
-     */
-    suspend fun crearEvento(token: String, request: EventoRequest): Boolean {
+    suspend fun crearEvento(token: String, evento: Evento): Boolean {
         return try {
-            Log.d("EventoViewModel", "🛠️ Creando evento con nombre: ${request.nombre}")
-            val res = api.crearEvento("Bearer $token", request)
+            val res = api.crearEvento("Bearer $token", evento)
             res.isSuccessful
         } catch (e: Exception) {
-            Log.e("EventoViewModel", "❌ Error al crear evento", e)
+            Log.e("EventoViewModel", "Error al crear evento", e)
             false
         }
     }
 
-    /**
-     * Actualiza un evento existente en el sistema.
-     * @param token Token JWT de autenticación.
-     * @param evento Evento con datos actualizados (incluye el ID).
-     * @return true si se actualiza correctamente, false si hay error.
-     */
     suspend fun actualizarEvento(token: String, evento: Evento): Boolean {
         return try {
-            Log.d("EventoViewModel", "✏️ Actualizando evento con ID: ${evento.id}")
             val res = api.actualizarEvento("Bearer $token", evento.id, evento)
             res.isSuccessful
         } catch (e: Exception) {
@@ -123,6 +105,7 @@ class EventoViewModel @Inject constructor(
         return try {
             Log.d("EventoViewModel", "🗑️ Eliminando evento con ID: $eventoId")
             val res = api.eliminarEvento("Bearer $token", eventoId)
+            Log.d("EventoViewModel", "🗑️ Evento eliminado: $eventoId")
             res.isSuccessful
         } catch (e: Exception) {
             Log.e("EventoViewModel", "❌ Error al eliminar evento", e)
@@ -130,10 +113,11 @@ class EventoViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Registra asistencia del usuario autenticado a un evento.
-     */
-    fun registrarAsistencia(eventoId: Long, asistira: Boolean, pagado: Boolean) {
+    fun registrarAsistencia(
+        eventoId: Long,
+        asistira: Boolean,
+        pagado: Boolean
+    ) {
         viewModelScope.launch {
             try {
                 val token = sesionManager.getToken()
@@ -146,9 +130,11 @@ class EventoViewModel @Inject constructor(
                 val response = api.registrarAsistenciaEvento("Bearer $token", eventoId, request)
 
                 if (response.isSuccessful) {
-                    Log.d("EventoViewModel", "✅ Asistencia registrada: ${response.body()}")
+                    val asistencia = response.body()
+                    Log.d("EventoViewModel", "Asistencia registrada: $asistencia")
+                    // Aquí podrías actualizar estado interno o emitir evento UI
                 } else {
-                    Log.e("EventoViewModel", "❌ Error HTTP al registrar asistencia: ${response.code()}")
+                    Log.e("EventoViewModel", "Error al registrar asistencia: ${response.code()} - ${response.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 Log.e("EventoViewModel", "❌ Excepción al registrar asistencia", e)
