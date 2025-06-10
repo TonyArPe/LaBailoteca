@@ -15,15 +15,24 @@ import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
+import com.example.bailotecaapp.ui.screens.eventos.CrearEditarEventoScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventoDetailScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventosUsuarioScreen
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.usuarios.ClasesUsuarioScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
+import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 
+/**
+ * Sistema de navegación principal de la app Bailoteca.
+ * Define todas las rutas accesibles dependiendo del rol del usuario (invitado, usuario, admin, etc.).
+ * También aplica protección de rutas mediante [SesionGuard].
+ */
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
@@ -116,6 +125,39 @@ fun AppNavigation(
                     themeViewModel = themeViewModel
                 )
             }
+        }
+
+        composable(Screens.CrearEvento.route) {
+            Log.d("AppNavigation", "📍 Crear evento")
+            val eventoViewModel = hiltViewModel<EventoViewModel>()
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                CrearEditarEventoScreen(
+                    navController = navController,
+                    sesionViewModel = sesionViewModel,
+                    eventoViewModel = eventoViewModel
+                )
+            }
+        }
+
+        composable(
+            route = Screens.EventoDetalle.route,
+            arguments = listOf(navArgument("eventoId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val eventoId = backStackEntry.arguments?.getLong("eventoId") ?: return@composable
+            val eventoViewModel = hiltViewModel<EventoViewModel>()
+
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                EventoDetailScreen(
+                    eventoId = eventoId,
+                    navController = navController,
+                    sesionViewModel = sesionViewModel,
+                    eventoViewModel = eventoViewModel
+                )
+            }
+        }
+
+        composable(Screens.Eventos.route) {
+            EventosUsuarioScreen(navController)
         }
 
         composable(Screens.Usuarios.route) {

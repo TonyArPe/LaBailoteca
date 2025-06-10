@@ -18,8 +18,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Configuración principal de seguridad para Bailoteca.
- * Se utiliza autenticación JWT (Firebase) y control de roles.
+ * Configuración principal de seguridad para la aplicación Bailoteca.
+ * Define accesos permitidos por ruta y protege los endpoints mediante JWT de Firebase.
  */
 @Configuration
 @RequiredArgsConstructor
@@ -35,25 +35,32 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
 
-                // REGISTRO PERMITIDO SIN TOKEN
+                // Rutas públicas (sin token)
                 .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
-
-                // LOGIN PERMITIDO SIN TOKEN
                 .requestMatchers("/api/auth/**").permitAll()
-
-                // EVENTOS Y CLASES VISIBLES PARA INVITADOS
                 .requestMatchers("/api/clases/publicas", "/api/eventos/publicos").permitAll()
 
-                // GET de usuarios requiere rol
+                // Usuarios
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasAnyRole("ADMIN", "PROFESOR")
-
-                // Cualquier acción específica sobre usuarios requiere autenticación
                 .requestMatchers("/api/usuarios/**").authenticated()
 
-                // Recursos frontend o públicos
+                // Eventos
+                .requestMatchers(HttpMethod.GET, "/api/eventos/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/eventos").hasAnyRole("ADMIN", "PROFESOR")
+                .requestMatchers(HttpMethod.PUT, "/api/eventos/**").hasAnyRole("ADMIN", "PROFESOR")
+                .requestMatchers(HttpMethod.DELETE, "/api/eventos/**").hasAnyRole("ADMIN", "PROFESOR")
+
+                // Asistencia a eventos (solo usuarios)
+                .requestMatchers(HttpMethod.POST, "/api/eventos/*/asistir").hasRole("USUARIO")
+                .requestMatchers(HttpMethod.DELETE, "/api/eventos/*/asistir").hasRole("USUARIO")
+
+                // Ver asistentes (solo admin o profesor creador)
+                .requestMatchers(HttpMethod.GET, "/api/eventos/*/asistentes").hasAnyRole("ADMIN", "PROFESOR")
+
+                // Recursos públicos
                 .requestMatchers("/", "/index.html", "/chat.html", "/ws/**").permitAll()
 
-                // Todo lo demás requiere estar autenticado
+                // Todo lo demás requiere autentificación
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.accessDeniedHandler(accessDeniedHandler()))
@@ -62,6 +69,9 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Manejador de errores personalizados para accesos denegados.
+     */
     @Bean
     public AccessDeniedHandler accessDeniedHandler() {
         return (request, response, accessDeniedException) -> {
@@ -71,11 +81,17 @@ public class SecurityConfig {
         };
     }
 
+    /**
+     * Bean para autenticación basada en configuración de seguridad.
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Bean para codificar contraseñas (BCrypt).
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();

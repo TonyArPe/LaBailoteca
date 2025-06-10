@@ -4,12 +4,11 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Evento
-import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
+import com.example.bailotecaapp.model.enums.EstadoEvento
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -25,39 +24,11 @@ class EventoViewModel @Inject constructor(
     private val _eventoSeleccionado = MutableStateFlow<Evento?>(null)
     val eventoSeleccionado: StateFlow<Evento?> = _eventoSeleccionado
 
-    /**
-     * Carga eventos públicos (para invitados).
-     */
-    fun obtenerEventosPublicos() {
-        viewModelScope.launch {
-            try {
-                val resultado = api.obtenerEventos()
-                _eventos.value = resultado
-            } catch (e: Exception) {
-                Log.e("EventoViewModel", "Error cargando eventos públicos", e)
-            }
-        }
-    }
+    private val _asistencias = MutableStateFlow<Set<Long>>(emptySet())
+    val asistencias: StateFlow<Set<Long>> = _asistencias
 
-    /**
-     * Carga eventos autenticados (admin o profesor).
-     */
-    fun obtenerEventosPrivados(token: String) {
-        viewModelScope.launch {
-            try {
-                val res = api.getEventosPrivados("Bearer $token")
-                if (res.isSuccessful) {
-                    _eventos.value = res.body() ?: emptyList()
-                } else {
-                    Log.w("EventoViewModel", "Eventos no disponibles: ${res.code()}")
-                }
-            } catch (e: Exception) {
-                Log.e("EventoViewModel", "Error cargando eventos privados", e)
-            }
-        }
-    }
-
-    fun seleccionarEvento(evento: Evento) {
+    fun seleccionarEvento(id: Long) {
+        val evento = _eventos.value.find { it.id == id }
         _eventoSeleccionado.value = evento
     }
 
@@ -65,63 +36,116 @@ class EventoViewModel @Inject constructor(
         _eventoSeleccionado.value = null
     }
 
-    suspend fun crearEvento(token: String, evento: Evento): Boolean {
-        return try {
-            val res = api.crearEvento("Bearer $token", evento)
-            res.isSuccessful
-        } catch (e: Exception) {
-            Log.e("EventoViewModel", "Error al crear evento", e)
-            false
-        }
-    }
-
-    suspend fun actualizarEvento(token: String, evento: Evento): Boolean {
-        return try {
-            val res = api.actualizarEvento("Bearer $token", evento.id, evento)
-            res.isSuccessful
-        } catch (e: Exception) {
-            Log.e("EventoViewModel", "Error al actualizar evento", e)
-            false
-        }
-    }
-
-    suspend fun eliminarEvento(token: String, eventoId: Long): Boolean {
-        return try {
-            val res = api.eliminarEvento("Bearer $token", eventoId)
-            res.isSuccessful
-        } catch (e: Exception) {
-            Log.e("EventoViewModel", "Error al eliminar evento", e)
-            false
-        }
-    }
-
-    fun registrarAsistencia(
-        eventoId: Long,
-        asistira: Boolean,
-        pagado: Boolean
-    ) {
+    /**
+     * Obtiene todos los eventos públicos visibles por invitados.
+     */
+    fun obtenerEventosPublicos() {
         viewModelScope.launch {
             try {
-                val token = sesionManager.getToken()
-                if (token == null) {
-                    Log.e("EventoViewModel", "Token no disponible.")
-                    return@launch
-                }
-
-                val request = AsistenciaEventoRequest(asistira, pagado)
-                val response = api.registrarAsistenciaEvento("Bearer $token", eventoId, request)
-
-                if (response.isSuccessful) {
-                    val asistencia = response.body()
-                    Log.d("EventoViewModel", "Asistencia registrada: $asistencia")
-                    // Aquí podrías actualizar estado interno o emitir evento UI
-                } else {
-                    Log.e("EventoViewModel", "Error al registrar asistencia: ${response.code()} - ${response.errorBody()?.string()}")
-                }
+                val resultado = api.obtenerEventos()
+                _eventos.value = resultado
+                Log.i("EventoViewModel", "✅ Eventos públicos cargados correctamente (${resultado.size})")
             } catch (e: Exception) {
-                Log.e("EventoViewModel", "Excepción al registrar asistencia", e)
+                Log.e("EventoViewModel", "❌ Error cargando eventos públicos", e)
             }
         }
     }
 
+    /**
+     * Obtiene los eventos visibles para un usuario autenticado.
+     * Los administradores y profesores pueden ver todos los eventos.
+     * Los usuarios comunes solo pueden ver los eventos públicos o aquellos a los que están asociados.
+     */
+    fun obtenerEventosPrivados(token: String) {
+        viewModelScope.launch {
+            try {
+                val res = api.getEventosPrivados("Bearer $token")
+                if (res.isSuccessful) {
+                    val lista = res.body() ?: emptyList()
+                    _eventos.value = lista
+                    Log.i("EventoViewModel", "✅ Eventos privados cargados: ${lista.size}")
+                    cargarAsistencias(token)
+                } else {
+                    Log.w("EventoViewModel", "⚠️ Eventos no disponibles: código ${res.code()}")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error cargando eventos privados", e)
+            }
+        }
+    }
+
+    /**
+     * Lógica para crear un evento solo si el usuario es ADMIN o PROFESOR.
+     */
+    fun crearEvento(token: String, evento: Evento): Boolean {
+        viewModelScope.launch {
+            try {
+                val res = api.crearEvento("Bearer $token", evento)
+                val exito = res.isSuccessful
+                if (exito) {
+                    Log.i("EventoViewModel", "✅ Evento creado: ${evento.nombre}")
+                } else {
+                    Log.e("EventoViewModel", "❌ Error al crear evento")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error al crear evento", e)
+            }
+        }
+        return true
+    }
+
+    /**
+     * Lógica para editar un evento solo si el usuario es ADMIN o el organizador del evento.
+     */
+    suspend fun actualizarEvento(token: String, evento: Evento): Boolean {
+        return try {
+            val res = api.actualizarEvento("Bearer $token", evento.id, evento)
+            val exito = res.isSuccessful
+            Log.i("EventoViewModel", "🛠️ Evento actualizado: ${evento.nombre}")
+            exito
+        } catch (e: Exception) {
+            Log.e("EventoViewModel", "❌ Error al actualizar evento", e)
+            false
+        }
+    }
+
+    /**
+     * Elimina un evento solo si el usuario es ADMIN o el organizador del evento.
+     */
+    suspend fun eliminarEvento(token: String, eventoId: Long): Boolean {
+        return try {
+            val res = api.eliminarEvento("Bearer $token", eventoId)
+            val exito = res.isSuccessful
+            Log.i("EventoViewModel", "🗑️ Evento eliminado: ID $eventoId")
+            exito
+        } catch (e: Exception) {
+            Log.e("EventoViewModel", "❌ Error al eliminar evento", e)
+            false
+        }
+    }
+
+    /**
+     * Carga las asistencias para un usuario autenticado.
+     */
+    private fun cargarAsistencias(token: String) {
+        viewModelScope.launch {
+            try {
+                val lista = api.getEventosAsistidos("Bearer $token")
+                _asistencias.value = lista.body()?.map { it.id }?.toSet() ?: emptySet()
+                Log.i("EventoViewModel", "📌 Asistencias cargadas (${_asistencias.value.size} eventos)")
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error cargando asistencias", e)
+            }
+        }
+    }
+
+    /**
+     * Verifica si el usuario ya está apuntado a un evento.
+     *
+     * @param eventoId ID del evento.
+     * @return true si ya está inscrito, false en caso contrario.
+     */
+    fun yaAsiste(eventoId: Long): Boolean {
+        return _asistencias.value.contains(eventoId)
+    }
 }

@@ -20,6 +20,7 @@ import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
 import com.example.bailotecaapp.ui.screens.eventos.EventoListScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventosUsuarioScreen
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -150,9 +151,8 @@ fun MainScaffold(
                         modifier = Modifier.padding(padding)
                     )
 
-                    MainScreen.EVENTOS -> EventoListScreen(
+                    MainScreen.EVENTOS -> EventosUsuarioScreen(
                         navController = globalNavController,
-                        usuario = usuario,
                         modifier = Modifier.padding(padding)
                     )
                 }

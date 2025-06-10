@@ -25,6 +25,12 @@ sealed class Screens(val route: String) {
     object ClaseDetail : Screens("clase/{claseId}") {
         fun createRoute(claseId: Long) = "clase/$claseId"
     }
+     // Gestión de eventos
+     object CrearEvento : Screens("crear_evento")
+
+    object EventoDetalle : Screens("evento/{eventoId}") {
+        fun createRoute(eventoId: Long) = "evento/$eventoId"
+    }
 
     object UsuarioDetalle : Screens("usuario_detalle") {
         fun routeWithArgs(id: Long) = "usuario_detalle/$id"

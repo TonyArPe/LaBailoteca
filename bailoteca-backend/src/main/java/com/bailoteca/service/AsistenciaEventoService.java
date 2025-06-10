@@ -9,14 +9,14 @@ import com.bailoteca.repository.usuario.UsuarioRepo;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
 /**
- * Servicio encargado de la gestión de asistencias a eventos.
+ * Servicio que gestiona la lógica de las asistencias a eventos.
  */
 @Service
 @RequiredArgsConstructor
@@ -28,73 +28,71 @@ public class AsistenciaEventoService {
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Registra o actualiza la asistencia de un usuario a un evento.
-     *
-     * @param eventoId ID del evento
-     * @param usuario  Usuario autenticado
-     * @param asistira true si asistirá
-     * @param pagado   true si ha pagado
-     * @return la entidad actualizada o creada
+     * Permite que un usuario marque asistencia a un evento, si tiene permiso.
      */
     @Transactional
-    public AsistenciaEvento registrarAsistencia(Long eventoId, Usuario usuario, boolean asistira, boolean pagado) {
+    public void marcarAsistencia(Long eventoId, Usuario usuario) {
         Evento evento = eventoRepo.findById(eventoId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
 
-        AsistenciaEvento asistencia = asistenciaRepo.findByEventoAndUsuario(evento, usuario)
-                .orElseGet(() -> {
-                    log.info("Creando nueva asistencia para evento {} y usuario {}", eventoId, usuario.getId());
-                    return AsistenciaEvento.builder()
-                            .evento(evento)
-                            .usuario(usuario)
-                            .build();
-                });
+        if (!puedeVerEvento(evento, usuario)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes asistir a este evento");
+        }
 
-        asistencia.setAsistira(asistira);
-        asistencia.setPagado(pagado);
+        if (asistenciaRepo.existsByUsuarioIdAndEventoId(usuario.getId(), eventoId)) {
+            log.warn("Usuario {} ya está inscrito al evento {}", usuario.getCorreo(), eventoId);
+            return; // Evita duplicados
+        }
 
-        AsistenciaEvento guardada = asistenciaRepo.save(asistencia);
-        log.info("Asistencia actualizada: id={}, asistira={}, pagado={}", guardada.getId(), asistira, pagado);
-        return guardada;
+        AsistenciaEvento asistencia = AsistenciaEvento.builder()
+                .evento(evento)
+                .usuario(usuario)
+                .build();
+
+        asistenciaRepo.save(asistencia);
+        log.info("🟢 Usuario {} marcado como asistente al evento {}", usuario.getCorreo(), evento.getNombre());
     }
 
     /**
-     * Obtiene todas las asistencias a un evento dado.
-     *
-     * @param eventoId ID del evento
-     * @return lista de asistencias
-     */
-    public List<AsistenciaEvento> listarAsistenciasPorEvento(Long eventoId) {
-        Evento evento = eventoRepo.findById(eventoId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
-        return asistenciaRepo.findByEvento(evento);
-    }
-
-    /**
-     * Obtiene todas las asistencias de un usuario.
-     *
-     * @param usuario Usuario autenticado
-     * @return lista de asistencias
-     */
-    public List<AsistenciaEvento> listarAsistenciasPorUsuario(Usuario usuario) {
-        return asistenciaRepo.findByUsuario(usuario);
-    }
-
-    /**
-     * Elimina la asistencia de un usuario a un evento.
-     *
-     * @param eventoId ID del evento
-     * @param usuario  Usuario autenticado
+     * Permite que un usuario cancele su asistencia.
      */
     @Transactional
-    public void eliminarAsistencia(Long eventoId, Usuario usuario) {
+    public void cancelarAsistencia(Long eventoId, Usuario usuario) {
+        if (!asistenciaRepo.existsByUsuarioIdAndEventoId(usuario.getId(), eventoId)) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No estás inscrito en este evento");
+        }
+
+        asistenciaRepo.deleteByUsuarioIdAndEventoId(usuario.getId(), eventoId);
+        log.info("🟡 Usuario {} canceló asistencia al evento {}", usuario.getCorreo(), eventoId);
+    }
+
+    /**
+     * Devuelve la lista de asistentes de un evento (solo visible por admin o profesor creador).
+     */
+    public List<AsistenciaEvento> obtenerAsistentes(Long eventoId, Usuario usuarioActual) {
         Evento evento = eventoRepo.findById(eventoId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        AsistenciaEvento asistencia = asistenciaRepo.findByEventoAndUsuario(evento, usuario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Asistencia no encontrada"));
+        if (!usuarioActual.getRol().name().equals("ADMIN") &&
+                !evento.getOrganizador().getId().equals(usuarioActual.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para ver asistentes");
+        }
 
-        log.info("Eliminando asistencia del usuario {} al evento {}", usuario.getId(), eventoId);
-        asistenciaRepo.delete(asistencia);
+        return asistenciaRepo.findByEventoId(eventoId);
+    }
+
+    /**
+     * Valida si un usuario puede ver (y por tanto asistir) a un evento.
+     */
+    public boolean puedeVerEvento(Evento evento, Usuario usuario) {
+        if (evento.isPublico()) return true;
+
+        if (usuario.getRol().name().equals("ADMIN")) return true;
+
+        if (usuario.getRol().name().equals("PROFESOR") &&
+                evento.getOrganizador().getId().equals(usuario.getId())) return true;
+
+        return usuario.getInscripciones().stream()
+                .anyMatch(insc -> insc.getClase().getProfesor().getId().equals(evento.getOrganizador().getId()));
     }
 }

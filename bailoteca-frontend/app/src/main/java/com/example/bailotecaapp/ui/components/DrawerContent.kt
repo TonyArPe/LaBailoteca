@@ -60,6 +60,7 @@ fun DrawerContent(
         Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
+            DrawerDestination.Eventos,
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
