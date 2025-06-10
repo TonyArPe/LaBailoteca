@@ -4,6 +4,16 @@ import java.time.LocalDateTime;
 
 /**
  * Clase que representa la estructura de una respuesta de error personalizada.
+ * Esta clase se utiliza para enviar información detallada sobre errores
+ * que ocurren en la aplicación, incluyendo el estado HTTP, el tipo de error,
+ * un mensaje descriptivo y una marca de tiempo.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see RuntimeException
+ * @see LocalDateTime
+ * @see ErrorResponse
  */
 public class ErrorResponse {
 

@@ -8,6 +8,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Controlador que maneja mensajes entrantes en tiempo real
+ * a través de WebSocket.
+ * Este controlador recibe mensajes enviados por los clientes
+ * y los procesa utilizando el servicio de mensajes.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Mensaje
+ * @see MensajeService
  */
 @RestController
 @RequiredArgsConstructor

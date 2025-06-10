@@ -22,6 +22,22 @@ import java.util.List;
 
 /**
  * Controlador REST para gestionar inscripciones a clases.
+ * Permite a los usuarios inscribirse en clases, consultar sus inscripciones,
+ * y a los administradores y profesores consultar inscripciones de otros usuarios.
+ * Este controlador proporciona endpoints para crear, listar y eliminar inscripciones,
+ * con restricciones de acceso basadas en el rol del usuario autenticado.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Inscripcion
+ * @see InscripcionRequest
+ * @see EstadoInscripcion
+ * @see Usuario
+ * @see UsuarioDetails
+ * @see InscripcionRepo
+ * @see ClaseRepo
+ * @see UsuarioRepo
  */
 @RestController
 @RequestMapping("/api/inscripciones")

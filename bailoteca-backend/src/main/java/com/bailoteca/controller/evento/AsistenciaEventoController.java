@@ -5,7 +5,7 @@ import com.bailoteca.models.evento.AsistenciaEvento;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
 import com.bailoteca.security.UsuarioDetails;
-import com.bailoteca.service.AsistenciaEventoService;
+import com.bailoteca.service.evento.AsistenciaEventoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -20,6 +20,20 @@ import java.util.List;
 
 /**
  * Controlador que gestiona las asistencias de los usuarios a los eventos.
+ * Permite registrar, listar y eliminar asistencias.
+ * Este controlador proporciona endpoints para que los usuarios puedan indicar
+ * su asistencia a eventos específicos, así como para listar todas las asistencias
+ * registradas a un evento o las asistencias del usuario autenticado.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see AsistenciaEvento
+ * @see AsistenciaEventoRequest
+ * @see AsistenciaEventoService
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see UsuarioDetails
+ * 
  */
 @RestController
 @RequestMapping("/api/asistencias")
@@ -40,7 +54,11 @@ public class AsistenciaEventoController {
 
     /**
      * Registra o actualiza la asistencia del usuario autenticado a un evento.
-     *
+     * Si el usuario ya tiene una asistencia registrada, se actualiza.
+     * Si no, se crea una nueva asistencia.
+     * Este endpoint permite a los usuarios indicar si asistirán al evento y si han pagado.
+     * 
+     * @param request     contiene los detalles de la asistencia (asistirá, pagado)
      * @param eventoId    ID del evento
      * @param asistira    true si asistirá
      * @param pagado      true si ha pagado

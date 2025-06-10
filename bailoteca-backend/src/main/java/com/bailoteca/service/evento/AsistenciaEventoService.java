@@ -1,4 +1,4 @@
-package com.bailoteca.service;
+package com.bailoteca.service.evento;
 
 import com.bailoteca.models.evento.AsistenciaEvento;
 import com.bailoteca.models.evento.Evento;
@@ -16,7 +16,17 @@ import org.springframework.http.HttpStatus;
 import java.util.List;
 
 /**
- * Servicio encargado de la gestión de asistencias a eventos.
+ * Servicio encargado de gestionar las asistencias de los usuarios a eventos.
+ * Permite registrar, listar y eliminar asistencias, así como actualizar el estado de asistencia y pago.
+ * Este servicio asegura que las operaciones se realicen de forma transaccional y maneja
+ * las validaciones necesarias para mantener la integridad de los datos.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see AsistenciaEvento
+ * @see Evento
+ * @see Usuario
  */
 @Service
 @RequiredArgsConstructor

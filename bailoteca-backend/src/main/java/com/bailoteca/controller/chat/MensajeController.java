@@ -7,6 +7,17 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador que gestiona los mensajes de chat.
+ * Permite obtener mensajes privados entre dos usuarios o mensajes de un grupo.
+ * Este controlador proporciona endpoints para acceder a los mensajes
+ * de chat privados y grupales, facilitando la comunicación entre usuarios.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Mensaje
+ * @see MensajeService
+ */
 @RestController
 @RequestMapping("/api/chat")
 @RequiredArgsConstructor

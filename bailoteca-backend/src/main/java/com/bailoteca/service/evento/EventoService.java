@@ -1,4 +1,4 @@
-package com.bailoteca.service;
+package com.bailoteca.service.evento;
 
 import com.bailoteca.dto.EventoDTO;
 import com.bailoteca.mapper.EventoMapper;
@@ -17,8 +17,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Servicio que gestiona la lógica de negocio relacionada con los eventos.
- * Controla los permisos de acceso y transformación entre entidades y DTOs.
+ * Servicio encargado de la gestión de eventos en el sistema Bailoteca.
+ * Permite crear, actualizar, eliminar y consultar eventos según el rol del usuario autenticado.
+ * Este servicio maneja las operaciones CRUD y las restricciones de acceso basadas en roles.
+ *
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Evento
+ * @see EventoDTO
+ * @see EventoMapper
  */
 @Service
 @RequiredArgsConstructor
@@ -28,7 +36,13 @@ public class EventoService {
     private final EventoRepo eventoRepo;
 
     /**
-     * Devuelve los eventos visibles para el usuario autenticado según su rol.
+     * Obtiene todos los eventos visibles para el usuario autenticado según su rol.
+     * - ADMIN: ve todos los eventos.
+     * - PROFESOR: ve solo sus eventos.
+     * - USUARIO: ve eventos de profesores a los que está inscrito o eventos públicos.
+     *
+     * @param usuario Usuario autenticado
+     * @return Lista de eventos visibles para el usuario
      */
     public List<EventoDTO> obtenerEventosAutenticado(Usuario usuario) {
         List<Evento> eventos = switch (usuario.getRol()) {
@@ -50,7 +64,14 @@ public class EventoService {
     }
 
     /**
-     * Obtiene un evento por ID si el usuario tiene permiso para verlo.
+     * Obtiene un evento por ID, verificando si el usuario tiene permisos para verlo.
+     * - ADMIN: acceso total.
+     * - PROFESOR: acceso a sus propios eventos.
+     * - USUARIO: acceso a eventos públicos o de profesores a los que está inscrito.
+     *
+     * @param id      ID del evento
+     * @param usuario Usuario autenticado
+     * @return Evento si el usuario tiene acceso, vacío en caso contrario
      */
     public Optional<Evento> obtenerEventoPorIdYUsuario(Long id, Usuario usuario) {
         Optional<Evento> eventoOpt = eventoRepo.findById(id);
@@ -64,7 +85,12 @@ public class EventoService {
     }
 
     /**
-     * Crea un nuevo evento con el organizador indicado.
+     * Crea un nuevo evento asignando el organizador y estableciendo el estado inicial.
+     * El evento se guarda en la base de datos.
+     *
+     * @param evento      Evento a crear
+     * @param organizador Usuario que organiza el evento
+     * @return Evento creado
      */
     public Evento crearEvento(Evento evento, Usuario organizador) {
         evento.setOrganizador(organizador);
@@ -74,7 +100,14 @@ public class EventoService {
     }
 
     /**
-     * Actualiza un evento si el usuario tiene permisos.
+     * Actualiza un evento existente si el usuario tiene permisos.
+     * - ADMIN: puede actualizar cualquier evento.
+     * - PROFESOR: puede actualizar solo sus propios eventos.
+     *
+     * @param id          ID del evento a actualizar
+     * @param nuevosDatos Nuevos datos del evento
+     * @param actual      Usuario que realiza la actualización
+     * @return Evento actualizado
      */
     @Transactional
     public Evento actualizarEvento(Long id, Evento nuevosDatos, Usuario actual) {
@@ -101,6 +134,11 @@ public class EventoService {
 
     /**
      * Elimina un evento si el usuario tiene permisos.
+     * - ADMIN: puede eliminar cualquier evento.
+     * - PROFESOR: puede eliminar solo sus propios eventos.
+     *
+     * @param id     ID del evento a eliminar
+     * @param actual Usuario que realiza la eliminación
      */
     public void eliminarEvento(Long id, Usuario actual) {
         Evento evento = eventoRepo.findById(id)
@@ -119,7 +157,10 @@ public class EventoService {
     }
 
     /**
-     * Devuelve todos los eventos públicos activos.
+     * Obtiene todos los eventos públicos activos.
+     * Un evento es público si su campo 'publico' es verdadero y su estado es 'ACTIVO'.
+     *
+     * @return Lista de eventos públicos activos
      */
     public List<Evento> obtenerPublicos() {
         return eventoRepo.findByEstado(EstadoEvento.ACTIVO).stream()
@@ -127,11 +168,24 @@ public class EventoService {
                 .toList();
     }
 
+    /**
+     * Obtiene un evento por su ID.
+     * Si no se encuentra, lanza una excepción 404 Not Found.
+     *
+     * @param id ID del evento a buscar
+     * @return Evento encontrado
+     */
     public Evento obtenerPorId(Long id) {
         return eventoRepo.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Evento no encontrado"));
     }
 
+    /**
+     * Obtiene todos los eventos organizados por un usuario específico.
+     *
+     * @param id ID del organizador
+     * @return Lista de eventos organizados por el usuario
+     */
     public List<Evento> obtenerPorOrganizador(Long id) {
         return eventoRepo.findByOrganizadorId(id);
     }

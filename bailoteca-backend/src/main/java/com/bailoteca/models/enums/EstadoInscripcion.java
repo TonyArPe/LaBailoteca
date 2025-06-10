@@ -1,7 +1,11 @@
 package com.bailoteca.models.enums;
 
 /**
- * Enum que representa el estado de una inscripción a una clase.
+ * Enum que representa los estados posibles de una inscripción.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 public enum EstadoInscripcion {
     ACTIVA,

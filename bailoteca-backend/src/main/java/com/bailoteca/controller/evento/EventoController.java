@@ -6,7 +6,7 @@ import com.bailoteca.mapper.EventoMapper;
 import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.usuario.UsuarioRepo;
-import com.bailoteca.service.EventoService;
+import com.bailoteca.service.evento.EventoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -22,6 +22,19 @@ import java.util.List;
  * - ADMIN: control total.
  * - PROFESOR: solo sus propios eventos.
  * - USUARIO/INVITADO: acceso solo lectura.
+ * Este controlador permite a los usuarios autenticados listar, crear, actualizar y eliminar eventos,
+ * así como obtener eventos públicos visibles para todos.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Evento
+ * @see EventoDTO
+ * @see EventoRequest
+ * @see EventoService
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see EventoMapper
+ * 
  */
 @RestController
 @RequestMapping("/api/eventos")

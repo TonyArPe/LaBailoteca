@@ -1,4 +1,4 @@
-package com.bailoteca.service;
+package com.bailoteca.service.clase;
 
 import com.bailoteca.dto.ClaseRequest;
 import com.bailoteca.dto.HorarioClaseRequest;
@@ -20,9 +20,18 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Servicio para gestionar Clases y sus horarios.
- * Incluye lógica de validación de propiedad, edición segura y control de
- * duplicados.
+ * Servicio encargado de la gestión de Clases y sus horarios.
+ * Permite crear, actualizar y consultar clases, así como gestionar sus horarios asociados.
+ * Este servicio asegura que las operaciones se realicen de forma transaccional y maneja
+ * las validaciones necesarias para mantener la integridad de los datos.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Clase
+ * @see HorarioClase
+ * @see ClaseRepo
+ * @see HorarioClaseRepo
  */
 @Service
 @RequiredArgsConstructor
@@ -33,7 +42,12 @@ public class ClaseService {
     private final HorarioClaseRepo horarioClaseRepo;
 
     /**
-     * Guarda una nueva clase con horarios.
+     * Guarda una nueva clase con sus horarios asociados.
+     * Valida que la clase tenga un profesor asignado antes de guardar.
+     *
+     * @param clase    Clase a guardar
+     * @param horarios Lista de horarios asociados a la clase
+     * @return Clase guardada con sus horarios
      */
     @Transactional
     public Clase guardarClaseConHorarios(Clase clase, List<HorarioClase> horarios) {
@@ -142,6 +156,14 @@ public class ClaseService {
         return claseRepo.save(clase);
     }
 
+    /**
+     * Crea un nuevo horario de clase a partir de la solicitud.
+     * Valida que el horario tenga los campos necesarios y lo asocia a la clase.
+     *
+     * @param req   Solicitud con los datos del horario
+     * @param clase Clase a la que se asociará el nuevo horario
+     * @return Nuevo objeto HorarioClase
+     */
     private HorarioClase crearNuevoHorario(HorarioClaseRequest req, Clase clase) {
         if (req == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Horario nulo");
@@ -161,10 +183,14 @@ public class ClaseService {
     }
 
     /**
-     * Obtiene todas las clases públicas visibles por usuarios no autenticados.
+     * Obtiene una clase por su ID y verifica si el usuario autenticado tiene acceso.
+     * Si la clase es pública o el usuario es el propietario o un administrador, se permite el acceso.
+     *
+     * @param id      ID de la clase
+     * @param usuario Usuario autenticado
+     * @return Clase encontrada
      */
     public List<Clase> obtenerTodasLasClasesVisiblesParaInvitados() {
         return claseRepo.findByPublicaTrue();
-    }
-    
+    } 
 }

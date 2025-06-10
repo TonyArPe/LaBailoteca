@@ -8,6 +8,18 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
+/**
+ * Controlador REST para la gestión de Horarios de Clases.
+ * Permite obtener, crear y eliminar horarios de clases.
+ * Este controlador proporciona endpoints para acceder a los horarios
+ * de clases, tanto para todas las clases como para una clase específica.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see HorarioClase
+ * @see HorarioClaseRepo
+ */
 @RestController
 @RequestMapping("/api/horarios-clase")
 @RequiredArgsConstructor

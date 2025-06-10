@@ -22,7 +22,20 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Filtro JWT que valida tokens Firebase y autentica al usuario en el contexto de Spring Security.
+ * Filtro de seguridad que intercepta las solicitudes HTTP para verificar el token JWT de Firebase.
+ * Autentica al usuario y lo agrega al contexto de seguridad si el token es válido.
+ * Excluye ciertas rutas del filtrado para permitir acceso anónimo.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see FirebaseAuth
+ * @see FirebaseToken
+ * @see UserDetails
+ * @see UsernamePasswordAuthenticationToken
+ * @see OncePerRequestFilter
  */
 @Slf4j
 @Component
@@ -32,7 +45,8 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Lista de rutas que no deben ser filtradas (permitidas anónimamente).
+     * Rutas que se excluyen del filtrado JWT.
+     * Estas rutas permiten acceso anónimo y no requieren autenticación.
      */
     private static final List<String> EXCLUDE_PATHS = List.of(
             "/api/usuarios",        // Registro
@@ -41,6 +55,17 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
             "/api/clases/publicas"
     );
 
+    /**
+     * Método que se ejecuta para filtrar las solicitudes HTTP.
+     * Verifica el token JWT y autentica al usuario si es válido.
+     * Si la ruta está excluida, omite el filtrado.
+     *
+     * @param request  La solicitud HTTP entrante.
+     * @param response La respuesta HTTP a enviar.
+     * @param filterChain La cadena de filtros a seguir.
+     * @throws ServletException Si ocurre un error en el procesamiento del filtro.
+     * @throws IOException Si ocurre un error de entrada/salida.
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
@@ -98,7 +123,12 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Determina si la ruta actual está excluida del filtro.
+     * Verifica si la ruta y el método HTTP están excluidos del filtrado JWT.
+     * Permite acceso anónimo a ciertas rutas específicas.
+     *
+     * @param path   La ruta de la solicitud.
+     * @param method El método HTTP de la solicitud.
+     * @return true si la ruta está excluida, false en caso contrario.
      */
     private boolean isExcluded(String path, String method) {
         return EXCLUDE_PATHS.stream().anyMatch(path::equalsIgnoreCase)

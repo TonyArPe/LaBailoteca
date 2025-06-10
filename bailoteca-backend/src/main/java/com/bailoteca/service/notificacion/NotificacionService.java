@@ -15,8 +15,17 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * Servicio para gestionar las operaciones relacionadas con las notificaciones.
- * Encapsula la lógica de negocio asociada a las notificaciones.
+ * Servicio encargado de la gestión de notificaciones.
+ * Permite crear, obtener, marcar como leídas y eliminar notificaciones.
+ * Utiliza WebSocket para enviar notificaciones en tiempo real a los usuarios.
+ *
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Notificacion
+ * @see Usuario
+ * @see NotificacionRepo
+ * @see UsuarioRepo
  */
 @Service
 @RequiredArgsConstructor

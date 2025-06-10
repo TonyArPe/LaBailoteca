@@ -10,6 +10,16 @@ import java.util.List;
 /**
  * Controlador REST para gestionar las notificaciones.
  * Define los endpoints relacionados con las operaciones de notificaciones.
+ * Permite a los usuarios recibir, crear, marcar como leídas y eliminar notificaciones.
+ * Este controlador proporciona funcionalidades para que los usuarios puedan interactuar
+ * con sus notificaciones, incluyendo la obtención de notificaciones por receptor,
+ * la creación de nuevas notificaciones, y la gestión del estado de lectura de las mismas.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Notificacion
+ * @see NotificacionService
  */
 @RestController
 @RequestMapping("/api/notificaciones")

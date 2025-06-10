@@ -17,6 +17,22 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
+/**
+ * Controlador REST para la gestión de pagos de eventos.
+ * Permite a los usuarios registrar pagos para eventos, consultar pagos realizados
+ * por un usuario específico, y obtener todos los pagos registrados.
+ * Este controlador proporciona endpoints para crear, listar y eliminar pagos de eventos,
+ * con restricciones de acceso basadas en el rol del usuario autenticado.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see PagoEvento
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see PagoEventoRepo
+ * @see EventoRepo
+ */
 @RestController
 @RequestMapping("/api/pagos-evento")
 @RequiredArgsConstructor

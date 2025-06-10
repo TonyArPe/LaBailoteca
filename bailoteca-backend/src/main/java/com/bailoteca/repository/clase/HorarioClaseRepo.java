@@ -8,6 +8,15 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repositorio para gestionar los horarios de las clases en la aplicación.
+ * Permite buscar horarios por ID de clase y eliminar horarios asociados a una clase.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see HorarioClase
+ */
 @Repository
 public interface HorarioClaseRepo extends JpaRepository<HorarioClase, Long> {
 

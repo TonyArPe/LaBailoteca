@@ -23,6 +23,25 @@ import java.util.List;
 /**
  * Controlador REST para gestionar usuarios.
  * Administra registros, actualizaciones, consultas y eliminaciones de usuarios.
+ * Permite a administradores y profesores acceder a información de usuarios,
+ * así como a los propios usuarios acceder a su perfil.
+ * Este controlador proporciona endpoints para:
+ * - Registrar nuevos usuarios.
+ * - Consultar todos los usuarios o los alumnos de un profesor.
+ * - Consultar un usuario por ID.
+ * - Actualizar datos de un usuario.
+ * - Eliminar un usuario.
+ * - Consultar el perfil del usuario autenticado.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see UsuarioDetails
+ * @see UsuarioDTO
+ * @see UsuarioUpdateRequest
+ * 
  */
 @Slf4j
 @RestController

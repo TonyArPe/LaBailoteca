@@ -8,6 +8,23 @@ import java.time.LocalDateTime;
 /**
  * DTO de salida para eventos.
  * Expone solo los datos necesarios al frontend.
+ * * Este objeto se utiliza para enviar datos de eventos
+ * desde el servidor al cliente, incluyendo detalles
+ * como el nombre, descripción, fecha, lugar,
+ * estado, si es público y el nombre del organizador.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see EstadoEvento
+ * @see EventoResponse
+ * @see EventoService
+ * @see EventoRepo
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see UsuarioDetails
+ * @see UsuarioDetailsService
+ * @see EventoRequest
  */
 @Data
 public class EventoResponse {

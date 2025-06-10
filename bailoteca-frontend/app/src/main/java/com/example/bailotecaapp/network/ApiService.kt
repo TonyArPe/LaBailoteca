@@ -3,6 +3,7 @@ package com.example.bailotecaapp.network
 import com.example.bailotecaapp.model.*
 import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
 import com.example.bailotecaapp.model.dto.ClaseRequest
+import com.example.bailotecaapp.model.dto.EventoRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest

@@ -7,6 +7,16 @@ import com.bailoteca.models.usuario.Usuario;
 
 /**
  * Clase utilitaria para convertir entre entidades Evento y DTOs.
+ * Esta clase proporciona métodos estáticos para mapear
+ * Evento a EventoDTO y EventoRequest a Evento.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Evento
+ * @see EventoDTO
+ * @see EventoRequest
+ * @see Usuario
  */
 public class EventoMapper {
 

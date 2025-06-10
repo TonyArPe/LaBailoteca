@@ -7,6 +7,15 @@ import java.time.LocalTime;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
+/**
+ * Modelo que representa un horario de clase en la aplicación.
+ * Un horario define el día de la semana y las horas de inicio y fin de una clase.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Clase
+ */
 @Entity
 @Data
 @NoArgsConstructor
@@ -24,8 +33,7 @@ public class HorarioClase {
 
     @ManyToOne
     @JoinColumn(name = "clase_id")
-    // Indica que es el hijo de Clase
-    @JsonBackReference
+    @JsonBackReference // Indica que es el hijo de Clase
     private Clase clase;
 
 }

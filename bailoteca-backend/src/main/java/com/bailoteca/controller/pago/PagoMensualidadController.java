@@ -14,6 +14,21 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Controlador REST para la gestión de pagos mensuales.
+ * Permite a los usuarios registrar pagos mensuales, consultar pagos realizados
+ * por un usuario específico, y obtener todos los pagos mensuales registrados.
+ * Este controlador proporciona endpoints para crear, listar y eliminar pagos mensuales,
+ * con restricciones de acceso basadas en el rol del usuario autenticado.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see PagoMensualidad
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see PagoMensualidadRepo
+ */
 @RestController
 @RequestMapping("/api/pagos-mensualidad")
 @RequiredArgsConstructor

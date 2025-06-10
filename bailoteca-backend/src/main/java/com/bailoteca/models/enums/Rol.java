@@ -1,8 +1,11 @@
 package com.bailoteca.models.enums;
 
 /**
- * Enum que representa los diferentes roles de usuario en el sistema.
- * Los roles definen los permisos y privilegios de cada tipo de usuario.
+ * Enum que representa los roles de usuario en la aplicación.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 public enum Rol {
     ADMIN,

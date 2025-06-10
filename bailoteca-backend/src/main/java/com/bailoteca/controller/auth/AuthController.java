@@ -14,6 +14,13 @@ import java.util.Map;
 /**
  * Controlador que gestiona la autenticación de usuarios.
  * Permite iniciar sesión y obtener un JWT.
+ * Este controlador se encarga de validar las credenciales del usuario
+ * y devolver un token JWT si son correctas.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Usuario
+ * @see UsuarioRepo
  */
 @RestController
 @RequestMapping("/api/auth")

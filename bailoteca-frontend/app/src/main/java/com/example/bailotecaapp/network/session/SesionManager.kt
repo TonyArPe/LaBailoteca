@@ -2,12 +2,10 @@ package com.example.bailotecaapp.network.session
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.remember
 import com.example.bailotecaapp.datastore.TokenPreferences
 import com.example.bailotecaapp.datastore.UsuarioPersistente
 import com.example.bailotecaapp.datastore.UsuarioPreferences
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.network.ApiService
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,13 +18,15 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
- * Clase centralizada para gestionar el estado de sesión del usuario.
+ * Clase encargada de gestionar el estado de sesión del usuario.
  *
- * Se encarga de manejar el token JWT, el usuario actual y su persistencia
- * usando DataStore. Además, permite restaurar sesión, cerrarla y marcar
- * que ya fue cargada correctamente.
+ * Maneja el token JWT, el usuario actual y su persistencia utilizando DataStore. Además, permite:
+ * - Restaurar sesión desde preferencias,
+ * - Iniciar sesión con un token de Firebase,
+ * - Cerrar sesión y eliminar los datos persistidos,
+ * - Comprobar si hay una sesión activa.
  *
- * Esta clase es utilizada por el ViewModel `SesionViewModel`.
+ * Esta clase se utiliza principalmente desde el ViewModel `SesionViewModel`.
  */
 class SesionManager @Inject constructor(
     private val apiService: ApiService,
@@ -56,12 +56,9 @@ class SesionManager @Inject constructor(
      * @return Token JWT o null si no existe.
      */
     suspend fun getToken(): String? {
-        // Devuelve token en memoria si existe
         token.value?.let {
             return it
         }
-
-        // Si no hay token en memoria, lo intenta restaurar desde preferencias
         return TokenPreferences.obtenerToken(context)?.also {
             _token.value = it
         }
@@ -79,7 +76,6 @@ class SesionManager @Inject constructor(
      */
     suspend fun guardarUsuario(usuario: Usuario) {
         try {
-            // Convertimos a forma persistente compatible con DataStore
             val persistente = UsuarioPersistente(
                 id = usuario.id ?: -1,
                 nombre = usuario.nombre,
@@ -97,7 +93,6 @@ class SesionManager @Inject constructor(
                 pagado = usuario.pagado
             )
 
-            // Guardamos en preferencias y actualizamos estado
             UsuarioPreferences.guardarUsuario(context, persistente)
             _usuario.value = usuario
 
@@ -159,16 +154,16 @@ class SesionManager @Inject constructor(
                     if (usuarioApi != null) {
                         val persistente = UsuarioPersistente(
                             id = usuarioApi.id ?: -1,
-                            nombre = usuarioApi.nombre,
-                            apellido = usuarioApi.apellido,
-                            correo = usuarioApi.correo,
-                            rol = usuarioApi.rol,
-                            fotoPerfil = usuarioApi.fotoPerfil,
-                            telefono = usuarioApi.telefono,
-                            direccion = usuarioApi.direccion,
+                            nombre = usuarioApi.nombre ?: "",
+                            apellido = usuarioApi.apellido ?: "",
+                            correo = usuarioApi.correo ?: "",
+                            rol = usuarioApi.rol ?: "",
+                            fotoPerfil = usuarioApi.fotoPerfil ?: "",
+                            telefono = usuarioApi.telefono ?: "",
+                            direccion = usuarioApi.direccion ?: "",
                             fechaNacimiento = usuarioApi.fechaNacimiento,
-                            genero = usuarioApi.genero,
-                            dni = usuarioApi.dni,
+                            genero = usuarioApi.genero ?: "",
+                            dni = usuarioApi.dni ?: "",
                             fechaRegistro = usuarioApi.fechaRegistro,
                             activo = usuarioApi.activo,
                             pagado = usuarioApi.pagado
@@ -206,7 +201,6 @@ class SesionManager @Inject constructor(
             }
         }
     }
-
 
     /**
      * Cierra la sesión actual, eliminando token y usuario tanto de memoria
@@ -252,8 +246,15 @@ fun UsuarioPersistente.toUsuario(): Usuario {
         nombre = this.nombre,
         apellido = this.apellido ?: "",
         correo = this.correo,
-        contrasenna = "",
+        contrasenna = "",  // No se guarda la contraseña
         rol = this.rol,
+        fotoPerfil = this.fotoPerfil,
+        telefono = this.telefono,
+        direccion = this.direccion,
+        fechaNacimiento = this.fechaNacimiento,
+        genero = this.genero,
+        dni = this.dni,
+        fechaRegistro = this.fechaRegistro,
         activo = this.activo,
         pagado = this.pagado
     )

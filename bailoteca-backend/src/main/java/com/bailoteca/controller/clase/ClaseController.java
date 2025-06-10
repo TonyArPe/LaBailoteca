@@ -7,7 +7,7 @@ import com.bailoteca.models.usuario.Usuario;
 import com.bailoteca.repository.clase.ClaseRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
 import com.bailoteca.security.UsuarioDetails;
-import com.bailoteca.service.ClaseService;
+import com.bailoteca.service.clase.ClaseService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +24,20 @@ import java.util.List;
  * Controlador REST para la gestión de Clases y Horarios.
  * Sólo profesores pueden gestionar sus propias clases.
  * Admin puede acceder a todas.
+ * Este controlador permite crear, actualizar, eliminar y consultar clases,
+ * así como obtener clases públicas visibles para invitados.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Clase
+ * @see ClaseRequest
+ * @see ClaseService
+ * @see ClaseRepo
+ * @see Usuario
+ * @see UsuarioRepo
+ * @see UsuarioDetails
+ * @see HorarioClase
+ * 
  */
 @RestController
 @RequestMapping("/api/clases")

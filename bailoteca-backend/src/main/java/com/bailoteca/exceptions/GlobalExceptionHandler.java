@@ -24,6 +24,14 @@ import java.util.Map;
 
 /**
  * Controlador global de manejo de excepciones.
+ * Este controlador maneja las excepciones lanzadas
+ * por la aplicación y devuelve respuestas
+ * personalizadas con información sobre el error.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see ErrorResponse
  */
 @ControllerAdvice
 @RestController
