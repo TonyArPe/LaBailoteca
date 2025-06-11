@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Filtro de seguridad que intercepta las solicitudes HTTP para verificar el token JWT de Firebase.
- * Autentica al usuario y lo agrega al contexto de seguridad si el token es válido.
+ * Filtro de seguridad que intercepta las solicitudes HTTP para verificar el
+ * token JWT de Firebase.
+ * Autentica al usuario y lo agrega al contexto de seguridad si el token es
+ * válido.
  * Excluye ciertas rutas del filtrado para permitir acceso anónimo.
  * 
  * @author Tony Aragón
@@ -49,27 +51,26 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
      * Estas rutas permiten acceso anónimo y no requieren autenticación.
      */
     private static final List<String> EXCLUDE_PATHS = List.of(
-            "/api/usuarios",        // Registro
-            "/api/auth/login",      // Login
+            "/api/usuarios", // Registro
+            "/api/auth/login", // Login
             "/api/eventos/publicos",
-            "/api/clases/publicas"
-    );
+            "/api/clases/publicas");
 
     /**
      * Método que se ejecuta para filtrar las solicitudes HTTP.
      * Verifica el token JWT y autentica al usuario si es válido.
      * Si la ruta está excluida, omite el filtrado.
      *
-     * @param request  La solicitud HTTP entrante.
-     * @param response La respuesta HTTP a enviar.
+     * @param request     La solicitud HTTP entrante.
+     * @param response    La respuesta HTTP a enviar.
      * @param filterChain La cadena de filtros a seguir.
      * @throws ServletException Si ocurre un error en el procesamiento del filtro.
-     * @throws IOException Si ocurre un error de entrada/salida.
+     * @throws IOException      Si ocurre un error de entrada/salida.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    FilterChain filterChain)
+            HttpServletResponse response,
+            FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getServletPath();
@@ -102,9 +103,15 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
                 return;
             }
 
+            if (!usuario.isActivo()) {
+                log.warn("⛔ Usuario {} está desactivado y no puede acceder", usuario.getCorreo());
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuario desactivado");
+                return;
+            }
+
             UserDetails userDetails = new UsuarioDetails(usuario);
-            UsernamePasswordAuthenticationToken auth =
-                    new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                    userDetails.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(auth);
             log.info("🔐 Usuario autenticado: {} (ID: {})", usuario.getCorreo(), usuario.getId());

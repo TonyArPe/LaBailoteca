@@ -14,5 +14,6 @@ data class Evento(
     val lugar: String,
     val estado: EstadoEvento,
     val publico: Boolean,
-    val nombreOrganizador: String
+    val nombreOrganizador: String,
+    val imagen: String? = null
 )

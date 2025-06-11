@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import okhttp3.MultipartBody
 import javax.inject.Inject
 
 /**
@@ -61,6 +62,23 @@ class EventoViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 Log.e("EventoViewModel", "❌ Error cargando eventos privados", e)
+            }
+        }
+    }
+
+    fun subirImagenEvento(archivo: MultipartBody.Part, onSuccess: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val respuesta = api.subirArchivo(archivo)
+                if (respuesta.isSuccessful) {
+                    val nombre = respuesta.body()
+                    Log.d("EventoViewModel", "✅ Imagen evento subida: $nombre")
+                    nombre?.let { onSuccess(it) }
+                } else {
+                    Log.e("EventoViewModel", "❌ Error al subir imagen evento: ${respuesta.errorBody()}")
+                }
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Excepción al subir imagen evento", e)
             }
         }
     }

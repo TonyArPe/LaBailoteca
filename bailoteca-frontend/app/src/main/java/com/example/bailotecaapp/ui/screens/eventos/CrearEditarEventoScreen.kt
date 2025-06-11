@@ -34,6 +34,7 @@ import com.example.bailotecaapp.viewmodel.SesionViewModel
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import com.example.bailotecaapp.utils.crearMultipartDesdeUri
 
 /**
  * Pantalla reutilizable para crear o editar eventos en Bailoteca.
@@ -67,11 +68,27 @@ fun CrearEditarEventoScreen(
     var estado by remember { mutableStateOf(eventoSeleccionado?.estado ?: EstadoEvento.ACTIVO) }
     var publico by remember { mutableStateOf(eventoSeleccionado?.publico ?: true) }
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
+    val imagenSubidaNombre = remember { mutableStateOf<String?>(eventoSeleccionado?.imagen) }
+    val imagenFinal = imagenUri ?: eventoSeleccionado?.imagen?.let {
+        Uri.parse("https://https://fe65-84-122-0-141.ngrok-free.app/api/media/files/$it")
+    }
+
+    Image(
+        painter = rememberAsyncImagePainter(imagenFinal),
+        contentDescription = "Foto de perfil",
+        modifier = Modifier.size(120.dp)
+    )
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imagenUri = uri
+        uri?.let {
+            val archivoPart = crearMultipartDesdeUri(context, it)
+            sesionViewModel.subirImagenPerfil(archivoPart) { nombre ->
+                imagenSubidaNombre.value = nombre
+            }
+        }
     }
 
     Box(
@@ -194,7 +211,8 @@ fun CrearEditarEventoScreen(
                         fecha = "${fecha}T00:00:00",
                         lugar = lugar,
                         estado = estado,
-                        publico = publico
+                        publico = publico,
+                        imagen = imagenSubidaNombre.value
                     )
 
                     scope.launch {

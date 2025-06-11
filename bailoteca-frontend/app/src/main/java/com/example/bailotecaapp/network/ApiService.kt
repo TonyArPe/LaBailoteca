@@ -7,6 +7,7 @@ import com.example.bailotecaapp.model.dto.EventoRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
+import okhttp3.MultipartBody
 import retrofit2.http.*
 import retrofit2.Response
 
@@ -245,4 +246,12 @@ interface ApiService {
         @Header("Authorization") token: String,
         @Path("profesorId") profesorId: Long
     ): Response<List<Evento>>
+
+    //------------------------ SUBIDA FICHEROS -------------------------
+    @Multipart
+    @POST("media/upload")
+    suspend fun subirArchivo(
+        @Part archivo: MultipartBody.Part
+    ): Response<String>
+
 }

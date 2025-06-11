@@ -25,6 +25,7 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.example.bailotecaapp.utils.crearMultipartDesdeUri
 
 /**
  * Pantalla para editar datos del perfil del usuario autenticado.
@@ -64,11 +65,27 @@ fun EditProfileScreen(
     var fechaNacimiento by remember { mutableStateOf(usuarioActual.fechaNacimiento ?: "") }
     var genero by remember { mutableStateOf(usuarioActual.genero ?: "") }
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
+    val imagenSubidaNombre = remember { mutableStateOf<String?>(usuarioActual.fotoPerfil) }
+    val imagenFinal = imagenUri ?: usuarioActual.fotoPerfil?.let {
+        Uri.parse("https://https://fe65-84-122-0-141.ngrok-free.app/api/media/files/$it")
+    }
+
+    Image(
+        painter = rememberAsyncImagePainter(imagenFinal),
+        contentDescription = "Foto de perfil",
+        modifier = Modifier.size(120.dp)
+    )
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         imagenUri = uri
+        uri?.let {
+            val archivoPart = crearMultipartDesdeUri(context, it)
+            sesionViewModel.subirImagenPerfil(archivoPart) { nombre ->
+                imagenSubidaNombre.value = nombre
+            }
+        }
     }
 
     val scrollState = rememberScrollState()
@@ -149,11 +166,10 @@ fun EditProfileScreen(
                         direccion = direccion,
                         fechaNacimiento = fechaNacimiento,
                         genero = genero,
-                        fotoPerfil = imagenUri?.toString() ?: usuarioActual.fotoPerfil,
+                        fotoPerfil = imagenSubidaNombre.value,
                         activo = usuarioActual.activo,
                         pagado = usuarioActual.pagado
                     )
-
 
                     Log.d("EditProfileScreen", "📤 Enviando actualización: $actualizado")
 
