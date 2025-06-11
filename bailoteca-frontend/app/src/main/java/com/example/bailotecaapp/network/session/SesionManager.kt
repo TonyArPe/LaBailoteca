@@ -194,6 +194,11 @@ class SesionManager @Inject constructor(
     fun estaSesionActiva(): Boolean {
         return _usuario.value != null && _token.value != null
     }
+
+    fun getUsuarioActual(): Usuario? {
+        return _usuario.value
+    }
+
 }
 
 fun UsuarioPersistente.toUsuario(): Usuario {

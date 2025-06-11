@@ -9,6 +9,7 @@ import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
+import com.example.bailotecaapp.network.session.SesionManagerSingleton.usuario
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,37 +44,23 @@ class UsuarioViewModel @Inject constructor(
     private val _inscripcionesDelUsuario = MutableStateFlow<List<Inscripcion>>(emptyList())
     val inscripcionesDelUsuario: StateFlow<List<Inscripcion>> = _inscripcionesDelUsuario
 
-    /**
-     * Alterna el estado activo del usuario (solo profesores).
-     */
     fun toggleActivo(usuario: Usuario) {
         viewModelScope.launch {
             try {
                 val token = sesionManager.getToken() ?: return@launch
+                val request = UsuarioEstadoUpdateRequest(activo = !usuario.activo)
+                val response = api.actualizarEstadoUsuario("Bearer $token", usuario.id!!, request)
 
-                val request = UsuarioUpdateRequest(
-                    nombre = usuario.nombre,
-                    apellido = usuario.apellido ?: "",
-                    correo = usuario.correo,
-                    contrasenna = usuario.contrasenna,
-                    rol = usuario.rol,
-                    telefono = usuario.telefono ?: "",
-                    direccion = usuario.direccion ?: "",
-                    activo = !usuario.activo,
-                    pagado = usuario.pagado
-                )
-
-                val response = api.actualizarUsuario("Bearer $token", usuario.id!!, request)
                 if (response.isSuccessful) {
                     val actualizado = response.body()
                     if (actualizado != null) {
-                        _usuarioDetalle.value = actualizado
-                        Log.d("UsuarioViewModel", "✅ Usuario actualizado (activo): ${actualizado.correo}")
-                    } else {
-                        Log.e("UsuarioViewModel", "❌ Respuesta sin cuerpo al actualizar activo")
+                        _usuarios.value = _usuarios.value.map {
+                            if (it.id == actualizado.id) actualizado else it
+                        }
+                        Log.d("UsuarioViewModel", "✅ Activo actualizado: ${actualizado.correo}")
                     }
                 } else {
-                    Log.e("UsuarioViewModel", "❌ Error al actualizar activo: ${response.code()}")
+                    Log.e("UsuarioViewModel", "❌ Error HTTP al actualizar activo: ${response.code()}")
                 }
             } catch (e: Exception) {
                 Log.e("UsuarioViewModel", "❌ Excepción al actualizar activo", e)
@@ -81,16 +68,11 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Alterna el estado de pago del usuario (solo profesores).
-     * Utiliza endpoint parcial PUT /usuarios/{id}/estado.
-     */
     fun togglePagado(usuario: Usuario) {
         viewModelScope.launch {
             try {
                 val token = sesionManager.getToken() ?: return@launch
                 val nuevoEstado = !usuario.pagado
-
                 val request = UsuarioEstadoUpdateRequest(pagado = nuevoEstado)
                 val response = api.actualizarEstadoUsuario("Bearer $token", usuario.id!!, request)
 
@@ -114,9 +96,6 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Elimina un usuario por su ID (solo ADMIN).
-     */
     fun eliminarUsuario(id: Long) {
         viewModelScope.launch {
             try {
@@ -134,9 +113,31 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Carga el detalle de un usuario por ID.
-     */
+    fun obtenerTodosLosUsuarios() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _errorMessage.value = null
+            try {
+                val token = sesionManager.getToken() ?: return@launch
+                val response = api.getUsuarios("Bearer $token")
+                if (response.isSuccessful) {
+                    val todos = response.body() ?: emptyList()
+                    val yo = usuario.value?.id
+                    _usuarios.value = todos.filter {
+                        it.id != yo && it.rol.name != "ADMIN"
+                    }
+                    Log.d("UsuarioViewModel", "✅ Todos los usuarios cargados: ${_usuarios.value.size}")
+                } else {
+                    _errorMessage.value = "Error al obtener usuarios: ${response.code()}"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = "Error: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun cargarUsuarioPorId(id: Long) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -160,9 +161,6 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Obtiene todas las inscripciones de un usuario.
-     */
     fun obtenerInscripcionesDelUsuario(usuarioId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -181,18 +179,12 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Filtra las inscripciones por clases del profesor.
-     */
     fun obtenerInscripcionesFiltradasPorProfesor(profesorId: Long): List<Inscripcion> {
         return _inscripcionesDelUsuario.value.filter {
             it.clase.profesor.id == profesorId
         }
     }
 
-    /**
-     * Carga todos los usuarios visibles por un profesor (usuarios con clases impartidas por él).
-     */
     fun obtenerUsuariosVisiblesParaProfesor(profesorId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -206,8 +198,12 @@ class UsuarioViewModel @Inject constructor(
                     val usuarios = responseUsuarios.body() ?: emptyList()
                     val inscripciones = responseInscripciones.body() ?: emptyList()
                     val idsUsuariosConClases = inscripciones.mapNotNull { it.usuario.id }.toSet()
+                    val yo = usuario.value?.id
+                    _usuarios.value = usuarios.filter {
+                        it.id in idsUsuariosConClases && it.id != yo && it.rol.name != "ADMIN"
+                    }
 
-                    _usuarios.value = usuarios.filter { it.id in idsUsuariosConClases }
+                    _usuarios.value = usuarios.filter { it.id in idsUsuariosConClases && it.id != yo }
 
                     Log.d("UsuarioViewModel", "✅ Usuarios visibles cargados: ${_usuarios.value.size}")
                 } else {
@@ -222,9 +218,6 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Carga las inscripciones del usuario y actualiza el flujo correspondiente.
-     */
     fun cargarInscripcionesDelUsuario(usuarioId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -242,9 +235,6 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Elimina una inscripción por ID.
-     */
     fun eliminarInscripcion(inscripcionId: Long) {
         viewModelScope.launch {
             try {
@@ -260,14 +250,6 @@ class UsuarioViewModel @Inject constructor(
         }
     }
 
-    /**
-     * Actualiza un usuario desde la pantalla de edición (usado por Admin).
-     *
-     * @param token Token JWT.
-     * @param id ID del usuario a actualizar.
-     * @param request Objeto con los nuevos datos.
-     * @return true si fue exitoso, false en caso contrario.
-     */
     suspend fun actualizarUsuario(token: String, id: Long, request: UsuarioUpdateRequest): Boolean {
         return try {
             val response = api.actualizarUsuario("Bearer $token", id, request)
