@@ -47,9 +47,9 @@ LaBailoteca/
 
 ## Estado actual
 
-- ✅ Backend funcional con seguridad y API REST completa
-- ✅ App Android conectada a Firebase y al backend (login, usuarios)
-- ⏳ Módulo web pendiente de desarrollo (previsto en React + Vite)
+- Backend funcional con seguridad y API REST completa
+- App Android conectada a Firebase y al backend (login, usuarios)
+- Módulo web pendiente de desarrollo (previsto en React + Vite)
 
 ---
 
@@ -69,6 +69,6 @@ Desarrollado por **Antonio Manuel Aragón Pérez**, alumno de 2º DAM, como part
 
 ## Licencia
 
-Proyecto con fines educativos. No destinado a producción.
+Proyecto con fines educativos. No destinado a producción de momento.
 
 ---
