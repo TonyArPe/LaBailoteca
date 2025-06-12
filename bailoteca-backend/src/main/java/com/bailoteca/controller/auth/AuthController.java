@@ -12,8 +12,14 @@ import com.bailoteca.repository.usuario.UsuarioRepo;
 import java.util.Map;
 
 /**
- * Controlador que gestiona la autenticación de usuarios.
- * Permite iniciar sesión y obtener un JWT.
+ * Controlador que maneja las operaciones de autenticación de usuarios.
+ * Permite iniciar sesión y obtener un JWT si las credenciales son válidas.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Usuario
+ * @see UsuarioRepo
  */
 @RestController
 @RequestMapping("/api/auth")

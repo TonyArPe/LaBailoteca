@@ -16,6 +16,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import okhttp3.MultipartBody
 import javax.inject.Inject
 
 /**
@@ -103,6 +104,23 @@ class SesionViewModel @Inject constructor(
                 sincronizarDesdeSesionManager()
                 _isLoading.value = false
                 true
+            }
+        }
+    }
+
+    fun subirImagenPerfil(archivo: MultipartBody.Part, onSuccess: (String) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val respuesta = api.subirArchivo(archivo)
+                if (respuesta.isSuccessful) {
+                    val nombre = respuesta.body()
+                    Log.d("SesionViewModel", "✅ Imagen subida correctamente: $nombre")
+                    nombre?.let { onSuccess(it) }
+                } else {
+                    Log.e("SesionViewModel", "❌ Error al subir imagen de perfil: ${respuesta.errorBody()}")
+                }
+            } catch (e: Exception) {
+                Log.e("SesionViewModel", "❌ Excepción al subir imagen", e)
             }
         }
     }

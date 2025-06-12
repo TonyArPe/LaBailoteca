@@ -8,6 +8,10 @@ import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerCo
 
 /**
  * Configuración de WebSocket con STOMP.
+ * Esta clase configura los puntos finales de WebSocket
+ * y el broker de mensajes para la aplicación.
+ * Permite la comunicación en tiempo real entre el cliente y el servidor
+ * a través de STOMP (Simple Text Oriented Messaging Protocol).
  */
 @Configuration
 @EnableWebSocketMessageBroker

@@ -5,8 +5,12 @@ import lombok.Data;
 import java.time.LocalTime;
 
 /**
- * DTO para representar un horario dentro de la creación o edición de clase.
- * Incluye el campo `id` para soportar edición sin duplicaciones.
+ * Clase que representa una solicitud para crear o actualizar un horario de clase.
+ * Contiene información sobre el día de la semana, hora de inicio y hora de fin.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 @Data
 public class HorarioClaseRequest {

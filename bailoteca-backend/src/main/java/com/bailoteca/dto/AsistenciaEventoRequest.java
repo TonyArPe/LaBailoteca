@@ -4,7 +4,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * DTO para registrar o actualizar la asistencia de un usuario a un evento.
+ * Clase que representa una solicitud de asistencia a un evento.
+ * Contiene información sobre si el usuario asistirá y si ha pagado el evento.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 @Data
 @NoArgsConstructor

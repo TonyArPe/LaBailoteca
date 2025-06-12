@@ -10,5 +10,6 @@ data class EventoRequest(
     val fecha: String,
     val lugar: String,
     val estado: EstadoEvento,
-    val publico: Boolean
+    val publico: Boolean,
+    val imagen: String? = null
 )

@@ -15,6 +15,16 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Modelo que representa un chat en la aplicación.
+ * Un chat puede ser grupal (asociado a una clase) o privado (entre dos usuarios).
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Clase
+ * @see Usuario
+ */
 @Entity
 @Table(name = "chats")
 @Data

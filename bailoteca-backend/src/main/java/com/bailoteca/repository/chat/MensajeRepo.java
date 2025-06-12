@@ -6,6 +6,15 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
+/**
+ * Repositorio para gestionar los mensajes de chat en la aplicación.
+ * Permite buscar mensajes privados entre dos usuarios o mensajes de un grupo.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Mensaje
+ */
 @Repository
 public interface MensajeRepo extends JpaRepository<Mensaje, Long> {
 

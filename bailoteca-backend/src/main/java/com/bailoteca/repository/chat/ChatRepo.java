@@ -7,6 +7,16 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 import java.util.List;
 
+/**
+ * Repositorio para gestionar los chats en la aplicación.
+ * Permite buscar chats privados entre dos usuarios, chats grupales por clase,
+ * y listar todos los chats de un usuario.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Chat
+ */
 @Repository
 public interface ChatRepo extends JpaRepository<Chat, Long> {
 

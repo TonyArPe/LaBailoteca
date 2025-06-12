@@ -2,12 +2,11 @@ package com.example.bailotecaapp.network.session
 
 import android.content.Context
 import android.util.Log
-import androidx.compose.runtime.remember
 import com.example.bailotecaapp.datastore.TokenPreferences
 import com.example.bailotecaapp.datastore.UsuarioPersistente
 import com.example.bailotecaapp.datastore.UsuarioPreferences
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.ApiService
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,13 +19,15 @@ import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
- * Clase centralizada para gestionar el estado de sesión del usuario.
+ * Clase encargada de gestionar el estado de sesión del usuario.
  *
- * Se encarga de manejar el token JWT, el usuario actual y su persistencia
- * usando DataStore. Además, permite restaurar sesión, cerrarla y marcar
- * que ya fue cargada correctamente.
+ * Maneja el token JWT, el usuario actual y su persistencia utilizando DataStore. Además, permite:
+ * - Restaurar sesión desde preferencias,
+ * - Iniciar sesión con un token de Firebase,
+ * - Cerrar sesión y eliminar los datos persistidos,
+ * - Comprobar si hay una sesión activa.
  *
- * Esta clase es utilizada por el ViewModel `SesionViewModel`.
+ * Esta clase se utiliza principalmente desde el ViewModel `SesionViewModel`.
  */
 class SesionManager @Inject constructor(
     private val apiService: ApiService,
@@ -49,19 +50,10 @@ class SesionManager @Inject constructor(
     private val _yaCargado = MutableStateFlow(false)
     val yaCargado: StateFlow<Boolean> = _yaCargado
 
-    /**
-     * Devuelve el token JWT actualmente almacenado en memoria.
-     * Si no está en memoria, lo intenta cargar desde DataStore.
-     *
-     * @return Token JWT o null si no existe.
-     */
     suspend fun getToken(): String? {
-        // Devuelve token en memoria si existe
         token.value?.let {
             return it
         }
-
-        // Si no hay token en memoria, lo intenta restaurar desde preferencias
         return TokenPreferences.obtenerToken(context)?.also {
             _token.value = it
         }
@@ -72,14 +64,8 @@ class SesionManager @Inject constructor(
         _token.value = token
     }
 
-    /**
-     * Guarda el usuario actual en memoria y DataStore.
-     *
-     * @param usuario Objeto de dominio `Usuario` recibido tras login o registro.
-     */
     suspend fun guardarUsuario(usuario: Usuario) {
         try {
-            // Convertimos a forma persistente compatible con DataStore
             val persistente = UsuarioPersistente(
                 id = usuario.id ?: -1,
                 nombre = usuario.nombre,
@@ -97,7 +83,6 @@ class SesionManager @Inject constructor(
                 pagado = usuario.pagado
             )
 
-            // Guardamos en preferencias y actualizamos estado
             UsuarioPreferences.guardarUsuario(context, persistente)
             _usuario.value = usuario
 
@@ -112,12 +97,6 @@ class SesionManager @Inject constructor(
         _token.value = null
     }
 
-    /**
-     * Restaura la sesión desde DataStore si existen token y usuario guardados.
-     *
-     * Se utiliza normalmente al iniciar la app para intentar restablecer el estado
-     * previo de la sesión sin depender de Firebase.
-     */
     fun restaurarSesionDesdePreferencias() {
         coroutineScope.launch {
             try {
@@ -144,8 +123,6 @@ class SesionManager @Inject constructor(
     /**
      * Realiza login con token (JWT), obtiene el usuario desde el backend
      * y guarda sus datos en DataStore.
-     *
-     * @param tokenNuevo Token JWT recibido desde Firebase.
      */
     fun iniciarSesionConToken(tokenNuevo: String) {
         coroutineScope.launch {
@@ -153,36 +130,28 @@ class SesionManager @Inject constructor(
                 TokenPreferences.guardarToken(context, tokenNuevo)
                 _token.value = tokenNuevo
 
-                val response = apiService.getUsuarioActual("Bearer $tokenNuevo")
-                if (response.isSuccessful) {
-                    val usuarioApi = response.body()
-                    if (usuarioApi != null) {
-                        val persistente = UsuarioPersistente(
-                            id = usuarioApi.id ?: -1,
-                            nombre = usuarioApi.nombre,
-                            apellido = usuarioApi.apellido,
-                            correo = usuarioApi.correo,
-                            rol = usuarioApi.rol,
-                            fotoPerfil = usuarioApi.fotoPerfil,
-                            telefono = usuarioApi.telefono,
-                            direccion = usuarioApi.direccion,
-                            fechaNacimiento = usuarioApi.fechaNacimiento,
-                            genero = usuarioApi.genero,
-                            dni = usuarioApi.dni,
-                            fechaRegistro = usuarioApi.fechaRegistro,
-                            activo = usuarioApi.activo,
-                            pagado = usuarioApi.pagado
-                        )
-                        UsuarioPreferences.guardarUsuario(context, persistente)
-                        _usuario.value = persistente.toUsuario()
+                val usuarioApi = apiService.obtenerUsuarioActual("Bearer $tokenNuevo")
 
-                        Log.d("SesionManager", "✅ Sesión iniciada con ${usuarioApi.correo}")
-                    } else {
-                        Log.e("SesionManager", "⚠️ Respuesta sin cuerpo al iniciar sesión")
-                    }
-                } else {
-                    Log.e("SesionManager", "❌ Error al obtener usuario: ${response.code()}")
-                }
+                val persistente = UsuarioPersistente(
+                    id = usuarioApi.id ?: -1,
+                    nombre = usuarioApi.nombre ?: "",
+                    apellido = usuarioApi.apellido ?: "",
+                    correo = usuarioApi.correo ?: "",
+                    rol = usuarioApi.rol,
+                    fotoPerfil = usuarioApi.fotoPerfil ?: "",
+                    telefono = usuarioApi.telefono ?: "",
+                    direccion = usuarioApi.direccion ?: "",
+                    fechaNacimiento = usuarioApi.fechaNacimiento,
+                    genero = usuarioApi.genero ?: "",
+                    dni = usuarioApi.dni ?: "",
+                    fechaRegistro = usuarioApi.fechaRegistro,
+                    activo = usuarioApi.activo,
+                    pagado = usuarioApi.pagado
+                )
+                UsuarioPreferences.guardarUsuario(context, persistente)
+                _usuario.value = persistente.toUsuario()
+
+                Log.d("SesionManager", "✅ Sesión iniciada con ${usuarioApi.correo}")
 
                 _yaCargado.value = true
             } catch (e: Exception) {
@@ -207,11 +176,6 @@ class SesionManager @Inject constructor(
         }
     }
 
-
-    /**
-     * Cierra la sesión actual, eliminando token y usuario tanto de memoria
-     * como de DataStore.
-     */
     fun cerrarSesion() {
         coroutineScope.launch {
             TokenPreferences.borrarToken(context)
@@ -223,29 +187,20 @@ class SesionManager @Inject constructor(
         }
     }
 
-    /**
-     * Marca que el usuario ha sido correctamente cargado (usado por el ViewModel).
-     * Esto permite evitar múltiples llamadas innecesarias al backend si ya se tiene
-     * un estado válido en memoria.
-     */
     fun marcarUsuarioComoCargado() {
         _yaCargado.value = true
     }
 
-    /**
-     * Comprueba si actualmente hay una sesión activa en memoria.
-     *
-     * @return true si tanto el usuario como el token están presentes.
-     */
     fun estaSesionActiva(): Boolean {
         return _usuario.value != null && _token.value != null
     }
+
+    fun getUsuarioActual(): Usuario? {
+        return _usuario.value
+    }
+
 }
 
-/**
- * Extensión para convertir un `UsuarioPersistente` guardado en DataStore
- * en un `Usuario` completo, útil al restaurar sesión.
- */
 fun UsuarioPersistente.toUsuario(): Usuario {
     return Usuario(
         id = this.id,
@@ -254,6 +209,13 @@ fun UsuarioPersistente.toUsuario(): Usuario {
         correo = this.correo,
         contrasenna = "",
         rol = this.rol,
+        fotoPerfil = this.fotoPerfil,
+        telefono = this.telefono,
+        direccion = this.direccion,
+        fechaNacimiento = this.fechaNacimiento,
+        genero = this.genero,
+        dni = this.dni,
+        fechaRegistro = this.fechaRegistro,
         activo = this.activo,
         pagado = this.pagado
     )

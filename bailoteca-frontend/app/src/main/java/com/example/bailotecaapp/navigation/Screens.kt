@@ -39,7 +39,9 @@ sealed class Screens(val route: String) {
     // Rutas para el modo invitado
     object InvitadoHome : Screens("invitado_home")
 
-    // Puedes añadir más rutas si implementas eventos o redes sociales
-    // object EventoDetail : Screens("evento/{eventoId}")
-    // object RedesSociales : Screens("redes")
+    object EventoList : Screens("eventos")
+    object EventoDetail : Screens("evento/{id}") {
+        fun createRoute(id: Long) = "evento/$id"
+    }
+    object CrearEvento : Screens("crear_evento")
 }

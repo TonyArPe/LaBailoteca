@@ -6,7 +6,12 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * DTO para representar la solicitud de autenticación.
+ * Clase que representa la solicitud de autenticación.
+ * Contiene los campos necesarios para iniciar sesión: correo y contraseña.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 @Getter
 @Setter

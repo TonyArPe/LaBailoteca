@@ -3,43 +3,36 @@ package com.example.bailotecaapp.network
 import com.example.bailotecaapp.model.*
 import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
 import com.example.bailotecaapp.model.dto.ClaseRequest
+import com.example.bailotecaapp.model.dto.EventoRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
+import okhttp3.MultipartBody
 import retrofit2.http.*
 import retrofit2.Response
 
 /**
- * Interfaz que define los endpoints disponibles en la API REST de Bailoteca.
- * Se usa con Retrofit para realizar las llamadas HTTP desde la app Android.
+ * Interfaz de comunicación con la API REST de Bailoteca.
+ * Define todos los endpoints accesibles desde la app Android.
  */
 interface ApiService {
 
-    // SESION
+    // --------------------------- USUARIO Y SESIÓN ---------------------------
+
+    /**
+     * Obtiene el usuario actualmente autenticado.
+     */
     @GET("/api/usuarios/me")
     suspend fun obtenerUsuarioActual(@Header("Authorization") token: String): Usuario
 
-
-    // USUARIOS
-
     /**
-     * Obtiene todos los usuarios (ADMIN).
+     * Devuelve todos los usuarios (solo para ADMIN).
      */
     @GET("api/usuarios")
-    suspend fun getUsuarios(
-        @Header("Authorization") token: String
-    ): Response<List<Usuario>>
+    suspend fun getUsuarios(@Header("Authorization") token: String): Response<List<Usuario>>
 
     /**
-     * Obtiene el usuario autenticado.
-     */
-    @GET("api/usuarios/me")
-    suspend fun getUsuarioActual(
-        @Header("Authorization") token: String
-    ): Response<Usuario>
-
-    /**
-     * Obtiene un usuario por ID.
+     * Obtiene un usuario por su ID.
      */
     @GET("api/usuarios/{id}")
     suspend fun getUsuarioPorId(
@@ -57,7 +50,7 @@ interface ApiService {
     ): Response<Usuario>
 
     /**
-     * Actualiza un usuario existente.
+     * Actualiza los datos de un usuario existente.
      */
     @PUT("api/usuarios/{id}")
     suspend fun actualizarUsuario(
@@ -66,12 +59,18 @@ interface ApiService {
         @Body usuario: UsuarioUpdateRequest
     ): Response<Usuario>
 
+    /**
+     * Elimina un usuario del sistema.
+     */
     @DELETE("/api/usuarios/{id}")
     suspend fun eliminarUsuario(
         @Header("Authorization") token: String,
         @Path("id") id: Long
     ): Response<Void>
 
+    /**
+     * Cambia el estado de pago de un usuario.
+     */
     @PUT("/api/usuarios/{id}/estado")
     suspend fun actualizarEstadoUsuario(
         @Header("Authorization") token: String,
@@ -79,18 +78,16 @@ interface ApiService {
         @Body request: UsuarioEstadoUpdateRequest
     ): Response<Usuario>
 
-    // CLASES
+    // --------------------------- CLASES ---------------------------
 
     /**
-     * Obtiene todas las clases disponibles.
+     * Lista todas las clases accesibles para el usuario autenticado.
      */
     @GET("api/clases")
-    suspend fun getClasesDisponibles(
-        @Header("Authorization") token: String
-    ): Response<List<Clase>>
+    suspend fun getClasesDisponibles(@Header("Authorization") token: String): Response<List<Clase>>
 
     /**
-     * Obtiene una clase por ID.
+     * Detalle de una clase por su ID.
      */
     @GET("api/clases/{id}")
     suspend fun getClasePorId(
@@ -98,27 +95,33 @@ interface ApiService {
         @Path("id") claseId: Long
     ): Response<Clase>
 
+    /**
+     * Lista las clases públicas (accesibles sin login).
+     */
     @GET("api/clases/publicas")
     suspend fun obtenerClases(): List<Clase>
 
     /**
-     * Obtiene todos los eventos públicos.
+     * Devuelve todos los alumnos de una clase según el profesor.
      */
-    @GET("/api/eventos/publicos")
-    suspend fun obtenerEventos(): List<Evento>
-
     @GET("usuarios/profesor/{claseId}/alumnos")
     suspend fun obtenerAlumnosPorProfesor(
         @Path("claseId") claseId: Long,
         @Header("Authorization") token: String
     ): Response<List<Usuario>>
 
+    /**
+     * Crea una nueva clase.
+     */
     @POST("/api/clases")
     suspend fun crearClase(
         @Header("Authorization") token: String,
         @Body request: ClaseRequest
     ): Response<Void>
 
+    /**
+     * Actualiza una clase existente.
+     */
     @PUT("/api/clases/{id}")
     suspend fun actualizarClase(
         @Header("Authorization") token: String,
@@ -126,20 +129,19 @@ interface ApiService {
         @Body request: ClaseRequest
     ): Response<Void>
 
+    /**
+     * Elimina una clase del sistema.
+     */
     @DELETE("/api/clases/{id}")
     suspend fun eliminarClase(
         @Header("Authorization") token: String,
         @Path("id") id: Long
     ): Response<Void>
 
-    // INSCRIPCIONES
+    // --------------------------- INSCRIPCIONES ---------------------------
 
     /**
-     * Realiza una inscripción del usuario a una clase.
-     *
-     * @param authorization Header con el token JWT.
-     * @param request Objeto que contiene el usuario y la clase a inscribirse.
-     * @return Respuesta HTTP 200 si éxito o 400/500 si hay error.
+     * Inscribe al usuario en una clase específica.
      */
     @POST("/api/inscripciones")
     suspend fun inscribirse(
@@ -148,7 +150,7 @@ interface ApiService {
     ): Response<Void>
 
     /**
-     * Obtiene todas las inscripciones
+     * Devuelve inscripciones de un profesor.
      */
     @GET("/api/inscripciones/profesor/{profesorId}")
     suspend fun getInscripcionesProfesor(
@@ -157,7 +159,7 @@ interface ApiService {
     ): Response<List<Inscripcion>>
 
     /**
-     * Obtiene las inscripciones del usuario autenticado.
+     * Devuelve las inscripciones del usuario autenticado.
      */
     @GET("api/inscripciones/mias")
     suspend fun getMisInscripciones(
@@ -165,7 +167,7 @@ interface ApiService {
     ): Response<List<Inscripcion>>
 
     /**
-     * Obtiene las inscripciones de un usuario por su ID.
+     * Lista inscripciones por ID de usuario.
      */
     @GET("api/inscripciones/usuario/{usuarioId}")
     suspend fun getInscripcionesPorUsuario(
@@ -174,7 +176,7 @@ interface ApiService {
     ): Response<List<Inscripcion>>
 
     /**
-     * Elimina una inscripción por ID.
+     * Elimina una inscripción existente.
      */
     @DELETE("/api/inscripciones/{id}")
     suspend fun eliminarInscripcion(
@@ -182,36 +184,74 @@ interface ApiService {
         @Path("id") id: Long
     ): Response<Void>
 
-    // EVENTOS
+    // --------------------------- EVENTOS ---------------------------
+
+    /**
+     * Eventos públicos disponibles para invitados.
+     */
+    @GET("/api/eventos/publicos")
+    suspend fun obtenerEventos(): List<Evento>
+
+    /**
+     * Eventos accesibles para usuario autenticado (ADMIN o PROFESOR).
+     */
     @GET("/api/eventos")
     suspend fun getEventosPrivados(
         @Header("Authorization") token: String
     ): Response<List<Evento>>
 
+    /**
+     * Crea un nuevo evento a partir de datos básicos (EventoRequest).
+     */
     @POST("/api/eventos")
     suspend fun crearEvento(
         @Header("Authorization") token: String,
-        @Body evento: Evento
+        @Body evento: EventoRequest
     ): Response<Evento>
 
     @PUT("/api/eventos/{id}")
     suspend fun actualizarEvento(
         @Header("Authorization") token: String,
         @Path("id") eventoId: Long,
-        @Body evento: Evento
+        @Body evento: EventoRequest
     ): Response<Evento>
 
+    /**
+     * Elimina un evento por ID.
+     */
     @DELETE("/api/eventos/{id}")
     suspend fun eliminarEvento(
         @Header("Authorization") token: String,
         @Path("id") eventoId: Long
     ): Response<Void>
 
-    // EVENTOS
+    /**
+     * Registra la asistencia del usuario autenticado a un evento.
+     */
     @POST("/api/asistencias/evento/{eventoId}")
     suspend fun registrarAsistenciaEvento(
         @Header("Authorization") token: String,
         @Path("eventoId") eventoId: Long,
         @Body request: AsistenciaEventoRequest
     ): Response<AsistenciaEvento>
+
+    @GET("/api/eventos/usuario/{usuarioId}")
+    suspend fun getEventosUsuario(
+        @Header("Authorization") token: String,
+        @Path("usuarioId") usuarioId: Long
+    ): Response<List<Evento>>
+
+    @GET("/api/eventos/profesor/{profesorId}")
+    suspend fun getEventosProfesor(
+        @Header("Authorization") token: String,
+        @Path("profesorId") profesorId: Long
+    ): Response<List<Evento>>
+
+    //------------------------ SUBIDA FICHEROS -------------------------
+    @Multipart
+    @POST("media/upload")
+    suspend fun subirArchivo(
+        @Part archivo: MultipartBody.Part
+    ): Response<String>
+
 }

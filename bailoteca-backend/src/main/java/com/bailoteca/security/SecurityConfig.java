@@ -18,8 +18,20 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
- * Configuración principal de seguridad para la aplicación Bailoteca.
- * Define accesos permitidos por ruta y protege los endpoints mediante JWT de Firebase.
+ * Configuración de seguridad para la aplicación.
+ * Define las reglas de acceso a los endpoints, maneja la autenticación
+ * y autorización de usuarios, y configura el filtro JWT de Firebase.
+ * Esta clase utiliza Spring Security para proteger los recursos
+ * y gestionar el acceso basado en roles.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see FirebaseJwtFilter
+ * @see SecurityFilterChain
+ * @see AuthenticationManager
+ * @see PasswordEncoder
+ * @see AccessDeniedHandler
  */
 @Configuration
 @RequiredArgsConstructor
@@ -28,6 +40,16 @@ public class SecurityConfig {
 
     private final FirebaseJwtFilter firebaseJwtFilter;
 
+    /**
+     * Configura la cadena de filtros de seguridad para la aplicación.
+     * Define las reglas de autorización, manejo de sesiones y excepciones.
+     * Permite el acceso a ciertos endpoints sin autenticación,
+     * mientras que otros requieren roles específicos o autenticación general.
+     *
+     * @param http la configuración de seguridad HTTP
+     * @return la cadena de filtros de seguridad configurada
+     * @throws Exception si ocurre un error al configurar la seguridad
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -35,32 +57,25 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
 
-                // Rutas públicas (sin token)
+                // REGISTRO PERMITIDO SIN TOKEN
                 .requestMatchers(HttpMethod.POST, "/api/usuarios").permitAll()
+
+                // LOGIN PERMITIDO SIN TOKEN
                 .requestMatchers("/api/auth/**").permitAll()
+
+                // EVENTOS Y CLASES VISIBLES PARA INVITADOS
                 .requestMatchers("/api/clases/publicas", "/api/eventos/publicos").permitAll()
 
-                // Usuarios
+                // GET de usuarios requiere rol
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasAnyRole("ADMIN", "PROFESOR")
+
+                // Cualquier acción específica sobre usuarios requiere autenticación
                 .requestMatchers("/api/usuarios/**").authenticated()
 
-                // Eventos
-                .requestMatchers(HttpMethod.GET, "/api/eventos/**").authenticated()
-                .requestMatchers(HttpMethod.POST, "/api/eventos").hasAnyRole("ADMIN", "PROFESOR")
-                .requestMatchers(HttpMethod.PUT, "/api/eventos/**").hasAnyRole("ADMIN", "PROFESOR")
-                .requestMatchers(HttpMethod.DELETE, "/api/eventos/**").hasAnyRole("ADMIN", "PROFESOR")
-
-                // Asistencia a eventos (solo usuarios)
-                .requestMatchers(HttpMethod.POST, "/api/eventos/*/asistir").hasRole("USUARIO")
-                .requestMatchers(HttpMethod.DELETE, "/api/eventos/*/asistir").hasRole("USUARIO")
-
-                // Ver asistentes (solo admin o profesor creador)
-                .requestMatchers(HttpMethod.GET, "/api/eventos/*/asistentes").hasAnyRole("ADMIN", "PROFESOR")
-
-                // Recursos públicos
+                // Recursos frontend o públicos
                 .requestMatchers("/", "/index.html", "/chat.html", "/ws/**").permitAll()
 
-                // Todo lo demás requiere autentificación
+                // Todo lo demás requiere estar autenticado
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex.accessDeniedHandler(accessDeniedHandler()))
@@ -70,7 +85,10 @@ public class SecurityConfig {
     }
 
     /**
-     * Manejador de errores personalizados para accesos denegados.
+     * Maneja los accesos denegados, enviando una respuesta JSON con un mensaje de error.
+     * Este método se invoca cuando un usuario intenta acceder a un recurso sin los permisos adecuados.
+     *
+     * @return el manejador de acceso denegado
      */
     @Bean
     public AccessDeniedHandler accessDeniedHandler() {
@@ -82,7 +100,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Bean para autenticación basada en configuración de seguridad.
+     * Proporciona el AuthenticationManager para la autenticación de usuarios.
+     * Este bean es necesario para que Spring Security pueda gestionar la autenticación
+     * de los usuarios utilizando el filtro JWT y otros mecanismos de autenticación.
+     *
+     * @param config la configuración de autenticación
+     * @return el AuthenticationManager configurado
+     * @throws Exception si ocurre un error al obtener el AuthenticationManager
      */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -90,7 +114,11 @@ public class SecurityConfig {
     }
 
     /**
-     * Bean para codificar contraseñas (BCrypt).
+     * Proporciona un PasswordEncoder para codificar contraseñas.
+     * Utiliza BCrypt como algoritmo de codificación, que es seguro y ampliamente utilizado.
+     * Este bean es necesario para que Spring Security pueda gestionar las contraseñas de los usuarios.
+     *
+     * @return el PasswordEncoder configurado
      */
     @Bean
     public PasswordEncoder passwordEncoder() {

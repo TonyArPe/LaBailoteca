@@ -3,7 +3,12 @@ package com.bailoteca.exceptions;
 import java.time.LocalDateTime;
 
 /**
- * Clase que representa la estructura de una respuesta de error personalizada.
+ * Clase que representa una respuesta de error para las excepciones personalizadas.
+ * Contiene información sobre el estado, error, mensaje y la marca de tiempo del error.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 public class ErrorResponse {
 

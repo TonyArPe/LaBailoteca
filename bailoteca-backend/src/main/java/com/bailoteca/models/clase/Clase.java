@@ -10,6 +10,18 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 
+/**
+ * Modelo que representa una clase de baile en la aplicación.
+ * Una clase puede tener un profesor, horarios y puede ser pública o privada.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Usuario
+ * @see HorarioClase
+ * @see Dificultad
+ */
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -38,6 +50,7 @@ public class Clase {
     @JoinColumn(name = "profesor_id", nullable = false)
     private Usuario profesor;
 
+    // Relación con horarios de clase. Cada clase puede tener múltiples horarios.
     @OneToMany(mappedBy = "clase", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     @Builder.Default

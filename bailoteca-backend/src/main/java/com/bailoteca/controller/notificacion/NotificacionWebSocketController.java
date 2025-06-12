@@ -10,9 +10,14 @@ import com.bailoteca.service.notificacion.NotificacionService;
 import lombok.RequiredArgsConstructor;
 
 /**
- * Controlador que maneja las notificaciones enviadas por WebSocket
- * Recibe mensajes de los clientes y los envía a los suscriptores
- * conectados
+ * Controlador que maneja las notificaciones a través de WebSocket.
+ * Permite enviar notificaciones a todos los clientes suscritos al topic "/topic/notificaciones".
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see Notificacion
+ * @see NotificacionService
  */
 @RestController
 @RequiredArgsConstructor

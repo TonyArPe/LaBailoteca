@@ -7,6 +7,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.bailoteca.repository.usuario.UsuarioRepo;
 
+
+/**
+ * Configuración para migrar contraseñas existentes a formato encriptado.
+ * Este proceso se ejecuta una sola vez al iniciar la aplicación.
+ * Verifica si las contraseñas ya están encriptadas y las encripta si no lo están.
+ */
 @Configuration
 public class DataMigrationConfig {
 

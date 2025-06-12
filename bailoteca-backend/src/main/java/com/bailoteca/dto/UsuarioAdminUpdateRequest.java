@@ -6,7 +6,13 @@ import lombok.Data;
 import java.time.LocalDate;
 
 /**
- * DTO de actualización para administradores (pueden cambiar rol y estado).
+ * Clase que representa una solicitud de actualización de un usuario administrador.
+ * Contiene información sobre el nombre, apellido, teléfono, dirección, foto de perfil,
+ * fecha de nacimiento, estado activo y si ha pagado.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 @Data
 public class UsuarioAdminUpdateRequest {

@@ -11,19 +11,17 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.components.UsuarioCard
 import com.example.bailotecaapp.viewmodel.SesionViewModel
-import android.util.Log
+import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 
 /**
- * Pantalla que muestra la lista de usuarios disponibles según el rol del usuario autenticado.
+ * Pantalla que muestra la lista de usuarios según el rol:
+ * - ADMIN puede ver y gestionar a todos.
+ * - PROFESOR solo ve y edita usuarios inscritos en sus clases.
  *
- * - Un ADMIN verá y podrá editar todos los usuarios.
- * - Un PROFESOR verá y podrá modificar el estado de pago de los alumnos inscritos en sus clases.
- *
- * @param navController Controlador de navegación para transiciones entre pantallas.
- * @param viewModel ViewModel de usuario inyectado con Hilt.
+ * @param navController controlador de navegación.
+ * @param viewModel ViewModel de usuario (inyectado por Hilt).
  */
 @Composable
 fun UserListScreen(
@@ -36,83 +34,76 @@ fun UserListScreen(
     val error by viewModel.errorMessage.collectAsState()
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val usuarioActual by sesionViewModel.usuario.collectAsState()
-
     var usuarioAEliminar by remember { mutableStateOf<Usuario?>(null) }
 
-    /**
-     * Al iniciar la pantalla, se obtiene el listado de usuarios visibles al profesor actual.
-     * En caso de ser ADMIN, el backend también puede devolver todos los usuarios.
-     */
     LaunchedEffect(usuarioActual) {
-        val profesorId = usuarioActual?.id ?: return@LaunchedEffect
-        Log.d("UserListScreen", "🔍 Cargando usuarios visibles para profesor ID: $profesorId")
-        viewModel.obtenerUsuariosVisiblesParaProfesor(profesorId)
+        usuarioActual?.let {
+            if (it.rol.name == "ADMIN") {
+                viewModel.obtenerTodosLosUsuarios()
+            } else if (it.rol.name == "PROFESOR") {
+                viewModel.obtenerUsuariosVisiblesParaProfesor(it.id!!)
+            }
+        }
     }
 
-    Scaffold { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(16.dp)
-        ) {
-            when {
-                isLoading -> {
-                    Log.d("UserListScreen", "⏳ Cargando usuarios...")
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+    Scaffold { innerPadding ->
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else if (error != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(text = error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
+            }
+        } else {
+            val usuariosUnicos = usuarios.distinctBy { it.id }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(usuariosUnicos) { usuario ->
+                    UsuarioCard(
+                        usuario = usuario,
+                        rolActual = usuarioActual?.rol?.name ?: "",
+                        navController = navController,
+                        onEditar = { navController.navigate("editar_usuario/${usuario.id}") },
+                        onEliminar = { usuarioAEliminar = usuario },
+                        onModificarPagado = { viewModel.togglePagado(it) },
+                        onModificarActivo = { viewModel.toggleActivo(it) }
+                    )
                 }
+            }
 
-                error != null -> {
-                    Log.e("UserListScreen", "❌ Error cargando usuarios: $error")
-                    Text(error ?: "Error desconocido", color = MaterialTheme.colorScheme.error)
-                }
-
-                else -> {
-                    // Elimina duplicados por ID
-                    val usuariosUnicos = usuarios.distinctBy { it.id }
-                    Log.d("UserListScreen", "✅ Mostrando ${usuariosUnicos.size} usuarios únicos")
-
-                    LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        items(usuariosUnicos) { usuario ->
-                            UsuarioCard(
-                                usuario = usuario,
-                                rolActual = usuarioActual?.rol?.name ?: "",
-                                navController = navController,
-                                onEditar = { user ->
-                                    navController.navigate("editar_usuario/${user.id}")
-                                },
-                                onEliminar = { user ->
-                                    usuarioAEliminar = user
-                                },
-                                onModificarPagado = { user ->
-                                    viewModel.togglePagado(user)
-                                }
-                            )
-                        }
-                    }
-
-                    // Diálogo de confirmación de eliminación
-                    usuarioAEliminar?.let { user ->
-                        AlertDialog(
-                            onDismissRequest = { usuarioAEliminar = null },
-                            confirmButton = {
-                                TextButton(onClick = {
-                                    viewModel.eliminarUsuario(user.id!!)
-                                    usuarioAEliminar = null
-                                }) {
-                                    Text("Confirmar")
-                                }
-                            },
-                            dismissButton = {
-                                TextButton(onClick = { usuarioAEliminar = null }) {
-                                    Text("Cancelar")
-                                }
-                            },
-                            title = { Text("¿Estás seguro?") },
-                            text = { Text("Esta acción eliminará a ${user.nombre} permanentemente.") }
-                        )
-                    }
-                }
+            usuarioAEliminar?.let { user ->
+                AlertDialog(
+                    onDismissRequest = { usuarioAEliminar = null },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.eliminarUsuario(user.id!!)
+                            usuarioAEliminar = null
+                        }) { Text("Confirmar") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { usuarioAEliminar = null }) {
+                            Text("Cancelar") }
+                    },
+                    title = { Text("¿Estás seguro?") },
+                    text = { Text("Esta acción eliminará a ${user.nombre} permanentemente.") }
+                )
             }
         }
     }

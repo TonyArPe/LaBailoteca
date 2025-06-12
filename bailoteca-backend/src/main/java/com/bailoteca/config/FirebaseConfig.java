@@ -11,6 +11,19 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 import java.io.InputStream;
 
+
+/**
+ * Configuración de Firebase para la aplicación.
+ * Inicializa Firebase con las credenciales del archivo JSON
+ * y proporciona un bean de FirebaseAuth para su uso en la aplicación.
+ * Esta clase se ejecuta al iniciar la aplicación
+ * y asegura que Firebase esté correctamente configurado
+ * antes de que se utilice en otros componentes.
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
+ * @see FirebaseAuth
+ */
 @Configuration
 public class FirebaseConfig {
 

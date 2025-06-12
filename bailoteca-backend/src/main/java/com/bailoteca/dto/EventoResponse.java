@@ -6,8 +6,13 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * DTO de salida para eventos.
- * Expone solo los datos necesarios al frontend.
+ * Clase que representa la respuesta de un evento.
+ * Contiene información sobre el evento, incluyendo su estado,
+ * si es público, y detalles del organizador.
+ * 
+ * @author Tony Aragón
+ * @version 1.0
+ * @since 1.0
  */
 @Data
 public class EventoResponse {

@@ -19,8 +19,10 @@ import com.example.bailotecaapp.ui.screens.UserListScreen
 import com.example.bailotecaapp.ui.screens.clases.ClaseListScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.ProfileScreen
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
+import com.example.bailotecaapp.ui.screens.eventos.CrearEditarEventoScreen
+import com.example.bailotecaapp.ui.screens.eventos.EventoDetailScreen
 import com.example.bailotecaapp.ui.screens.eventos.EventoListScreen
-import com.example.bailotecaapp.ui.screens.eventos.EventosUsuarioScreen
+import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import kotlinx.coroutines.launch
@@ -43,24 +45,31 @@ fun MainScaffold(
     val currentRoute = currentDestination?.route ?: ""
     val currentBaseRoute = currentRoute.split("/").firstOrNull() ?: ""
 
+    val eventoViewModel: EventoViewModel = hiltViewModel()
+
     // Rutas principales que muestran Drawer
     val mainRoutes = setOf(
         Screens.Home.route,
         Screens.Clases.route,
         Screens.Usuarios.route,
         Screens.Perfil.route,
-        Screens.InvitadoHome.route
+        Screens.InvitadoHome.route,
+        Screens.Eventos.route,
+        "crear_evento",
+        "evento"
     )
 
     val showDrawer = currentBaseRoute in mainRoutes
     val showBack = !showDrawer
 
     Log.d("MainScaffold", "🔍 Ruta actual completa: $currentRoute")
-    Log.d("MainScaffold", "🧩 BaseRoute: $currentBaseRoute")
-    Log.d("MainScaffold", "📦 showDrawer: $showDrawer, showBack: $showBack")
+    Log.d("MainScaffold", "🧹 BaseRoute: $currentBaseRoute")
+    Log.d("MainScaffold", "📆 showDrawer: $showDrawer, showBack: $showBack")
 
     val topBarTitle = when {
         currentRoute.contains("clase/") -> "Detalle de clase"
+        currentRoute.contains("evento/") -> "Detalle de evento"
+        currentRoute == "crear_evento" -> "Crear evento"
         else -> "Bailoteca"
     }
 
@@ -73,7 +82,7 @@ fun MainScaffold(
                 Icon(Icons.Default.Menu, contentDescription = "Menú")
             }
         } else if (showBack) {
-            Log.d("MainScaffold", "🔙 Mostrando botón atrás")
+            Log.d("MainScaffold", "🖙 Mostrando botón atrás")
             IconButton(onClick = {
                 globalNavController.popBackStack()
             }) {
@@ -124,7 +133,7 @@ fun MainScaffold(
                 )
             },
             content = { padding ->
-                Log.d("MainScaffold", "📦 Renderizando contenido para: ${currentScreen.name}")
+                Log.d("MainScaffold", "📆 Renderizando contenido para: ${'$'}{currentScreen.name}")
                 when (currentScreen) {
                     MainScreen.HOME -> HomeScreen(
                         navController = globalNavController,
@@ -151,9 +160,11 @@ fun MainScaffold(
                         modifier = Modifier.padding(padding)
                     )
 
-                    MainScreen.EVENTOS -> EventosUsuarioScreen(
+                    MainScreen.EVENTOS -> EventoListScreen(
                         navController = globalNavController,
-                        modifier = Modifier.padding(padding)
+                        usuario = usuario,
+                        modifier = Modifier.padding(padding),
+                        viewModel = eventoViewModel
                     )
                 }
             }
