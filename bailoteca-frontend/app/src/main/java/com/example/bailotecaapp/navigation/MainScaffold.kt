@@ -97,7 +97,6 @@ fun MainScaffold(
             if (showDrawer) {
                 Log.d("MainScaffold", "📂 Renderizando DrawerContent")
                 DrawerContent(
-                    usuario = usuario,
                     onItemSelected = { route ->
                         coroutineScope.launch { drawerState.close() }
                         onNavigate(

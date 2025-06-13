@@ -97,13 +97,33 @@ class SesionViewModel @Inject constructor(
 
     fun iniciarSesionConTokenYSincronizar(token: String) {
         _isLoading.value = true
+        _error.value = null
+
+        Log.d("SesionViewModel", "🚀 Iniciando sesión con token...")
+
         viewModelScope.launch {
-            sesionManager.iniciarSesionConToken(token)
-            sesionManager.usuario.filterNotNull().first {
-                Log.d("SesionViewModel", "🧠 usuario recibido desde manager: ${it.correo}")
+            try {
+                // Guardar token localmente
+                sesionManager.iniciarSesionConToken(token)
+                Log.d("SesionViewModel", "🔐 Token inyectado en SesionManager")
+
+                // Esperar a que se propague y recuperar usuario
+                val usuarioRecuperado = sesionManager.usuario.filterNotNull().first()
+
+                Log.d("SesionViewModel", "✅ Usuario recuperado: ${usuarioRecuperado.correo}")
+
+                // Cargar inscripciones del usuario si procede
+                cargarMisInscripciones()
+
+                // Confirmar sincronización
                 sincronizarDesdeSesionManager()
+                _usuarioCargado.value = true
                 _isLoading.value = false
-                true
+
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _error.value = "❌ Excepción al iniciar sesión: ${e.localizedMessage}"
+                Log.e("SesionViewModel", "❌ Error al sincronizar sesión", e)
             }
         }
     }
@@ -178,7 +198,14 @@ class SesionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val currentUser = Firebase.auth.currentUser
-                val token = currentUser?.getIdToken(true)?.await()?.token ?: return@launch
+                val token = currentUser?.getIdToken(true)?.await()?.token
+                if (token == null) {
+                    val mensaje = "❌ Token Firebase nulo, no se puede continuar"
+                    _error.value = mensaje
+                    Log.e("SesionViewModel", mensaje)
+                    onError(mensaje)
+                    return@launch
+                }
                 val userId = usuario.value?.id ?: return@launch
 
                 val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)

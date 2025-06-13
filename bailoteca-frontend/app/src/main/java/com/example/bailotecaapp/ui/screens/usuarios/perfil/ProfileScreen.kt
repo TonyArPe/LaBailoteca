@@ -3,7 +3,9 @@ package com.example.bailotecaapp.ui.screens.usuarios.perfil
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,17 +14,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
-import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.example.bailotecaapp.navigation.Screens
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.ui.theme.Lima
+import com.example.bailotecaapp.ui.theme.Magenta
 
 /**
- * Pantalla que muestra el perfil del usuario autenticado de forma visual y atractiva.
+ * Pantalla que muestra el perfil del usuario autenticado de forma visual y alineada con la estética de Bailoteca.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,8 +45,12 @@ fun ProfileScreen(
         return
     }
 
-    //Para guardar el usuario en una variable una vez hecha la comprobacion
     val usuarioActual = usuario!!
+
+    // ⚠️ Construcción segura de la URL de imagen desde IP local (evitando caché)
+    val imagenUrl = usuarioActual.fotoPerfil?.let {
+        "http://10.0.2.2:8080/api/media/files/$it?cache=${System.currentTimeMillis()}"
+    }
 
     Scaffold(
         topBar = {
@@ -56,23 +62,26 @@ fun ProfileScreen(
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()), // Añade scroll
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Foto de perfil
-            Image(
-                painter = rememberAsyncImagePainter(usuarioActual.fotoPerfil),
-                contentDescription = "Foto de perfil",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            )
+            if (!imagenUrl.isNullOrBlank()) {
+                Image(
+                    painter = rememberAsyncImagePainter(imagenUrl),
+                    contentDescription = "Foto de perfil",
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                )
+            }
 
             Text(
                 text = usuarioActual.nombre,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = Magenta
             )
 
             Text(
@@ -83,7 +92,6 @@ fun ProfileScreen(
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Sección de detalles del usuario
             InfoRow(label = "Teléfono", value = usuarioActual.telefono)
             InfoRow(label = "Dirección", value = usuarioActual.direccion)
             InfoRow(label = "Fecha de nacimiento", value = usuarioActual.fechaNacimiento)
@@ -95,15 +103,13 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Solo para usuarios NO invitados
             if (usuarioActual.rol != Rol.INVITADO) {
-                InfoRow("Pagado", if (usuarioActual.pagado) "Sí" else "No")
-                InfoRow("Activo", if (usuarioActual.activo) "Sí" else "No")
-
-                Button(onClick = {
-                    navController.navigate(Screens.EditProfile.route)
-                }) {
-                    Text("Editar Perfil")
+                Button(
+                    onClick = { navController.navigate(Screens.EditProfile.route) },
+                    colors = ButtonDefaults.buttonColors(containerColor = Lima),
+                    shape = MaterialTheme.shapes.extraLarge
+                ) {
+                    Text("Editar Perfil", color = Color.White)
                 }
             }
         }
@@ -117,7 +123,9 @@ fun ProfileScreen(
 fun InfoRow(label: String, value: String?) {
     if (!value.isNullOrBlank()) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = "$label:", fontWeight = FontWeight.Medium)
