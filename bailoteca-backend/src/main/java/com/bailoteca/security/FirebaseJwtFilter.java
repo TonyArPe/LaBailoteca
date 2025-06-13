@@ -51,6 +51,7 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
      * Estas rutas permiten acceso anónimo y no requieren autenticación.
      */
     private static final List<String> EXCLUDE_PATHS = List.of(
+            "/",
             "/api/usuarios", // Registro
             "/api/auth/login", // Login
             "/api/eventos/publicos",
@@ -138,7 +139,6 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
      * @return true si la ruta está excluida, false en caso contrario.
      */
     private boolean isExcluded(String path, String method) {
-        return EXCLUDE_PATHS.stream().anyMatch(path::equalsIgnoreCase)
-                && method.equalsIgnoreCase("POST");
+        return EXCLUDE_PATHS.stream().anyMatch(path::equalsIgnoreCase);
     }
 }
