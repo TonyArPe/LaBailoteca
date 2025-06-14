@@ -9,45 +9,58 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.network.FirebaseUrlProvider
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import kotlinx.coroutines.delay
 
 /**
- * Pantalla de carga que se muestra al iniciar la aplicación.
- * Espera hasta que se haya obtenido la URL dinámica desde Firebase Remote Config
- * y luego navega a la pantalla de login o la pantalla principal según el estado.
+ * Pantalla de arranque que realiza configuración inicial y decide navegación.
+ *
+ * - Ejecuta `fetchAndActivate()` para cargar Remote Config
+ * - Restaura sesión desde preferencias
+ * - Redirige a Home si hay usuario o a Login si no
  */
 @Composable
 fun SplashScreen(
     navController: NavController,
-    urlProvider: FirebaseUrlProvider
+    urlProvider: FirebaseUrlProvider,
+    sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
-    var cargado by remember { mutableStateOf(false) }
+    var estadoCarga by remember { mutableStateOf(false) }
 
-    // ✅ Lanzamos el efecto para esperar a que Remote Config se actualice
+    // Lanzamos el efecto inicial
     LaunchedEffect(Unit) {
-        Log.d("SplashScreen", "🟡 Ejecutando fetchAndActivate()...")
         try {
-            val resultado = urlProvider.fetchAndActivateSuspend()
-            Log.d("SplashScreen", "✅ Finalizado fetchAndActivate(). Navegando...")
+            Log.d("SplashScreen", "🟡 Ejecutando fetchAndActivate()...")
+            urlProvider.fetchAndActivateSuspend()
+            Log.d("SplashScreen", "✅ Configuración remota obtenida")
         } catch (e: Exception) {
             Log.e("SplashScreen", "❌ Error durante fetchAndActivate()", e)
         }
 
-        cargado = true
-    }
+        sesionViewModel.recuperarSesionDesdePreferencias()
 
-    // Si ha cargado, navegamos a Login
-    LaunchedEffect(cargado) {
-        if (cargado) {
+        delay(300) // Margen para evitar pantallazos visuales
+
+        if (sesionViewModel.sesionActiva) {
+            Log.d("SplashScreen", "✅ Sesión detectada. Navegando a Home")
+            navController.navigate(Screens.Home.route) {
+                popUpTo(0) { inclusive = true }
+            }
+        } else {
+            Log.d("SplashScreen", "🔐 Sin sesión. Navegando a Login")
             navController.navigate(Screens.Login.route) {
                 popUpTo(0) { inclusive = true }
             }
         }
+        estadoCarga = true
     }
 
-    // UI mientras se espera
+    // UI de carga mientras espera
     Box(
         modifier = Modifier
             .fillMaxSize()

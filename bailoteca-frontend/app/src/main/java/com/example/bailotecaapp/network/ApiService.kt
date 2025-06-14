@@ -139,6 +139,12 @@ interface ApiService {
         @Path("id") id: Long
     ): Response<Void>
 
+    @GET("/api/clases/{id}/alumnos")
+    suspend fun obtenerAlumnos(
+        @Header("Authorization") token: String,
+        @Path("id") claseId: Long
+    ): Response<List<Usuario>>
+
     // --------------------------- INSCRIPCIONES ---------------------------
 
     /**

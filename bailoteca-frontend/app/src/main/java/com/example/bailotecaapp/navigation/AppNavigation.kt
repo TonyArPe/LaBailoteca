@@ -24,6 +24,7 @@ import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.usuarios.ClasesUsuarioScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
+import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditUserScreen
 import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
@@ -170,6 +171,14 @@ fun AppNavigation(
         composable("clasesUsuario/{id}") {
             val id = it.arguments?.getString("id")?.toLongOrNull() ?: return@composable
             ClasesUsuarioScreen(userId = id, navController = navController)
+        }
+
+        composable(
+            route = "editar_usuario/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getLong("id") ?: 0L
+            EditUserScreen(usuarioId = userId, navController = navController)
         }
 
         composable("clase/{claseId}", arguments = listOf(navArgument("claseId") { type = NavType.LongType })) {

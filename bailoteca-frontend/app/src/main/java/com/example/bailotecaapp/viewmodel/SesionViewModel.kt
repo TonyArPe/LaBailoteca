@@ -1,8 +1,7 @@
 package com.example.bailotecaapp.viewmodel
 
-import android.app.Application
 import android.util.Log
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
@@ -21,13 +20,13 @@ import javax.inject.Inject
 
 /**
  * ViewModel que centraliza la gestión de sesión del usuario.
+ * Controla inicio, cierre y restauración de sesión; subida de imágenes y sincronización.
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
-    application: Application,
     private val api: ApiService,
     private val sesionManager: SesionManager
-) : AndroidViewModel(application) {
+) : ViewModel() {
 
     val usuario = sesionManager.usuario
     val token = sesionManager.token
@@ -58,27 +57,13 @@ class SesionViewModel @Inject constructor(
     private val _modoInvitadoForzado = MutableStateFlow(false)
     val modoInvitadoForzado: StateFlow<Boolean> = _modoInvitadoForzado
 
-    fun obtenerUsuarioActualConToken(token: String) {
-        if (usuarioYaCargado.value) {
-            Log.d("SesionViewModel", "⛔ Usuario ya cargado, omitiendo nueva llamada a /me")
-            return
-        }
-        _isLoading.value = true
-        sesionManager.iniciarSesionConToken(token)
-        viewModelScope.launch {
-            sesionManager.usuario.filterNotNull().first {
-                cargarMisInscripciones()
-                _usuarioCargado.value = true
-                _isLoading.value = false
-                true
-            }
-        }
-    }
-
+    /**
+     * Restaura sesión desde DataStore al arrancar la app.
+     */
     fun recuperarSesionDesdePreferencias() {
         _isLoading.value = true
-        sesionManager.restaurarSesionDesdePreferencias()
         viewModelScope.launch {
+            sesionManager.restaurarSesionDesdePreferencias()
             sesionManager.usuario.filterNotNull().first {
                 if (sesionManager.estaSesionActiva()) {
                     cargarMisInscripciones()
@@ -90,6 +75,9 @@ class SesionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Inicia sesión desde token y sincroniza datos e inscripciones.
+     */
     fun iniciarSesionConTokenYSincronizar(token: String) {
         _isLoading.value = true
         _error.value = null
@@ -98,8 +86,7 @@ class SesionViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 cerrarSesion()
-                sesionManager.iniciarSesionConToken(token)
-
+                sesionManager.iniciarSesionConTokenSuspend(token)
                 sesionManager.usuario.filterNotNull().first()
 
                 cargarMisInscripciones()
@@ -114,6 +101,40 @@ class SesionViewModel @Inject constructor(
         }
     }
 
+    /**
+     * Cierra sesión local y Firebase.
+     */
+    fun cerrarSesion() {
+        viewModelScope.launch {
+            FirebaseAuth.getInstance().signOut()
+            sesionManager.cerrarSesion()
+            _inscripciones.value = emptyList()
+            _inscripcionesCargadas = false
+            _usuarioCargado.value = false
+            _sesionCerrada.value = true
+        }
+    }
+
+    /**
+     * Sincroniza datos del usuario actual si sesión activa.
+     */
+    fun sincronizarDesdeSesionManager() {
+        viewModelScope.launch {
+            val usuarioSesion = sesionManager.usuario.value
+            val tokenSesion = sesionManager.token.value
+
+            if (usuarioSesion != null && tokenSesion != null) {
+                Log.d("SesionViewModel", "🔁 Sincronizando estado desde SesionManager: ${usuarioSesion.correo}")
+                _usuarioCargado.value = true
+            } else {
+                Log.w("SesionViewModel", "⚠️ SesionManager sin usuario o token. No se puede sincronizar.")
+            }
+        }
+    }
+
+    /**
+     * Sube imagen de perfil al servidor.
+     */
     fun subirImagenPerfil(archivo: MultipartBody.Part, onSuccess: (String) -> Unit) {
         viewModelScope.launch {
             try {
@@ -131,31 +152,8 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    fun cerrarSesion() {
-        viewModelScope.launch {
-            FirebaseAuth.getInstance().signOut()
-            sesionManager.cerrarSesion()
-            _inscripciones.value = emptyList()
-            _inscripcionesCargadas = false
-            _usuarioCargado.value = false
-            _sesionCerrada.value = true
-        }
-    }
-
-    fun entrarComoInvitado(onPropagado: (() -> Unit)? = null) {
-        viewModelScope.launch {
-            sesionManager.cerrarSesion()
-            _modoInvitado.value = true
-            _modoInvitadoForzado.value = true
-            _usuarioCargado.value = true
-            _inscripciones.value = emptyList()
-            delay(100)
-            onPropagado?.invoke()
-        }
-    }
-
     /**
-     * Actualiza el perfil del usuario autenticado.
+     * Actualiza perfil del usuario autenticado.
      */
     fun actualizarPerfil(
         usuarioActualizado: UsuarioUpdateRequest,
@@ -182,7 +180,7 @@ class SesionViewModel @Inject constructor(
 
                 if (response.isSuccessful) {
                     Log.d("SesionViewModel", "✅ Perfil actualizado correctamente")
-                    response.body()?.let { actualizarUsuarioEnSesion(it) }
+                    response.body()?.let { sesionManager.guardarUsuario(it) }
                     onSuccess()
                 } else {
                     val mensaje = "❌ Error al actualizar perfil: ${response.code()}"
@@ -199,12 +197,9 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    private fun actualizarUsuarioEnSesion(usuario: Usuario) {
-        viewModelScope.launch {
-            sesionManager.guardarUsuario(usuario)
-        }
-    }
-
+    /**
+     * Carga inscripciones del usuario actual si aún no están cargadas.
+     */
     fun cargarMisInscripciones() {
         if (_inscripcionesCargadas) return
         viewModelScope.launch {
@@ -226,21 +221,6 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    fun sincronizarDesdeSesionManager() {
-        viewModelScope.launch {
-            val usuarioSesion = sesionManager.usuario.value
-            val tokenSesion = sesionManager.token.value
-
-            if (usuarioSesion != null && tokenSesion != null) {
-                Log.d("SesionViewModel", "🔁 Sincronizando estado desde SesionManager: ${usuarioSesion.correo}")
-                _usuarioCargado.value = true
-                sesionManager.marcarUsuarioComoCargado()
-            } else {
-                Log.w("SesionViewModel", "⚠️ SesionManager sin usuario o token. No se puede sincronizar.")
-            }
-        }
-    }
-
     fun marcarClasesComoActualizadas() {
         _versionClases.value++
     }
@@ -258,5 +238,17 @@ class SesionViewModel @Inject constructor(
         _modoInvitadoForzado.value = false
         _usuarioCargado.value = false
         _inscripcionesCargadas = false
+    }
+
+    fun entrarComoInvitado(onPropagado: (() -> Unit)? = null) {
+        viewModelScope.launch {
+            sesionManager.cerrarSesion()
+            _modoInvitado.value = true
+            _modoInvitadoForzado.value = true
+            _usuarioCargado.value = true
+            _inscripciones.value = emptyList()
+            delay(100)
+            onPropagado?.invoke()
+        }
     }
 }

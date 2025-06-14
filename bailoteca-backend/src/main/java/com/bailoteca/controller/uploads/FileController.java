@@ -11,14 +11,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 
 /**
- * Controlador REST encargado de gestionar la subida de archivos multimedia
- * (imágenes de perfil, imágenes de eventos, etc.) en Bailoteca.
- *
- * La descarga y visualización pública de estos archivos se gestiona desde
- * WebMvcConfig, mapeando la carpeta local `uploads/` a `/media/**`.
- *
- * @author Tony Aragón
- * @version 1.0
+ * Controlador REST encargado de gestionar la subida de archivos multimedia.
+ * Exposición pública desde /media/** configurada en WebConfig.
  */
 @RestController
 @RequestMapping("/api/uploads")
@@ -30,21 +24,27 @@ public class FileController {
 
     /**
      * Endpoint para subir un archivo al servidor.
-     * El archivo se guarda físicamente en el directorio `uploads/`.
      *
-     * @param file archivo subido desde el cliente
-     * @return nombre del archivo almacenado
+     * @param file archivo subido como multipart/form-data
+     * @return nombre del archivo guardado o error HTTP 400/500
      */
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
+        log.info("📩 Solicitud de subida de archivo recibida");
+
+        if (file.isEmpty() || file.getOriginalFilename() == null) {
+            log.warn("⚠️ Archivo inválido: vacío o sin nombre original");
+            return ResponseEntity.badRequest().body("Archivo vacío o sin nombre");
+        }
+
         try {
             String filename = storageService.saveFile(file);
             log.info("✅ Archivo subido correctamente: {}", filename);
             return ResponseEntity.ok(filename);
         } catch (IOException e) {
-            log.error("❌ Error al subir archivo", e);
+            log.error("❌ Error interno al guardar archivo: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error al subir archivo");
+                    .body("Error al guardar archivo: " + e.getMessage());
         }
     }
 }

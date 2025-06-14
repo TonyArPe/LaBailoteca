@@ -166,14 +166,15 @@ class ClaseViewModel @Inject constructor(
         viewModelScope.launch {
             try {
                 val token = sesionManager.getToken() ?: return@launch
-                val response = api.obtenerAlumnosPorProfesor(claseId, "Bearer $token")
+                val response = api.obtenerAlumnos("Bearer $token", claseId)
+
                 if (response.isSuccessful) {
-                    _alumnosInscritos.value = response.body() ?: emptyList()
+                    _alumnosInscritos.value = response.body().orEmpty()
                 } else {
                     Log.e("ClaseViewModel", "❌ Error al obtener alumnos: ${response.code()}")
                 }
             } catch (e: Exception) {
-                Log.e("ClaseViewModel", "❌ Excepción al cargar alumnos: ${e.message}")
+                Log.e("ClaseViewModel", "❌ Excepción al cargar alumnos: ${e.message}", e)
             }
         }
     }

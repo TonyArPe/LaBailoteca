@@ -1,5 +1,6 @@
 package com.example.bailotecaapp.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.network.FirebaseUrlProvider
@@ -22,10 +23,11 @@ class ApiInitViewModel @Inject constructor(
     val baseUrl: StateFlow<String> = _baseUrl
 
     init {
+        Log.d("ApiInitViewModel", "🔄 Iniciando fetch de baseUrl desde FirebaseUrlProvider")
         viewModelScope.launch {
-            // Fetch URL desde el proveedor y expónla como flujo
             val url = firebaseUrlProvider.getBaseUrl()
             _baseUrl.value = url
+            Log.i("ApiInitViewModel", "✅ baseUrl seteada en StateFlow: $url")
         }
     }
 }

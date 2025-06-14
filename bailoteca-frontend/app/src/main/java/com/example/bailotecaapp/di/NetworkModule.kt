@@ -1,13 +1,13 @@
 package com.example.bailotecaapp.di
 
-import android.content.Context
+import android.util.Log
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.FirebaseAuthInterceptor
+import com.example.bailotecaapp.network.FirebaseAuthTokenProvider
 import com.example.bailotecaapp.network.FirebaseUrlProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
-import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -32,10 +32,10 @@ object NetworkModule {
      */
     @Provides
     @Singleton
-    fun provideFirebaseAuthInterceptor(
-        @ApplicationContext context: Context
+    fun provideAuthInterceptor(
+        tokenProvider: FirebaseAuthTokenProvider
     ): FirebaseAuthInterceptor {
-        return FirebaseAuthInterceptor(context)
+        return FirebaseAuthInterceptor(tokenProvider)
     }
 
     /**
@@ -66,6 +66,7 @@ object NetworkModule {
         urlProvider: FirebaseUrlProvider
     ): Retrofit {
         val baseUrl = urlProvider.getBaseUrl()
+        Log.d("NetworkModule", "🛠️ Construyendo Retrofit con URL: $baseUrl")
 
         return Retrofit.Builder()
             .baseUrl(baseUrl)

@@ -13,10 +13,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.example.bailotecaapp.navigation.AppNavigation
 import com.example.bailotecaapp.network.FirebaseUrlProvider
-import com.example.bailotecaapp.network.session.SesionManagerSingleton
+import com.example.bailotecaapp.network.session.SesionManager
 import com.example.bailotecaapp.ui.theme.BailotecaTheme
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
@@ -35,6 +36,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var urlProvider: FirebaseUrlProvider
+    @Inject
+    lateinit var sesionManager: SesionManager
+
 
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,7 +46,9 @@ class MainActivity : ComponentActivity() {
         Log.d("MainActivity", "🚀 onCreate llamado, inicializando interfaz")
 
         // Restauramos sesión previamente guardada
-        SesionManagerSingleton.restaurarSesionDesdePreferencias(applicationContext)
+        lifecycleScope.launch {
+            sesionManager.restaurarSesionDesdePreferencias()
+        }
 
         // Escuchamos cambios de token y lo actualizamos en memoria + almacenamiento
         FirebaseAuth.getInstance().addIdTokenListener { firebaseAuth: FirebaseAuth ->
@@ -53,11 +59,10 @@ class MainActivity : ComponentActivity() {
 
                 if (nuevoToken != null && expiracion != null) {
                     Log.d("MainActivity", "🆕 Token renovado por Firebase (expira en $expiracion)")
-                    SesionManagerSingleton.guardarTokenConExpiracion(
-                        applicationContext,
-                        nuevoToken,
-                        expiracion * 1000
-                    )
+                    lifecycleScope.launch {
+                        sesionManager.guardarToken(nuevoToken)
+                        // Si quieres guardar expiración, necesitarás extensión en TokenPreferences (opcional)
+                    }
                 } else {
                     Log.w("MainActivity", "⚠️ Firebase renovó el token pero sin resultado válido")
                 }

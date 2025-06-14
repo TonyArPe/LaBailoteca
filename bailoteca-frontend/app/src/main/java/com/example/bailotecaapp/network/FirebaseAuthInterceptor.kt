@@ -1,27 +1,21 @@
 package com.example.bailotecaapp.network
 
-import android.content.Context
 import android.util.Log
-import com.example.bailotecaapp.network.session.SesionManagerSingleton
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.tasks.await
 import okhttp3.Interceptor
 import okhttp3.Response
+import javax.inject.Inject
 
 /**
- * Interceptor de autenticación que añade el token JWT de Firebase a cada petición HTTP.
- * Si el token está próximo a expirar, lo renueva automáticamente.
- *
- * @param context Contexto de aplicación necesario para acceder a DataStore y preferencias.
+ * Interceptor que añade el token JWT (Firebase) a cada petición HTTP.
  */
-class FirebaseAuthInterceptor(
-    private val context: Context
+class FirebaseAuthInterceptor @Inject constructor(
+    private val tokenProvider: FirebaseAuthTokenProvider
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response = runBlocking {
         try {
-            val token = SesionManagerSingleton.token.value
+            val token = tokenProvider.obtenerToken()
             if (!token.isNullOrBlank()) {
                 val request = chain.request().newBuilder()
                     .addHeader("Authorization", "Bearer $token")
@@ -29,7 +23,7 @@ class FirebaseAuthInterceptor(
                 return@runBlocking chain.proceed(request)
             }
         } catch (e: Exception) {
-            Log.e("FirebaseAuthInterceptor", "❌ Error al insertar token en headers: ${e.message}", e)
+            Log.e("FirebaseAuthInterceptor", "❌ Error al añadir token: ${e.message}", e)
         }
 
         chain.proceed(chain.request())
