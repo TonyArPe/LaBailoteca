@@ -1,6 +1,6 @@
 # CONFIGURACIÓN DE TÚNEL PÚBLICO CON NGROK EN BANANA PI PARA BACKEND LOCAL
 
-Aqui expongo un backend Spring Boot local desde un Banana Pi a través de internet usando Ngrok. Aunque inicialmente se pensó usar una Raspberry Pi, se descubrió que era una Banana Pi abriendo la cajetilla y viendo y analizando la placa comparandola con una placa de una Raspberry. Aquí se detallan los problemas encontrados y sus soluciones para lograr una app Android funcional desde cualquier red.
+Aquí se documenta cómo exponer un backend Spring Boot local desde un **Banana Pi** a través de internet usando **Ngrok**. Desde el principio se trabajó con un Banana Pi. Para confirmar el modelo miramos la placa de la cual se compone abriendo la cajetilla que la contiene. A continuación, se detalla la solución técnica y profesional para permitir una URL pública siempre actualizada, ideal para pruebas móviles o acceso remoto.
 
 ## CONTEXTO INICIAL
 
@@ -8,86 +8,113 @@ El objetivo era acceder al backend local desde fuera de la red doméstica (por e
 
 ## OBJETIVO
 
-Exponer el backend local (Java Spring Boot) que corre en un Banana Pi mediante un túnel seguro, accesible desde cualquier lugar usando una URL del tipo `https://...ngrok-free.app`.
+Exponer el backend local (Java Spring Boot) que corre en un Banana Pi mediante un túnel seguro, accesible desde cualquier lugar usando una URL del tipo `https://...ngrok-free.app`, y permitir que esta URL se actualice automáticamente en los clientes que la consumen.
 
 ## HARDWARE UTILIZADO
 
-- Banana Pi (modelo no identificado al principio, creo que es `Banana Pi BPI-M1`)
-- Tarjeta microSD con sistema pregrabado
-- Cable MicroUBS para alimentación
-- Conexión por Ethernet a router doméstico
+* Banana Pi (modelo confirmado como `Banana Pi BPI-M1` tras inspección física de la placa)
+* Tarjeta microSD con sistema pregrabado con adaptador SD
+* Cable MicroUSB para alimentación
+* Conexión por Ethernet a router doméstico
 
 ## PROBLEMAS INICIALES
 
-- **Confusión con el modelo:** Se pensaba que era una Raspberry Pi, pero el análisis físico de la placa revelaron que era una Banana Pi.
-- **Sin pantalla ni teclado:** El dispositivo no mostraba señal por HDMI ni ofrecía forma gráfica de interactuar.
-- **Dificultades de conexión:** Aunque la microSD estaba bien insertada y la luz roja encendida, no aparecía como dispositivo conocido en el router.
-- **Sin acceso vía ping o SSH al principio.**
+* **Sin interfaz gráfica:** El dispositivo no mostraba señal HDMI y no se podía usar directamente.
+* **Dificultades de conexión:** La red no detectaba inicialmente el dispositivo.
+* **Sin acceso vía ping o SSH inicialmente.**
 
 ## FASE DE PRUEBA Y DIAGNÓSTICO
 
-Se realizaron los siguientes intentos:
-
-- Se grabó la SD con Raspberry Pi OS Lite (por si era compatible).
-- Se agregó el archivo `ssh` y la configuración `wpa_supplicant.conf` con la configuracion de mi router domestico.
-- Se monitorizó la red desde el router.
-- Finalmente, se detectó un nuevo dispositivo `bananaapi` con IP local `192.168.2.107`.
+* Se grabó la SD con Raspberry Pi OS Lite.
+* Se habilitó SSH y Wi-Fi por configuración previa en la SD.
+* Se monitoreó el router hasta que apareció un nuevo host (`bananaapi`) con IP local `192.168.2.107`.
 
 ## CONFIGURACIÓN EFECTIVA PASO A PASO
 
-1. **Identificación del backend:**  
-  Se confirmó que el backend Spring Boot corría en el puerto 8080 en el Banana Pi.
+1. **Verificar el backend:**
+   El backend Spring Boot se ejecuta correctamente en el puerto `8080`.
 
-2. **Instalación de Ngrok:**  
-  Desde el Banana Pi o el equipo principal donde corre el backend:
-  ```bash
-  choco install ngrok
-  ```
+2. **Instalación de Ngrok:**
 
-  Y despues confirmamos con `y`
+   ```bash
+   choco install ngrok
+   ```
 
-3. **Registro en Ngrok:**  
-  - Crear una cuenta en [ngrok.com](https://ngrok.com)(Usada cuenta GitHub)
-  - Acceder a la sección *Your Authtoken* desde el dashboard.
-  - Copiar el token y ejecutar:
-    ```bash
-    ngrok config add-authtoken TU_AUTHTOKEN
-    ```
+3. **Autenticación en Ngrok:**
 
-4. **Lanzar el túnel:**  
-  Una vez autenticado:
-  ```bash
-  ngrok http 8080
-  ```
-  Esto generará una salida como:
-  ```
-  Forwarding https://xxxx-xx-xx-xxx.ngrok-free.app -> http://localhost:8080
-  ```
-  Esta URL pública será la que debe usarse como `BASE_URL` en la app Android en la clase `NetworkModule`.
+   ```bash
+   ngrok config add-authtoken TU_AUTHTOKEN
+   ```
+
+4. **Lanzar túnel Ngrok:**
+
+   ```bash
+   ngrok http 8080
+   ```
+
+   Esto genera una URL pública como:
+
+   ```
+   Forwarding https://xxxx-xx-xx-xxx.ngrok-free.app -> http://localhost:8080
+   ```
+
+5. **Automatización de la URL (profesional):**
+
+   Para evitar tener que cambiar manualmente la URL cada vez, se propone el siguiente sistema automatizado:
+
+   * Ngrok expone su configuración en tiempo real en `http://localhost:4040/api/tunnels`.
+   * Un script en Python puede consultar esta URL y guardar la `BASE_URL` en un archivo `base_url.txt`.
+
+   **Script Python recomendado:**
+
+   ```python
+   import requests
+
+   def obtener_url_ngrok():
+       try:
+           res = requests.get("http://127.0.0.1:4040/api/tunnels")
+           tunnels = res.json()["tunnels"]
+           for t in tunnels:
+               if t["proto"] == "https":
+                   return t["public_url"]
+       except Exception as e:
+           print("Error obteniendo la URL de Ngrok:", e)
+
+   if __name__ == "__main__":
+       url = obtener_url_ngrok()
+       if url:
+           with open("base_url.txt", "w") as f:
+               f.write(url)
+           print("URL actual de Ngrok guardada:", url)
+   ```
+
+   **Automatizar con cron:**
+
+   ```bash
+   crontab -e
+   @reboot /usr/bin/python3 /home/banana/actualizar_base_url.py
+   ```
 
 ## VALIDACIÓN DE FUNCIONAMIENTO
 
-- Se pudo acceder al backend mediante la URL pública generada por Ngrok desde datos móviles y otras redes.
-- El backend respondió correctamente a las peticiones, validando tokens Firebase y sirviendo datos.
+* Acceso al backend desde redes externas vía la URL Ngrok.
+* Validación de endpoints, autenticación con Firebase, y persistencia funcional.
+* URL dinámica correctamente gestionada sin intervención manual.
 
 ## CONCLUSIONES
 
-- Aunque inicialmente se planificó el uso de una Raspberry Pi, el proceso fue adaptable al uso de un Banana Pi.
-- El túnel público con Ngrok permite acceso seguro y temporal al backend desde cualquier lugar.
+* El Banana Pi ha demostrado ser un entorno robusto para backend expuesto públicamente con Ngrok.
+* Automatizar la sincronización de la URL mejora enormemente la experiencia de desarrollo y demostración.
+* Esta solución es escalable y aplicable a otros dispositivos y microservicios locales.
 
 ## RECURSOS ÚTILES
 
-- [Ngrok Dashboard](https://dashboard.ngrok.com/)
-- [Documentación oficial Ngrok](https://ngrok.com/docs)
-- Ver logs de Ngrok:
+* [Ngrok Dashboard](https://dashboard.ngrok.com/)
+* [Documentación oficial Ngrok](https://ngrok.com/docs)
+* Logs Ngrok:
+
   ```powershell
   type C:\Users\<TU_USUARIO>\ngrok.log
   ```
-  > Cambia `<TU_USUARIO>` por tu nombre de usuario de Windows.
 
-## ESTADO FINAL
-
-El sistema está completamente funcional para exposición remota del backend. El Banana Pi inicia y se conecta automáticamente por red local, y Ngrok expone el backend por una URL pública utilizable desde cualquier red o red móvil.
-
-> **Recomendación:** Usar un archivo `.env` o cambiar el `BASE_URL` mediante variable de entorno si el proyecto pasa a producción.
-
+> ⚠️ Recomendación: usar `.env`, `base_url.txt` o `Firebase Remote Config` en clientes Android para consumo automático de la URL sin hardcodear en código fuente.

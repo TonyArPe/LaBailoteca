@@ -17,7 +17,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.R
-import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.DrawerDestination
 import com.example.bailotecaapp.navigation.Screens
@@ -27,16 +26,17 @@ import com.google.firebase.auth.FirebaseAuth
 /**
  * Componente visual para el menú lateral (Drawer).
  * Muestra las secciones disponibles según el rol del usuario.
+ * También actualiza dinámicamente la imagen de perfil tras su edición.
  */
 @Composable
 fun DrawerContent(
-    usuario: Usuario,
+    sesionViewModel: SesionViewModel,
     onItemSelected: (String) -> Unit,
     navController: NavHostController,
-    onCloseDrawer: () -> Unit,
-    sesionViewModel: SesionViewModel
+    onCloseDrawer: () -> Unit
 ) {
-    val rol = usuario.rol
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val rol = usuario?.rol ?: Rol.INVITADO
     Log.d("DrawerContent", "🧑‍🎤 Rol activo: $rol")
 
     val opciones = when (rol) {
@@ -60,13 +60,14 @@ fun DrawerContent(
         Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
+            DrawerDestination.Eventos,
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
 
         Rol.INVITADO -> listOf(
             DrawerDestination.Home,
-            DrawerDestination.Clases
+            DrawerDestination.Logout
         )
     }
 
@@ -89,6 +90,7 @@ fun DrawerContent(
                 .clickable(enabled = rol != Rol.INVITADO) {
                     Log.d("DrawerContent", "👤 Click en cabecera -> Perfil")
                     onItemSelected(DrawerDestination.Perfil.route)
+                    navController.navigate(DrawerDestination.Perfil.route)
                     onCloseDrawer()
                 }
         ) {
@@ -96,9 +98,12 @@ fun DrawerContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val painter = if (usuario.fotoPerfil.isNullOrEmpty())
+                val imagenUri = usuario?.fotoPerfil?.takeIf { it.isNotBlank() }?.let {
+                    "http://10.0.2.2:8080/media/$it"
+                }
+                val painter = if (imagenUri.isNullOrBlank())
                     painterResource(id = R.drawable.default_profile)
-                else rememberAsyncImagePainter(usuario.fotoPerfil)
+                else rememberAsyncImagePainter(imagenUri)
 
                 Image(
                     painter = painter,
@@ -110,7 +115,7 @@ fun DrawerContent(
                         .padding(4.dp)
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(usuario.nombre, style = MaterialTheme.typography.titleMedium)
+                Text(usuario?.nombre ?: "Invitado", style = MaterialTheme.typography.titleMedium)
                 Text(
                     rol.name.lowercase().replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.bodySmall

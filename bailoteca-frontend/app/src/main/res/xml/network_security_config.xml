@@ -1,4 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- Permitir tráfico HTTP a IP local para desarrollo -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+    </domain-config>
+
+    <!-- Ngrok también en desarrollo -->
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">ngrok-free.app</domain>
         <trust-anchors>
