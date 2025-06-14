@@ -6,6 +6,7 @@ import com.google.firebase.remoteconfig.FirebaseRemoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfig
 import com.google.firebase.remoteconfig.ktx.remoteConfigSettings
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeout
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -35,6 +36,38 @@ class FirebaseUrlProvider @Inject constructor() {
             "https://default-fallback.ngrok-free.app/"
         }
     }
+
+    /**
+     * Espera de forma segura a que fetchAndActivate termine y devuelva una URL válida.
+     * Bloquea hasta 5 segundos como máximo para prevenir bloqueos eternos.
+     */
+    suspend fun fetchAndAwaitValidUrl(timeoutMillis: Long = 5000): Boolean {
+        return try {
+            withTimeout(timeoutMillis) {
+                val resultado = remoteConfig.fetchAndActivate().await()
+                Log.i("FirebaseUrlProvider", "✅ Configuración Firebase actualizada: $resultado")
+                true
+            }
+        } catch (e: Exception) {
+            Log.e("FirebaseUrlProvider", "❌ Timeout o error al obtener URL remota", e)
+            false
+        }
+    }
+
+    /**
+     * Versión suspend de fetchAndActivate para integrarse mejor en coroutines.
+     */
+    suspend fun fetchAndActivateSuspend(): Boolean {
+        return try {
+            remoteConfig.fetchAndActivate().await().also {
+                Log.i("FirebaseUrlProvider", "✅ Configuración Firebase actualizada.")
+            }
+        } catch (e: Exception) {
+            Log.e("FirebaseUrlProvider", "❌ Error al actualizar Remote Config", e)
+            false
+        }
+    }
+
 
     /**
      * Ejecuta `fetchAndActivate` para sincronizar la URL con Firebase.

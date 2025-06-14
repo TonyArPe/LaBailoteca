@@ -73,8 +73,7 @@ fun AppNavigation(
     ) {
         // 🌊 SplashScreen inicial
         composable("splash") {
-            Log.d("AppNavigation", "🌀 SplashScreen lanzada")
-            SplashScreen(navController, urlProvider)
+            SplashScreen(navController = navController, urlProvider = urlProvider)
         }
 
         composable("login") {
