@@ -162,7 +162,7 @@ fun AppNavigation(
         }
 
         composable("editar_perfil") {
-            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
                 EditProfileScreen(navController, sesionViewModel)
             }
         }

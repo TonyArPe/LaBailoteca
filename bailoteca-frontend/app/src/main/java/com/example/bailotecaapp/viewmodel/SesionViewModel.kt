@@ -103,6 +103,9 @@ class SesionViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
+                // 🔁 IMPORTANTE: Limpiar sesión anterior antes de iniciar una nueva
+                cerrarSesion() // <--- esta línea es clave
+
                 // Guardar token localmente
                 sesionManager.iniciarSesionConToken(token)
                 Log.d("SesionViewModel", "🔐 Token inyectado en SesionManager")

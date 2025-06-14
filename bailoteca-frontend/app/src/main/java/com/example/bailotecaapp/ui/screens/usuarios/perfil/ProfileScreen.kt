@@ -18,13 +18,19 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.model.enums.Rol
-import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.ui.theme.Lima
 import com.example.bailotecaapp.ui.theme.Magenta
 
 /**
- * Pantalla que muestra el perfil del usuario autenticado de forma visual y alineada con la estética de Bailoteca.
+ * Pantalla que muestra el perfil del usuario autenticado.
+ *
+ * Esta pantalla proporciona una vista visualmente agradable de los datos del usuario,
+ * permitiendo además la navegación a la pantalla de edición del perfil para usuarios no invitados.
+ *
+ * @param navController controlador de navegación que permite moverse entre pantallas.
+ * @param sesionViewModel ViewModel que gestiona la sesión y expone el usuario actual.
+ * @param modifier modificador para aplicar ajustes externos (padding, scroll, etc.)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +53,7 @@ fun ProfileScreen(
 
     val usuarioActual = usuario!!
 
-    // ⚠️ Construcción segura de la URL de imagen desde IP local (evitando caché)
+    // ⚠️ Se evita el cacheo de la imagen añadiendo un parámetro temporal
     val imagenUrl = usuarioActual.fotoPerfil?.let {
         "http://10.0.2.2:8080/api/media/files/$it?cache=${System.currentTimeMillis()}"
     }
@@ -58,7 +64,7 @@ fun ProfileScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize()
@@ -66,7 +72,7 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Foto de perfil
+            // 📷 Imagen de perfil del usuario
             if (!imagenUrl.isNullOrBlank()) {
                 Image(
                     painter = rememberAsyncImagePainter(imagenUrl),
@@ -78,6 +84,7 @@ fun ProfileScreen(
                 )
             }
 
+            // 🧑 Nombre y correo
             Text(
                 text = usuarioActual.nombre,
                 style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
@@ -92,6 +99,7 @@ fun ProfileScreen(
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
+            // ℹ️ Resto de campos del usuario
             InfoRow(label = "Teléfono", value = usuarioActual.telefono)
             InfoRow(label = "Dirección", value = usuarioActual.direccion)
             InfoRow(label = "Fecha de nacimiento", value = usuarioActual.fechaNacimiento)
@@ -103,9 +111,12 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // ✏️ Botón de editar perfil si no es invitado
             if (usuarioActual.rol != Rol.INVITADO) {
                 Button(
-                    onClick = { navController.navigate(Screens.EditProfile.route) },
+                    onClick = {
+                        navController.navigate("editar_perfil") // ✅ Navegación corregida
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = Lima),
                     shape = MaterialTheme.shapes.extraLarge
                 ) {
@@ -117,7 +128,10 @@ fun ProfileScreen(
 }
 
 /**
- * Componente reutilizable para mostrar una fila de información del perfil.
+ * Componente reutilizable para mostrar una fila de información en el perfil del usuario.
+ *
+ * @param label Etiqueta visible (ej. "Teléfono").
+ * @param value Valor asociado (ej. "633 123 456").
  */
 @Composable
 fun InfoRow(label: String, value: String?) {
