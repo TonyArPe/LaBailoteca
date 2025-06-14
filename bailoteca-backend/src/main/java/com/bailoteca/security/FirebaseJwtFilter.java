@@ -57,7 +57,6 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
             "/api/auth/**",
             "/api/eventos/publicos",
             "/api/clases/publicas",
-            "/api/uploads/files/**",
             "/media/**");
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();

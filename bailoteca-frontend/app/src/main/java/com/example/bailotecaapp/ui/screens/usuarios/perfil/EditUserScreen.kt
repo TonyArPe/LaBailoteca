@@ -1,23 +1,32 @@
 package com.example.bailotecaapp.ui.screens.usuarios.perfil
 
 import android.util.Log
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import com.example.bailotecaapp.viewmodel.ApiInitViewModel
+import com.example.bailotecaapp.utils.construirUrlMedia
+
 
 /**
  * Pantalla de edición de usuario, usada por el propio usuario o por ADMIN.
@@ -57,6 +66,9 @@ fun EditUserScreen(
             telefono = it.telefono ?: ""
             direccion = it.direccion ?: ""
         }
+        val apiInitViewModel: ApiInitViewModel = hiltViewModel()
+        val baseUrl by apiInitViewModel.baseUrl.collectAsState()
+        val imagenUrl = construirUrlMedia(it.fotoPerfil, baseUrl)
 
         Scaffold(
             topBar = {
@@ -77,6 +89,22 @@ fun EditUserScreen(
                     .fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                if (!imagenUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(imagenUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(140.dp)
+                            .align(Alignment.CenterHorizontally)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                    )
+                }
+
                 OutlinedTextField(
                     value = nombre,
                     onValueChange = { nombre = it },

@@ -4,12 +4,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Evento
 import com.example.bailotecaapp.ui.theme.Lima
 import com.example.bailotecaapp.viewmodel.EventoViewModel
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import com.example.bailotecaapp.utils.construirUrlMedia
+import com.example.bailotecaapp.viewmodel.ApiInitViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+
 
 /**
  * Componente reutilizable que muestra los detalles básicos de un evento en una tarjeta.
@@ -25,6 +35,10 @@ fun EventoCard(
     navController: NavHostController,
     viewModel: EventoViewModel
 ) {
+    val apiInitViewModel: ApiInitViewModel = hiltViewModel()
+    val baseUrl by apiInitViewModel.baseUrl.collectAsState()
+    val imagenUrl = construirUrlMedia(evento.imagen, baseUrl)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -39,26 +53,33 @@ fun EventoCard(
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = evento.nombre,
-                style = MaterialTheme.typography.titleMedium,
-                color = Lima
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = evento.descripcion,
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "📍 ${evento.lugar}",
-                style = MaterialTheme.typography.labelSmall
-            )
-            Text(
-                text = "📅 ${evento.fecha}",
-                style = MaterialTheme.typography.labelSmall
-            )
+        Column {
+            if (!imagenUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imagenUrl)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = "Imagen del evento",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(180.dp)
+                )
+            }
+
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = evento.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = Lima
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = evento.descripcion, style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(text = "📍 ${evento.lugar}", style = MaterialTheme.typography.labelSmall)
+                Text(text = "📅 ${evento.fecha}", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }

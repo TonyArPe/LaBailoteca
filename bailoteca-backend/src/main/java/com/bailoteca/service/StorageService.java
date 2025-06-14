@@ -1,57 +1,72 @@
 package com.bailoteca.service;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.util.UUID;
 
+/**
+ * Servicio encargado de guardar, eliminar y acceder a archivos subidos
+ * (como imágenes de perfil, banners de eventos, etc.)
+ */
 @Service
 @Slf4j
 public class StorageService {
 
-    @Value("${upload.dir}")
-    private String uploadDir;
+    private static final Path UPLOAD_DIR = Paths.get("uploads");
 
     /**
-     * Guarda un archivo en el servidor con un nombre único.
+     * Guarda un archivo en el sistema de archivos, dentro de la carpeta `uploads/`.
      *
-     * @param file archivo a guardar.
-     * @return ruta relativa del archivo guardado.
-     * @throws IOException si falla la escritura.
+     * @param file archivo recibido desde el cliente
+     * @return nombre generado del archivo (con UUID para evitar colisiones)
+     * @throws IOException si ocurre un error al escribir
      */
     public String saveFile(MultipartFile file) throws IOException {
-        String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
-        Path uploadPath = Paths.get(uploadDir);
-
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
+        if (!Files.exists(UPLOAD_DIR)) {
+            Files.createDirectories(UPLOAD_DIR);
+            log.info("📂 Carpeta de subida creada en {}", UPLOAD_DIR.toAbsolutePath());
         }
 
-        Path filePath = uploadPath.resolve(filename);
+        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path filePath = UPLOAD_DIR.resolve(filename);
+
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        log.info("Archivo guardado en: {}", filePath.toString());
+        log.info("✅ Archivo guardado en: {}", filePath.toAbsolutePath());
 
         return filename;
     }
 
     /**
-     * Devuelve la ruta completa del archivo.
+     * Obtiene la ruta absoluta de un archivo guardado.
+     *
+     * @param filename nombre del archivo
+     * @return ruta completa al archivo dentro de `uploads/`
      */
     public Path getFilePath(String filename) {
-        return Paths.get(uploadDir).resolve(filename);
+        return UPLOAD_DIR.resolve(filename);
     }
 
     /**
-     * Elimina un archivo.
+     * Elimina físicamente un archivo de la carpeta `uploads/`.
+     *
+     * @param filename nombre del archivo a borrar
+     * @return true si fue eliminado correctamente, false en caso contrario
      */
     public boolean deleteFile(String filename) {
         try {
-            return Files.deleteIfExists(getFilePath(filename));
+            boolean deleted = Files.deleteIfExists(getFilePath(filename));
+            if (deleted) {
+                log.info("🗑️ Archivo eliminado: {}", filename);
+            } else {
+                log.warn("⚠️ No se encontró archivo para eliminar: {}", filename);
+            }
+            return deleted;
         } catch (IOException e) {
-            log.error("Error al eliminar archivo {}", filename, e);
+            log.error("❌ Error al eliminar archivo {}", filename, e);
             return false;
         }
     }

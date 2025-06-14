@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -33,6 +34,12 @@ import kotlinx.coroutines.tasks.await
 import com.example.bailotecaapp.utils.crearMultipartDesdeUri
 import com.example.bailotecaapp.ui.theme.Magenta
 import com.example.bailotecaapp.ui.theme.Lima
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import com.example.bailotecaapp.viewmodel.ApiInitViewModel
+import com.example.bailotecaapp.utils.construirUrlMedia
+
 
 /**
  * Pantalla para editar el perfil del usuario autenticado.
@@ -46,6 +53,9 @@ fun EditProfileScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+
+    val apiInitViewModel: ApiInitViewModel = hiltViewModel()
+    val baseUrl by apiInitViewModel.baseUrl.collectAsState()
 
     val usuario by sesionViewModel.usuario.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
@@ -76,9 +86,7 @@ fun EditProfileScreen(
 
     // URL final de la imagen para mostrar (IP local 10.0.2.2)
     val imagenFinal = imagenUri?.toString()
-        ?: usuarioActual.fotoPerfil?.let {
-            "http://10.0.2.2:8080/api/media/files/$it?cache=${System.currentTimeMillis()}"
-        }
+        ?: construirUrlMedia(usuarioActual.fotoPerfil, baseUrl)
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -111,9 +119,13 @@ fun EditProfileScreen(
             Text("Edita tu información", style = MaterialTheme.typography.titleMedium)
 
             // Imagen de perfil con forma circular y sombra
-            Image(
-                painter = rememberAsyncImagePainter(imagenFinal),
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imagenFinal)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(140.dp)
                     .clip(CircleShape)

@@ -67,7 +67,6 @@ public class SecurityConfig {
                 .requestMatchers(
                 "/api/clases/publicas",
                  "/api/eventos/publicos",
-                 "/api/uploads/files/**",
                  "/media/**").permitAll()
 
                 // GET de usuarios requiere rol
