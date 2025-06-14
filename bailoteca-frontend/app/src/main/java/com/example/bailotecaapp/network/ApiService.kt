@@ -8,6 +8,7 @@ import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.http.*
 import retrofit2.Response
 
@@ -249,9 +250,9 @@ interface ApiService {
 
     //------------------------ SUBIDA FICHEROS -------------------------
     @Multipart
-    @POST("uploads/upload")
+    @POST("/api/uploads/upload")
     suspend fun subirArchivo(
         @Part archivo: MultipartBody.Part
-    ): Response<String>
+    ): Response<ResponseBody>
 
 }

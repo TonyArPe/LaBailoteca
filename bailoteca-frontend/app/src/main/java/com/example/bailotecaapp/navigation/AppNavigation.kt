@@ -50,7 +50,7 @@ fun AppNavigation(
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
-    val cargado by sesionViewModel.yaCargado.collectAsState()
+    val yaCargado by sesionViewModel.usuarioYaCargado.collectAsState()
     val invitado by sesionViewModel.modoInvitado.collectAsState()
 
     LaunchedEffect(sesionCerrada) {

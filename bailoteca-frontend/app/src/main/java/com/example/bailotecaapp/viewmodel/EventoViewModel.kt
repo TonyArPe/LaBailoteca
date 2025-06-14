@@ -71,11 +71,11 @@ class EventoViewModel @Inject constructor(
             try {
                 val respuesta = api.subirArchivo(archivo)
                 if (respuesta.isSuccessful) {
-                    val nombre = respuesta.body()
+                    val nombre = respuesta.body()?.string()
                     Log.d("EventoViewModel", "✅ Imagen evento subida: $nombre")
                     nombre?.let { onSuccess(it) }
                 } else {
-                    Log.e("EventoViewModel", "❌ Error al subir imagen evento: ${respuesta.errorBody()}")
+                    Log.e("EventoViewModel", "❌ Error al subir imagen evento: ${respuesta.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 Log.e("EventoViewModel", "❌ Excepción al subir imagen evento", e)

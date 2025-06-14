@@ -5,12 +5,12 @@ import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -20,8 +20,7 @@ import okhttp3.MultipartBody
 import javax.inject.Inject
 
 /**
- * ViewModel principal que gestiona la sesión del usuario en la aplicación Bailoteca.
- * Encargado de iniciar sesión, cerrar sesión, restaurar sesiones previas y gestionar inscripciones.
+ * ViewModel que centraliza la gestión de sesión del usuario.
  */
 @HiltViewModel
 class SesionViewModel @Inject constructor(
@@ -59,14 +58,11 @@ class SesionViewModel @Inject constructor(
     private val _modoInvitadoForzado = MutableStateFlow(false)
     val modoInvitadoForzado: StateFlow<Boolean> = _modoInvitadoForzado
 
-    val yaCargado = sesionManager.yaCargado
-
     fun obtenerUsuarioActualConToken(token: String) {
         if (usuarioYaCargado.value) {
             Log.d("SesionViewModel", "⛔ Usuario ya cargado, omitiendo nueva llamada a /me")
             return
         }
-
         _isLoading.value = true
         sesionManager.iniciarSesionConToken(token)
         viewModelScope.launch {
@@ -84,7 +80,6 @@ class SesionViewModel @Inject constructor(
         sesionManager.restaurarSesionDesdePreferencias()
         viewModelScope.launch {
             sesionManager.usuario.filterNotNull().first {
-                Log.d("SesionViewModel", "📦 usuario restaurado: ${it.correo}")
                 if (sesionManager.estaSesionActiva()) {
                     cargarMisInscripciones()
                 }
@@ -98,31 +93,19 @@ class SesionViewModel @Inject constructor(
     fun iniciarSesionConTokenYSincronizar(token: String) {
         _isLoading.value = true
         _error.value = null
-
         Log.d("SesionViewModel", "🚀 Iniciando sesión con token...")
 
         viewModelScope.launch {
             try {
-                // 🔁 IMPORTANTE: Limpiar sesión anterior antes de iniciar una nueva
-                cerrarSesion() // <--- esta línea es clave
-
-                // Guardar token localmente
+                cerrarSesion()
                 sesionManager.iniciarSesionConToken(token)
-                Log.d("SesionViewModel", "🔐 Token inyectado en SesionManager")
 
-                // Esperar a que se propague y recuperar usuario
-                val usuarioRecuperado = sesionManager.usuario.filterNotNull().first()
+                sesionManager.usuario.filterNotNull().first()
 
-                Log.d("SesionViewModel", "✅ Usuario recuperado: ${usuarioRecuperado.correo}")
-
-                // Cargar inscripciones del usuario si procede
                 cargarMisInscripciones()
-
-                // Confirmar sincronización
                 sincronizarDesdeSesionManager()
                 _usuarioCargado.value = true
                 _isLoading.value = false
-
             } catch (e: Exception) {
                 _isLoading.value = false
                 _error.value = "❌ Excepción al iniciar sesión: ${e.localizedMessage}"
@@ -136,11 +119,11 @@ class SesionViewModel @Inject constructor(
             try {
                 val respuesta = api.subirArchivo(archivo)
                 if (respuesta.isSuccessful) {
-                    val nombre = respuesta.body()
+                    val nombre = respuesta.body()?.string()
                     Log.d("SesionViewModel", "✅ Imagen subida correctamente: $nombre")
                     nombre?.let { onSuccess(it) }
                 } else {
-                    Log.e("SesionViewModel", "❌ Error al subir imagen de perfil: ${respuesta.errorBody()}")
+                    Log.e("SesionViewModel", "❌ Error al subir imagen: ${respuesta.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 Log.e("SesionViewModel", "❌ Excepción al subir imagen", e)
@@ -148,24 +131,9 @@ class SesionViewModel @Inject constructor(
         }
     }
 
-    fun sincronizarDesdeSesionManager() {
-        viewModelScope.launch {
-            val usuarioSesion = sesionManager.usuario.value
-            val tokenSesion = sesionManager.token.value
-
-            if (usuarioSesion != null && tokenSesion != null) {
-                Log.d("SesionViewModel", "🔁 Sincronizando estado desde SesionManager: ${usuarioSesion.correo}")
-                _usuarioCargado.value = true
-                sesionManager.marcarUsuarioComoCargado()
-            } else {
-                Log.w("SesionViewModel", "⚠️ SesionManager sin usuario o token. No se puede sincronizar.")
-            }
-        }
-    }
-
     fun cerrarSesion() {
         viewModelScope.launch {
-            Firebase.auth.signOut()
+            FirebaseAuth.getInstance().signOut()
             sesionManager.cerrarSesion()
             _inscripciones.value = emptyList()
             _inscripcionesCargadas = false
@@ -188,10 +156,6 @@ class SesionViewModel @Inject constructor(
 
     /**
      * Actualiza el perfil del usuario autenticado.
-     *
-     * @param usuarioActualizado Objeto con los datos modificados del usuario.
-     * @param onSuccess Callback si la actualización fue exitosa.
-     * @param onError Callback con mensaje si hubo error.
      */
     fun actualizarPerfil(
         usuarioActualizado: UsuarioUpdateRequest,
@@ -200,35 +164,44 @@ class SesionViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val currentUser = Firebase.auth.currentUser
-                val token = currentUser?.getIdToken(true)?.await()?.token
-                if (token == null) {
-                    val mensaje = "❌ Token Firebase nulo, no se puede continuar"
+                val tokenPersistido = sesionManager.token.value
+                val userId = usuario.value?.id
+
+                if (tokenPersistido == null || userId == null) {
+                    val mensaje = "❌ Token o usuario nulo. ¿Se ha perdido la sesión?"
                     _error.value = mensaje
-                    Log.e("SesionViewModel", mensaje)
                     onError(mensaje)
                     return@launch
                 }
-                val userId = usuario.value?.id ?: return@launch
 
-                val response = api.actualizarUsuario("Bearer $token", userId, usuarioActualizado)
+                val response = api.actualizarUsuario(
+                    token = "Bearer $tokenPersistido",
+                    id = userId,
+                    usuario = usuarioActualizado
+                )
 
                 if (response.isSuccessful) {
-                    sesionManager.iniciarSesionConToken(token)
+                    Log.d("SesionViewModel", "✅ Perfil actualizado correctamente")
+                    response.body()?.let { actualizarUsuarioEnSesion(it) }
                     onSuccess()
                 } else {
-                    val mensaje = "❌ Error ${response.code()}: ${response.message()}"
-                    Log.e("SesionViewModel", mensaje)
+                    val mensaje = "❌ Error al actualizar perfil: ${response.code()}"
                     _error.value = mensaje
                     onError(mensaje)
                 }
 
             } catch (e: Exception) {
                 val mensaje = "⚠️ Excepción al actualizar perfil: ${e.localizedMessage}"
-                Log.e("SesionViewModel", mensaje, e)
                 _error.value = mensaje
+                Log.e("SesionViewModel", mensaje, e)
                 onError(mensaje)
             }
+        }
+    }
+
+    private fun actualizarUsuarioEnSesion(usuario: Usuario) {
+        viewModelScope.launch {
+            sesionManager.guardarUsuario(usuario)
         }
     }
 
@@ -236,7 +209,7 @@ class SesionViewModel @Inject constructor(
         if (_inscripcionesCargadas) return
         viewModelScope.launch {
             try {
-                val currentUser = Firebase.auth.currentUser ?: return@launch
+                val currentUser = FirebaseAuth.getInstance().currentUser ?: return@launch
                 val token = currentUser.getIdToken(false).await().token ?: return@launch
                 val usuarioId = usuario.value?.id ?: return@launch
 
@@ -249,6 +222,21 @@ class SesionViewModel @Inject constructor(
                 }
             } catch (e: Exception) {
                 _error.value = "Excepción al cargar inscripciones: ${e.message}"
+            }
+        }
+    }
+
+    fun sincronizarDesdeSesionManager() {
+        viewModelScope.launch {
+            val usuarioSesion = sesionManager.usuario.value
+            val tokenSesion = sesionManager.token.value
+
+            if (usuarioSesion != null && tokenSesion != null) {
+                Log.d("SesionViewModel", "🔁 Sincronizando estado desde SesionManager: ${usuarioSesion.correo}")
+                _usuarioCargado.value = true
+                sesionManager.marcarUsuarioComoCargado()
+            } else {
+                Log.w("SesionViewModel", "⚠️ SesionManager sin usuario o token. No se puede sincronizar.")
             }
         }
     }

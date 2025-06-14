@@ -27,15 +27,30 @@ public class StorageService {
      */
     public String saveFile(MultipartFile file) throws IOException {
         if (!Files.exists(UPLOAD_DIR)) {
-            Files.createDirectories(UPLOAD_DIR);
-            log.info("📂 Carpeta de subida creada en {}", UPLOAD_DIR.toAbsolutePath());
+            try {
+                Files.createDirectories(UPLOAD_DIR);
+                log.info("📁 Carpeta 'uploads' creada en {}", UPLOAD_DIR.toAbsolutePath());
+            } catch (IOException e) {
+                log.error("❌ No se pudo crear carpeta de uploads", e);
+                throw e;
+            }
         }
 
-        String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        String originalName = file.getOriginalFilename();
+        if (originalName == null || originalName.trim().isEmpty()) {
+            throw new IOException("Nombre de archivo no válido");
+        }
+
+        String filename = UUID.randomUUID() + "_" + originalName;
         Path filePath = UPLOAD_DIR.resolve(filename);
 
-        Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        log.info("✅ Archivo guardado en: {}", filePath.toAbsolutePath());
+        try {
+            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            log.info("✅ Archivo guardado en {}", filePath.toAbsolutePath());
+        } catch (IOException e) {
+            log.error("❌ Error al copiar archivo a disco", e);
+            throw e;
+        }
 
         return filename;
     }
