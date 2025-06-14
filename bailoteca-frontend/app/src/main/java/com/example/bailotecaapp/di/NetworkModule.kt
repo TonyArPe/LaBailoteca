@@ -3,6 +3,7 @@ package com.example.bailotecaapp.di
 import android.content.Context
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.FirebaseAuthInterceptor
+import com.example.bailotecaapp.network.FirebaseUrlProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -61,10 +62,13 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(
-        client: OkHttpClient
+        client: OkHttpClient,
+        urlProvider: FirebaseUrlProvider
     ): Retrofit {
+        val baseUrl = urlProvider.getBaseUrl()
+
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

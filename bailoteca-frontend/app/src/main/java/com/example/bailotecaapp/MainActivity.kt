@@ -11,12 +11,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.example.bailotecaapp.navigation.AppNavigation
+import com.example.bailotecaapp.network.FirebaseUrlProvider
 import com.example.bailotecaapp.network.session.SesionManagerSingleton
 import com.example.bailotecaapp.ui.theme.BailotecaTheme
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 /**
  * Punto de entrada principal de la aplicación.
@@ -24,9 +26,12 @@ import dagger.hilt.android.AndroidEntryPoint
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var urlProvider: FirebaseUrlProvider
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        urlProvider.fetchAndActivate()
 
         Log.d("MainActivity", "🚀 onCreate llamado, inicializando interfaz")
         SesionManagerSingleton.restaurarSesionDesdePreferencias(applicationContext)
@@ -66,7 +71,8 @@ class MainActivity : ComponentActivity() {
 
                 AppNavigation(
                     navController = navController,
-                    themeViewModel = themeViewModel
+                    themeViewModel = themeViewModel,
+                    urlProvider = urlProvider
                 )
             }
         }

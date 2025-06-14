@@ -12,28 +12,40 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.network.FirebaseUrlProvider
 import com.example.bailotecaapp.ui.components.SesionGuard
+import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.ui.screens.clases.*
 import com.example.bailotecaapp.ui.screens.enumscreens.MainScreen
-import com.example.bailotecaapp.ui.screens.eventos.CrearEditarEventoScreen
-import com.example.bailotecaapp.ui.screens.eventos.EventoDetailScreen
-import com.example.bailotecaapp.ui.screens.eventos.EventoListScreen
+import com.example.bailotecaapp.ui.screens.eventos.*
 import com.example.bailotecaapp.ui.screens.invitado.InvitadoHomeScreen
 import com.example.bailotecaapp.ui.screens.login.LoginScreen
 import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.usuarios.ClasesUsuarioScreen
-import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
+import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
 import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
 
+/**
+ * Encargado de definir y controlar toda la navegación principal de la app.
+ *
+ * Incluye control de sesión y redirección inicial según el rol del usuario
+ * y permite usar una pantalla de carga (`SplashScreen`) para sincronizar Firebase.
+ *
+ * @param navController controlador de navegación de Compose
+ * @param modifier modificador externo
+ * @param themeViewModel viewmodel que gestiona el tema actual
+ * @param urlProvider proveedor de la URL base remota
+ */
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    themeViewModel: ThemeViewModel
+    themeViewModel: ThemeViewModel,
+    urlProvider: FirebaseUrlProvider
 ) {
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
@@ -44,35 +56,38 @@ fun AppNavigation(
     LaunchedEffect(sesionCerrada) {
         if (sesionCerrada) {
             Log.d("AppNavigation", "🔐 Sesión cerrada, navegando a login")
-            navController.navigate(Screens.Login.route) {
+            navController.navigate("login") {
                 popUpTo(0) { inclusive = true }
             }
             sesionViewModel.reiniciarEstadoSesion()
         }
     }
 
-    val startDestination = when {
-        cargado && usuario?.rol != Rol.INVITADO -> Screens.Home.route
-        cargado && usuario?.rol == Rol.INVITADO -> Screens.InvitadoHome.route
-        else -> Screens.Login.route
-    }
+    // Primera pantalla: siempre iniciamos en SplashScreen
+    val startDestination = "splash"
 
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
-        composable(Screens.Login.route) {
+        // 🌊 SplashScreen inicial
+        composable("splash") {
+            Log.d("AppNavigation", "🌀 SplashScreen lanzada")
+            SplashScreen(navController, urlProvider)
+        }
+
+        composable("login") {
             Log.d("AppNavigation", "📍 Login")
             LoginScreen(navController)
         }
 
-        composable(Screens.Register.route) {
+        composable("register") {
             Log.d("AppNavigation", "📍 Registro")
             RegisterScreen(navController)
         }
 
-        composable(Screens.Home.route) {
+        composable("home") {
             Log.d("AppNavigation", "📍 Home")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 MainScaffold(
@@ -86,7 +101,7 @@ fun AppNavigation(
             }
         }
 
-        composable(Screens.Clases.route) {
+        composable("clases") {
             Log.d("AppNavigation", "📍 Lista de Clases")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 MainScaffold(
@@ -100,15 +115,12 @@ fun AppNavigation(
             }
         }
 
-        composable(
-            route = "usuario_detalle/{id}",
-            arguments = listOf(navArgument("id") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val id = backStackEntry.arguments?.getLong("id") ?: return@composable
+        composable("usuario_detalle/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+            val id = it.arguments?.getLong("id") ?: return@composable
             UsuarioDetalleScreen(userId = id, navController)
         }
 
-        composable(Screens.Eventos.route) {
+        composable("eventos") {
             Log.d("AppNavigation", "📍 Lista de Eventos")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 MainScaffold(
@@ -122,7 +134,7 @@ fun AppNavigation(
             }
         }
 
-        composable(Screens.Usuarios.route) {
+        composable("usuarios") {
             Log.d("AppNavigation", "📍 Usuarios")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 MainScaffold(
@@ -136,7 +148,7 @@ fun AppNavigation(
             }
         }
 
-        composable(Screens.Perfil.route) {
+        composable("perfil") {
             Log.d("AppNavigation", "📍 Perfil")
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
                 MainScaffold(
@@ -150,25 +162,19 @@ fun AppNavigation(
             }
         }
 
-        composable(Screens.EditProfile.route) {
+        composable("editar_perfil") {
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
-                EditProfileScreen(
-                    navController = navController,
-                    sesionViewModel = sesionViewModel
-                )
+                EditProfileScreen(navController, sesionViewModel)
             }
         }
 
-        composable("clasesUsuario/{id}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+        composable("clasesUsuario/{id}") {
+            val id = it.arguments?.getString("id")?.toLongOrNull() ?: return@composable
             ClasesUsuarioScreen(userId = id, navController = navController)
         }
 
-        composable(
-            route = Screens.ClaseDetail.route,
-            arguments = listOf(navArgument("claseId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+        composable("clase/{claseId}", arguments = listOf(navArgument("claseId") { type = NavType.LongType })) {
+            val claseId = it.arguments?.getLong("claseId") ?: return@composable
             Log.d("AppNavigation", "📍 Detalle clase ID: $claseId")
 
             SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
@@ -181,41 +187,31 @@ fun AppNavigation(
         }
 
         composable("crearEditarClase") {
-            Log.d("AppNavigation", "📍 Crear nueva clase")
-            CrearEditarClaseScreen(navController = navController)
+            CrearEditarClaseScreen(navController)
         }
 
-        composable(
-            "crearEditarClase/{claseId}",
-            arguments = listOf(navArgument("claseId") { type = NavType.LongType })
-        ) { backStackEntry ->
-            val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
-            Log.d("AppNavigation", "📍 Editar clase ID: $claseId")
-            CrearEditarClaseScreen(navController = navController, claseId = claseId)
+        composable("crearEditarClase/{claseId}", arguments = listOf(navArgument("claseId") { type = NavType.LongType })) {
+            val claseId = it.arguments?.getLong("claseId") ?: return@composable
+            CrearEditarClaseScreen(navController, claseId)
         }
 
-        composable(Screens.EventoList.route) {
+        composable("evento_list") {
             val usuario = sesionViewModel.usuario.collectAsState().value
             val eventoViewModel = hiltViewModel<EventoViewModel>()
-
             if (usuario != null) {
-                EventoListScreen(
-                    navController = navController,
-                    usuario = usuario,
-                    viewModel = eventoViewModel
-                )
+                EventoListScreen(navController, usuario, eventoViewModel)
             }
         }
 
         composable("evento/{id}") {
-            EventoDetailScreen(navController = navController)
+            EventoDetailScreen(navController)
         }
+
         composable("crear_evento") {
             CrearEditarEventoScreen(navController)
         }
 
-
-        composable(Screens.InvitadoHome.route) {
+        composable("invitado_home") {
             Log.d("AppNavigation", "📍 Home invitado")
             InvitadoHomeScreen(
                 navController = navController,
