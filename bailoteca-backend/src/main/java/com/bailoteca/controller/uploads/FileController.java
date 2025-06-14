@@ -1,20 +1,27 @@
 package com.bailoteca.controller.uploads;
 
 import com.bailoteca.service.StorageService;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.Path;
 
+/**
+ * Controlador REST encargado de gestionar la subida de archivos multimedia
+ * (imágenes de perfil, imágenes de eventos, etc.) en Bailoteca.
+ *
+ * La descarga y visualización pública de estos archivos se gestiona desde
+ * WebMvcConfig, mapeando la carpeta local `uploads/` a `/media/**`.
+ *
+ * @author Tony Aragón
+ * @version 1.0
+ */
 @RestController
-@RequestMapping("/api/media")
+@RequestMapping("/api/uploads")
 @RequiredArgsConstructor
 @Slf4j
 public class FileController {
@@ -22,39 +29,22 @@ public class FileController {
     private final StorageService storageService;
 
     /**
-     * Sube un archivo al servidor.
+     * Endpoint para subir un archivo al servidor.
+     * El archivo se guarda físicamente en el directorio `uploads/`.
+     *
+     * @param file archivo subido desde el cliente
+     * @return nombre del archivo almacenado
      */
     @PostMapping("/upload")
     public ResponseEntity<String> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             String filename = storageService.saveFile(file);
+            log.info("✅ Archivo subido correctamente: {}", filename);
             return ResponseEntity.ok(filename);
         } catch (IOException e) {
-            log.error("Error al subir archivo", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al subir archivo");
-        }
-    }
-
-    /**
-     * Devuelve un archivo para su visualización o descarga.
-     */
-    @GetMapping("/files/{filename:.+}")
-    public ResponseEntity<Resource> serveFile(@PathVariable String filename, HttpServletResponse response) {
-        try {
-            Path filePath = storageService.getFilePath(filename);
-            Resource resource = new UrlResource(filePath.toUri());
-
-            if (resource.exists() || resource.isReadable()) {
-                return ResponseEntity.ok()
-                        .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + resource.getFilename() + "\"")
-                        .body(resource);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
-            log.error("Error al servir archivo", e);
-            return ResponseEntity.internalServerError().build();
+            log.error("❌ Error al subir archivo", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al subir archivo");
         }
     }
 }

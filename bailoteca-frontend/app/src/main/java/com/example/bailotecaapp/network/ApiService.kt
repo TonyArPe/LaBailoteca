@@ -249,7 +249,7 @@ interface ApiService {
 
     //------------------------ SUBIDA FICHEROS -------------------------
     @Multipart
-    @POST("media/upload")
+    @POST("uploads/upload")
     suspend fun subirArchivo(
         @Part archivo: MultipartBody.Part
     ): Response<String>

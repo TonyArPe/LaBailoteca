@@ -87,6 +87,7 @@ dependencies {
     // Firebase
     implementation(platform("com.google.firebase:firebase-bom:32.7.2"))
     implementation(libs.firebase.auth.ktx)
+    implementation (libs.firebase.config.ktx)
 
     // Jetpack DataStore (Preferences)
     implementation("androidx.datastore:datastore-preferences:1.1.1")

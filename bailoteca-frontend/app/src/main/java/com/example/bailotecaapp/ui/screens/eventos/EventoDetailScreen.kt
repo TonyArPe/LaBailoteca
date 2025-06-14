@@ -17,8 +17,8 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun EventoDetailScreen(
-    viewModel: EventoViewModel = hiltViewModel(),
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: EventoViewModel = hiltViewModel()
 ) {
     val evento by viewModel.eventoSeleccionado.collectAsState()
 

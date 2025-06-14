@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -50,11 +51,16 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
      * Rutas que se excluyen del filtrado JWT.
      * Estas rutas permiten acceso anónimo y no requieren autenticación.
      */
-    private static final List<String> EXCLUDE_PATHS = List.of(
-            "/api/usuarios", // Registro
-            "/api/auth/login", // Login
+    private static final List<String> EXCLUDE_PATTERNS = List.of(
+            "/",
+            "/api/usuarios",
+            "/api/auth/**",
             "/api/eventos/publicos",
-            "/api/clases/publicas");
+            "/api/clases/publicas",
+            "/api/uploads/files/**",
+            "/media/**");
+
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     /**
      * Método que se ejecuta para filtrar las solicitudes HTTP.
@@ -138,7 +144,6 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
      * @return true si la ruta está excluida, false en caso contrario.
      */
     private boolean isExcluded(String path, String method) {
-        return EXCLUDE_PATHS.stream().anyMatch(path::equalsIgnoreCase)
-                && method.equalsIgnoreCase("POST");
+        return EXCLUDE_PATTERNS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
     }
 }

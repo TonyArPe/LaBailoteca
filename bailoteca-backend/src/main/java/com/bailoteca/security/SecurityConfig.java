@@ -64,7 +64,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
 
                 // EVENTOS Y CLASES VISIBLES PARA INVITADOS
-                .requestMatchers("/api/clases/publicas", "/api/eventos/publicos").permitAll()
+                .requestMatchers(
+                "/api/clases/publicas",
+                 "/api/eventos/publicos",
+                 "/api/uploads/files/**",
+                 "/media/**").permitAll()
 
                 // GET de usuarios requiere rol
                 .requestMatchers(HttpMethod.GET, "/api/usuarios").hasAnyRole("ADMIN", "PROFESOR")

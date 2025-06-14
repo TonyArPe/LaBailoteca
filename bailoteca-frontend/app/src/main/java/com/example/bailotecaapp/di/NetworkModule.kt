@@ -3,6 +3,7 @@ package com.example.bailotecaapp.di
 import android.content.Context
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.FirebaseAuthInterceptor
+import com.example.bailotecaapp.network.FirebaseUrlProvider
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,7 +23,7 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://fe65-84-122-0-141.ngrok-free.app/"
+    private const val BASE_URL = "http://10.0.2.2:8080/"
 
     /**
      * Proporciona el interceptor que añade y renueva el token JWT de Firebase.
@@ -61,10 +62,13 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideRetrofit(
-        client: OkHttpClient
+        client: OkHttpClient,
+        urlProvider: FirebaseUrlProvider
     ): Retrofit {
+        val baseUrl = urlProvider.getBaseUrl()
+
         return Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl(baseUrl)
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

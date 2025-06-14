@@ -3,7 +3,9 @@ package com.example.bailotecaapp.ui.screens.usuarios.perfil
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,17 +14,23 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import coil.compose.rememberAsyncImagePainter
-import com.example.bailotecaapp.viewmodel.SesionViewModel
-import com.example.bailotecaapp.navigation.Screens
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.bailotecaapp.model.enums.Rol
+import com.example.bailotecaapp.viewmodel.SesionViewModel
+import com.example.bailotecaapp.ui.theme.Lima
+import com.example.bailotecaapp.ui.theme.Magenta
 
 /**
- * Pantalla que muestra el perfil del usuario autenticado de forma visual y atractiva.
+ * Pantalla que muestra el perfil del usuario autenticado.
+ *
+ * Esta pantalla proporciona una vista visualmente agradable de los datos del usuario,
+ * permitiendo además la navegación a la pantalla de edición del perfil para usuarios no invitados.
+ *
+ * @param navController controlador de navegación que permite moverse entre pantallas.
+ * @param sesionViewModel ViewModel que gestiona la sesión y expone el usuario actual.
+ * @param modifier modificador para aplicar ajustes externos (padding, scroll, etc.)
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,8 +51,12 @@ fun ProfileScreen(
         return
     }
 
-    //Para guardar el usuario en una variable una vez hecha la comprobacion
     val usuarioActual = usuario!!
+
+    // ⚠️ Se evita el cacheo de la imagen añadiendo un parámetro temporal
+    val imagenUrl = usuarioActual.fotoPerfil?.let {
+        "http://10.0.2.2:8080/api/media/files/$it?cache=${System.currentTimeMillis()}"
+    }
 
     Scaffold(
         topBar = {
@@ -52,27 +64,31 @@ fun ProfileScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState()), // Añade scroll
+                .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Foto de perfil
-            Image(
-                painter = rememberAsyncImagePainter(usuarioActual.fotoPerfil),
-                contentDescription = "Foto de perfil",
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
-            )
+            // 📷 Imagen de perfil del usuario
+            if (!imagenUrl.isNullOrBlank()) {
+                Image(
+                    painter = rememberAsyncImagePainter(imagenUrl),
+                    contentDescription = "Foto de perfil",
+                    modifier = Modifier
+                        .size(140.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+                )
+            }
 
+            // 🧑 Nombre y correo
             Text(
                 text = usuarioActual.nombre,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold)
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                color = Magenta
             )
 
             Text(
@@ -83,7 +99,7 @@ fun ProfileScreen(
 
             Divider(modifier = Modifier.padding(vertical = 8.dp))
 
-            // Sección de detalles del usuario
+            // ℹ️ Resto de campos del usuario
             InfoRow(label = "Teléfono", value = usuarioActual.telefono)
             InfoRow(label = "Dirección", value = usuarioActual.direccion)
             InfoRow(label = "Fecha de nacimiento", value = usuarioActual.fechaNacimiento)
@@ -95,15 +111,16 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Solo para usuarios NO invitados
+            // ✏️ Botón de editar perfil si no es invitado
             if (usuarioActual.rol != Rol.INVITADO) {
-                InfoRow("Pagado", if (usuarioActual.pagado) "Sí" else "No")
-                InfoRow("Activo", if (usuarioActual.activo) "Sí" else "No")
-
-                Button(onClick = {
-                    navController.navigate(Screens.EditProfile.route)
-                }) {
-                    Text("Editar Perfil")
+                Button(
+                    onClick = {
+                        navController.navigate("editar_perfil") // ✅ Navegación corregida
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Lima),
+                    shape = MaterialTheme.shapes.extraLarge
+                ) {
+                    Text("Editar Perfil", color = Color.White)
                 }
             }
         }
@@ -111,13 +128,18 @@ fun ProfileScreen(
 }
 
 /**
- * Componente reutilizable para mostrar una fila de información del perfil.
+ * Componente reutilizable para mostrar una fila de información en el perfil del usuario.
+ *
+ * @param label Etiqueta visible (ej. "Teléfono").
+ * @param value Valor asociado (ej. "633 123 456").
  */
 @Composable
 fun InfoRow(label: String, value: String?) {
     if (!value.isNullOrBlank()) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(text = "$label:", fontWeight = FontWeight.Medium)
