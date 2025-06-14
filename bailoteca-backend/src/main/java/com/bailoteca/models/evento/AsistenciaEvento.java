@@ -43,4 +43,9 @@ public class AsistenciaEvento {
      */
     @Column(nullable = false)
     private Boolean asistira = true;
+
+    public void setPagado(boolean pagado) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'setPagado'");
+    }
 }
