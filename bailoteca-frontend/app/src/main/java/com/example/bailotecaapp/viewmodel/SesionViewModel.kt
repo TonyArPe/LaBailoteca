@@ -187,10 +187,12 @@ class SesionViewModel @Inject constructor(
 
                 if (response.isSuccessful) {
                     Log.d("SesionViewModel", "✅ Perfil actualizado correctamente")
+
                     response.body()?.let {
                         sesionManager.guardarUsuario(it)
-                        sincronizarDesdeSesionManager()
+                        sincronizarDesdeSesionManager() // <- 🔁 Forzamos recomposición con nuevo usuario
                     }
+
                     onSuccess()
                 } else {
                     val mensaje = "❌ Error al actualizar perfil: ${response.code()}"

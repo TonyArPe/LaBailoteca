@@ -74,7 +74,7 @@ fun EditProfileScreen(
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
     val imagenSubidaNombre = remember { mutableStateOf<String?>(usuarioActual.fotoPerfil) }
 
-    val imagenFinal = imagenUri?.toString() ?: construirUrlMedia(usuarioActual.fotoPerfil, baseUrl)
+    val imagenFinal = construirUrlMedia(imagenSubidaNombre.value, baseUrl)
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -86,8 +86,35 @@ fun EditProfileScreen(
                 imagenSubidaNombre.value = nombreArchivo
 
                 scope.launch {
-                    Firebase.auth.currentUser?.getIdToken(true)?.await()?.token?.let { nuevoToken ->
-                        sesionViewModel.iniciarSesionConTokenYSincronizar(nuevoToken)
+                    // ⚠️ Nueva lógica para actualizar perfil con imagen subida
+                    val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
+                    if (token != null) {
+                        val actualizado = UsuarioUpdateRequest(
+                            nombre = usuarioActual.nombre,
+                            apellido = usuarioActual.apellido ?: "",
+                            correo = usuarioActual.correo,
+                            contrasenna = usuarioActual.contrasenna,
+                            rol = usuarioActual.rol,
+                            telefono = usuarioActual.telefono,
+                            direccion = usuarioActual.direccion,
+                            fechaNacimiento = usuarioActual.fechaNacimiento,
+                            genero = usuarioActual.genero,
+                            fotoPerfil = nombreArchivo,
+                            activo = usuarioActual.activo,
+                            pagado = usuarioActual.pagado
+                        )
+
+                        Log.d("EditProfileScreen", "🖼️ Actualizando usuario con nueva imagen: $actualizado")
+
+                        sesionViewModel.actualizarPerfil(
+                            usuarioActualizado = actualizado,
+                            onSuccess = {
+                                sesionViewModel.sincronizarDesdeSesionManager()
+                            },
+                            onError = { msg ->
+                                Log.e("EditProfileScreen", "❌ Error al actualizar imagen: $msg")
+                            }
+                        )
                     }
                 }
             }

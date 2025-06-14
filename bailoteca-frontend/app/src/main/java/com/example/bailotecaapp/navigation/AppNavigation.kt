@@ -198,6 +198,18 @@ fun AppNavigation(
             CrearEditarClaseScreen(navController)
         }
 
+        composable("crear_clase") {
+            CrearEditarClaseScreen(navController)
+        }
+
+        composable(
+            "editar_clase/{claseId}",
+            arguments = listOf(navArgument("claseId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+            CrearEditarClaseScreen(navController = navController, claseId = claseId)
+        }
+
         composable("crearEditarClase/{claseId}", arguments = listOf(navArgument("claseId") { type = NavType.LongType })) {
             val claseId = it.arguments?.getLong("claseId") ?: return@composable
             CrearEditarClaseScreen(navController, claseId)

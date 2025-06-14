@@ -188,7 +188,14 @@ class ClaseViewModel @Inject constructor(
     }
 
     suspend fun eliminarClase(token: String, claseId: Long): Response<Void> {
-        return api.eliminarClase("Bearer $token", claseId)
+        Log.d("ClaseViewModel", "🗑 Solicitando eliminación clase ID $claseId")
+        val response = api.eliminarClase("Bearer $token", claseId)
+        if (response.isSuccessful) {
+            Log.d("ClaseViewModel", "✅ Clase $claseId eliminada con éxito")
+        } else {
+            Log.e("ClaseViewModel", "❌ Error al eliminar clase $claseId: ${response.code()}")
+        }
+        return response
     }
 
 }

@@ -83,7 +83,7 @@ fun ProfileScreen(
             if (!imagenUrl.isNullOrBlank()) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(imagenUrl)
+                        .data(imagenUrl + "?t=" + System.currentTimeMillis())
                         .crossfade(true)
                         .build(),
                     contentDescription = "Foto de perfil",
