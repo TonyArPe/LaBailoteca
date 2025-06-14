@@ -11,10 +11,12 @@ import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
 import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import okhttp3.MultipartBody
 import javax.inject.Inject
 
@@ -64,14 +66,17 @@ class SesionViewModel @Inject constructor(
         _isLoading.value = true
         viewModelScope.launch {
             sesionManager.restaurarSesionDesdePreferencias()
-            sesionManager.usuario.filterNotNull().first {
-                if (sesionManager.estaSesionActiva()) {
-                    cargarMisInscripciones()
-                }
+            val usuarioRestaurado = sesionManager.usuario.value
+            val tokenRestaurado = sesionManager.token.value
+
+            if (usuarioRestaurado != null && tokenRestaurado != null) {
+                Log.d("SesionViewModel", "🔁 Usuario restaurado: ${usuarioRestaurado.correo}")
                 _usuarioCargado.value = true
-                _isLoading.value = false
-                true
+                cargarMisInscripciones()
+            } else {
+                Log.w("SesionViewModel", "⚠️ No se pudo restaurar sesión desde preferencias")
             }
+            _isLoading.value = false
         }
     }
 
@@ -85,12 +90,14 @@ class SesionViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                cerrarSesion()
+                withContext(Dispatchers.IO) {
+                    sesionManager.cerrarSesion()
+                }
+                delay(100) // Espera segura
                 sesionManager.iniciarSesionConTokenSuspend(token)
-                sesionManager.usuario.filterNotNull().first()
 
-                cargarMisInscripciones()
                 sincronizarDesdeSesionManager()
+                cargarMisInscripciones()
                 _usuarioCargado.value = true
                 _isLoading.value = false
             } catch (e: Exception) {
@@ -180,7 +187,10 @@ class SesionViewModel @Inject constructor(
 
                 if (response.isSuccessful) {
                     Log.d("SesionViewModel", "✅ Perfil actualizado correctamente")
-                    response.body()?.let { sesionManager.guardarUsuario(it) }
+                    response.body()?.let {
+                        sesionManager.guardarUsuario(it)
+                        sincronizarDesdeSesionManager()
+                    }
                     onSuccess()
                 } else {
                     val mensaje = "❌ Error al actualizar perfil: ${response.code()}"

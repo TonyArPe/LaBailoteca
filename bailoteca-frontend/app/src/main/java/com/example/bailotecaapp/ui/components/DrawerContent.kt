@@ -20,6 +20,7 @@ import com.example.bailotecaapp.R
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.DrawerDestination
 import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.network.FirebaseUrlProvider
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -35,6 +36,7 @@ fun DrawerContent(
     navController: NavHostController,
     onCloseDrawer: () -> Unit
 ) {
+
     val usuario by sesionViewModel.usuario.collectAsState()
     val rol = usuario?.rol ?: Rol.INVITADO
     Log.d("DrawerContent", "🧑‍🎤 Rol activo: $rol")
@@ -98,9 +100,13 @@ fun DrawerContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                val firebaseUrlProvider = remember { FirebaseUrlProvider() }
+                val baseUrl = firebaseUrlProvider.getBaseUrl()
                 val imagenUri = usuario?.fotoPerfil?.takeIf { it.isNotBlank() }?.let {
-                    "http://10.0.2.2:8080/media/$it"
+                    "$baseUrl/media/$it"
                 }
+                Log.d("DrawerContent", "📷 URL de imagen: $imagenUri")
+
                 val painter = if (imagenUri.isNullOrBlank())
                     painterResource(id = R.drawable.default_profile)
                 else rememberAsyncImagePainter(imagenUri)

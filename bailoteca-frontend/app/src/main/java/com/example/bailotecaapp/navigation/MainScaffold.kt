@@ -31,14 +31,16 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScaffold(
     globalNavController: NavHostController,
-    usuario: Usuario,
     sesionViewModel: SesionViewModel,
+    usuario: Usuario,
     currentScreen: MainScreen,
     onNavigate: (MainScreen) -> Unit,
     themeViewModel: ThemeViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+
+    val usuario by sesionViewModel.usuario.collectAsState()
 
     val backStackEntry by globalNavController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -161,7 +163,7 @@ fun MainScaffold(
 
                     MainScreen.EVENTOS -> EventoListScreen(
                         navController = globalNavController,
-                        usuario = usuario,
+                        usuario = usuario ?: return@Scaffold,
                         modifier = Modifier.padding(padding),
                         viewModel = eventoViewModel
                     )
