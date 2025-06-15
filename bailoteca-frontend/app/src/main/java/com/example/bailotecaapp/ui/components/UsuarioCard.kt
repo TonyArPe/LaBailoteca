@@ -33,7 +33,6 @@ fun UsuarioCard(
     navController: NavController,
     usuario: Usuario,
     rolActual: String,
-    onEditar: (Usuario) -> Unit,
     onEliminar: (Usuario) -> Unit,
     onModificarPagado: (Usuario) -> Unit,
     onModificarActivo: (Usuario) -> Unit
@@ -68,12 +67,6 @@ fun UsuarioCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                IconButton(onClick = {
-                    navController.navigate("editar_usuario/${usuario.id}")
-                }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar")
-                }
-
                 IconButton(onClick = { onEliminar(usuario) }) {
                     Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                 }

@@ -16,10 +16,11 @@ import com.example.bailotecaapp.ui.components.UsuarioCard
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
 import com.example.bailotecaapp.ui.theme.Magenta
+import kotlinx.coroutines.delay
 
 /**
  * Pantalla que muestra la lista de usuarios, adaptada por rol:
- * - ADMIN: visualiza y gestiona todos los usuarios del sistema.
+ * - ADMIN: visualiza y gestiona todos los usuarios del sistema (menos a sí mismo).
  * - PROFESOR: solo ve usuarios inscritos en sus clases.
  *
  * Aplica los colores y formas definidas en el tema de la app.
@@ -38,30 +39,38 @@ fun UserListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuarioActual by sesionViewModel.usuario.collectAsState()
-    Log.d("UserListScreen", "📦 Estado usuarioActual = $usuarioActual")
+    Log.d("UserListScreen", "\uD83D\uDCE6 Estado usuarioActual = $usuarioActual")
 
     var usuarioAEliminar by remember { mutableStateOf<Usuario?>(null) }
+
+    LaunchedEffect(Unit) {
+        if (sesionViewModel.usuario.value == null) {
+            Log.w("UserListScreen", "\u26A0\uFE0F Usuario no disponible aún. Forzando sincronización.")
+            sesionViewModel.sincronizarDesdeSesionManager()
+        }
+    }
 
     /**
      * Lógica reactiva que se ejecuta una vez el usuario ha sido cargado.
      * Carga la lista de usuarios en base al rol actual.
      */
     LaunchedEffect(usuarioActual) {
-        if (usuarioActual == null) {
-            Log.w("UserListScreen", "⚠️ Usuario aún no cargado. Esperando sesión...")
-            return@LaunchedEffect
-        }
+        usuarioActual?.let {
+            delay(200) // ⚠️ Esperamos que el token también esté listo
+            Log.d("UserListScreen", "👤 Usuario actual: ${it.nombre} (${it.rol.name})")
 
-        Log.d("UserListScreen", "👤 Usuario actual: ${usuarioActual!!.nombre} (${usuarioActual!!.rol.name})")
+            // 🧠 Forzamos sincronización dentro del ViewModel
+            viewModel.sesionManager.guardarUsuario(it)
 
-        when (usuarioActual!!.rol.name) {
-            "ADMIN" -> {
-                Log.d("UserListScreen", "🛡️ Cargando todos los usuarios (ADMIN)")
-                viewModel.obtenerTodosLosUsuarios()
-            }
-            "PROFESOR" -> {
-                Log.d("UserListScreen", "👨‍🏫 Cargando alumnos del profesor (PROFESOR)")
-                viewModel.obtenerUsuariosVisiblesParaProfesor(usuarioActual!!.id!!)
+            when (it.rol.name) {
+                "ADMIN" -> {
+                    Log.d("UserListScreen", "🛡️ Cargando todos los usuarios (ADMIN)")
+                    viewModel.obtenerTodosLosUsuarios()
+                }
+                "PROFESOR" -> {
+                    Log.d("UserListScreen", "🧑‍🏫 Cargando usuarios visibles para PROFESOR")
+                    viewModel.obtenerUsuariosVisiblesParaProfesor(it.id!!)
+                }
             }
         }
     }
@@ -95,7 +104,9 @@ fun UserListScreen(
             }
 
             else -> {
-                val usuariosUnicos = usuarios.distinctBy { it.id }
+                val usuariosUnicos = usuarios
+                    .distinctBy { it.id }
+                    .filter { it.id != usuarioActual?.id } // ✅ Excluye a sí mismo
 
                 LazyColumn(
                     modifier = Modifier
@@ -109,7 +120,6 @@ fun UserListScreen(
                             usuario = usuario,
                             rolActual = usuarioActual?.rol?.name ?: "",
                             navController = navController,
-                            onEditar = { navController.navigate("editar_usuario/${usuario.id}") },
                             onEliminar = { usuarioAEliminar = usuario },
                             onModificarPagado = { viewModel.togglePagado(it) },
                             onModificarActivo = { viewModel.toggleActivo(it) }

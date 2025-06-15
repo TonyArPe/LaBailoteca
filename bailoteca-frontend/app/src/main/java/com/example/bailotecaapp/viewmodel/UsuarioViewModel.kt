@@ -39,23 +39,35 @@ class UsuarioViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
+    /**
+     * Carga todos los usuarios del sistema, excluyendo al usuario actualmente autenticado
+     * para evitar autoedición o autodesactivación.
+     */
     fun obtenerTodosLosUsuarios() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
 
-            try {
-                val token = sesionManager.getToken() ?: return@launch
-                val response = api.getUsuarios("Bearer $token")
+            val token = sesionManager.getToken()
+            val usuario = sesionManager.usuario.value
+            Log.d("UsuarioViewModel", "🎫 Token: $token")
+            Log.d("UsuarioViewModel", "👤 Usuario en ViewModel: $usuario")
 
+            if (token == null || usuario == null) {
+                Log.w("UsuarioViewModel", "⚠️ Token o usuario actual nulos. Abortando carga.")
+                _isLoading.value = false
+                return@launch
+            }
+
+            try {
+                val response = api.getUsuarios("Bearer $token")
                 if (response.isSuccessful) {
                     val todos = response.body() ?: emptyList()
-                    val yo = sesionManager.usuario.value?.id
-                    _usuarios.value = todos.filter { it.id != yo }
+                    _usuarios.value = todos.filter { it.id != usuario.id }
 
-                    Log.d("UsuarioViewModel", "✅ Todos los usuarios cargados: ${_usuarios.value.size}")
+                    Log.d("UsuarioViewModel", "✅ Usuarios cargados (sin yo): ${_usuarios.value.size}")
                 } else {
-                    _errorMessage.value = "Error al obtener usuarios: ${response.code()}"
+                    _errorMessage.value = "Error ${response.code()}: ${response.message()}"
                 }
 
             } catch (e: Exception) {
