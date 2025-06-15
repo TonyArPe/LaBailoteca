@@ -59,6 +59,13 @@ class SesionViewModel @Inject constructor(
     val modoInvitadoForzado: StateFlow<Boolean> = _modoInvitadoForzado
 
     /**
+     * Obtiene el token actual de sesión desde el SessionManager de forma segura.
+     */
+    suspend fun getTokenActual(): String? {
+        return sesionManager.getToken()
+    }
+
+    /**
      * Restaura sesión desde DataStore al arrancar la app.
      */
     fun recuperarSesionDesdePreferencias() {

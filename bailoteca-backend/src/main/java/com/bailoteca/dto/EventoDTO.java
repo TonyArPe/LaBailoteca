@@ -1,33 +1,67 @@
 package com.bailoteca.dto;
 
-import com.bailoteca.models.enums.EstadoEvento;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 /**
- * Clase que representa un evento en la aplicación.
- * Contiene información sobre el nombre, descripción, fecha, lugar,
- * estado del evento, si es público y el nombre del organizador.
+ * DTO unificado que representa los datos de un evento en la aplicación.
+ * Se utiliza tanto para la creación, edición como para la visualización.
  * 
- * @author Tony Aragón
- * @version 1.0
- * @since 1.0
+ * El campo `id` puede ser null en creación, pero obligatorio en edición o respuesta.
+ * El campo `nombreOrganizador` es solo informativo (rellenado en respuestas).
+ * 
+ * @author
  */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class EventoDTO {
+
+    /**
+     * Identificador único del evento (puede ser null al crear).
+     */
     private Long id;
+
+    /**
+     * Título del evento.
+     */
     private String nombre;
+
+    /**
+     * Descripción detallada del evento.
+     */
     private String descripcion;
-    private LocalDateTime fecha;
+
+    /**
+     * Fecha y hora en que se celebrará el evento.
+     */
+    private String fecha;
+
+    /**
+     * Ubicación física o virtual del evento.
+     */
     private String lugar;
-    private EstadoEvento estado;
+
+    /**
+     * Indica si el evento es público (visible por invitados).
+     */
     private boolean publico;
+
+    /**
+     * ID del organizador (se establece en la lógica del backend).
+     */
+    private Long organizadorId;
+
+    /**
+     * Nombre del organizador, útil para mostrar en frontend.
+     */
     private String nombreOrganizador;
+
+    /**
+     * Ruta o URL de la imagen asociada al evento.
+     */
+    private String urlImagen;
 }

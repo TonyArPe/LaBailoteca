@@ -1,55 +1,77 @@
 package com.bailoteca.mapper;
 
 import com.bailoteca.dto.EventoDTO;
-import com.bailoteca.dto.EventoRequest;
 import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 /**
- * Mapper para convertir entre modelos de Evento y sus representaciones DTO.
- * Facilita la transformación de datos entre la capa de persistencia y la capa de presentación.
+ * Mapper para convertir entre la entidad Evento y su representación DTO.
+ * Se utiliza tanto para transformar datos que provienen del frontend como para
+ * devolver datos enriquecidos desde la base de datos.
+ *
+ * Esta versión unificada utiliza EventoDTO para entrada y salida.
  * 
- * @author Tony Aragón
- * @version 1.0
- * @since 1.0
- * @see Evento
- * @see EventoDTO
- * @see EventoRequest
+ * @author Tony
  */
 public class EventoMapper {
 
+    private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
     /**
-     * Convierte un Evento en EventoDTO para respuesta API.
+     * Convierte una entidad Evento a su DTO correspondiente para mostrar al cliente.
+     *
+     * @param evento La entidad evento de base de datos.
+     * @return Un objeto EventoDTO con los datos preparados para el frontend.
      */
     public static EventoDTO toDTO(Evento evento) {
         return EventoDTO.builder()
                 .id(evento.getId())
                 .nombre(evento.getNombre())
                 .descripcion(evento.getDescripcion())
-                .fecha(evento.getFecha())
+                .fecha(evento.getFecha().format(FORMATTER)) // ⏱ LocalDateTime -> String
                 .lugar(evento.getLugar())
-                .estado(evento.getEstado())
                 .publico(evento.isPublico())
+                .organizadorId(evento.getOrganizador().getId())
                 .nombreOrganizador(evento.getOrganizador().getNombre())
+                .urlImagen(evento.getUrlImagen())
                 .build();
     }
 
     /**
-     * Convierte un EventoRequest en Evento para persistencia.
-     * 
-     * @param request El objeto EventoRequest que contiene los datos del evento.
+     * Convierte un DTO recibido desde el frontend en una entidad Evento nueva.
+     *
+     * @param dto El DTO con los datos del evento.
      * @param organizador El usuario que organiza el evento.
-     * @return Un objeto Evento con los datos del request y el organizador.
+     * @return Una nueva entidad Evento lista para persistir.
      */
-    public static Evento fromRequest(EventoRequest request, Usuario organizador) {
+    public static Evento fromDTO(EventoDTO dto, Usuario organizador) {
         return Evento.builder()
-                .nombre(request.getNombre())
-                .descripcion(request.getDescripcion())
-                .fecha(request.getFecha())
-                .lugar(request.getLugar())
-                .estado(request.getEstado())
-                .publico(request.isPublico())
+                .nombre(dto.getNombre())
+                .descripcion(dto.getDescripcion())
+                .fecha(LocalDateTime.parse(dto.getFecha(), FORMATTER)) // ⏱ String -> LocalDateTime
+                .lugar(dto.getLugar())
+                .publico(dto.isPublico())
+                .urlImagen(dto.getUrlImagen())
                 .organizador(organizador)
                 .build();
+    }
+
+    /**
+     * Aplica los cambios de un DTO a una entidad existente.
+     * Se usa para operaciones de edición (PUT).
+     *
+     * @param evento La entidad que ya existe en la base de datos.
+     * @param dto    Los nuevos datos que vienen del frontend.
+     */
+    public static void actualizarDesdeDTO(Evento evento, EventoDTO dto) {
+        evento.setNombre(dto.getNombre());
+        evento.setDescripcion(dto.getDescripcion());
+        evento.setFecha(LocalDateTime.parse(dto.getFecha(), FORMATTER)); // ⏱ String -> LocalDateTime
+        evento.setLugar(dto.getLugar());
+        evento.setPublico(dto.isPublico());
+        evento.setUrlImagen(dto.getUrlImagen());
     }
 }

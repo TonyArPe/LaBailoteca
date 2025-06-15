@@ -97,7 +97,8 @@ class MainActivity : ComponentActivity() {
                     AppNavigation(
                         navController = navController,
                         themeViewModel = themeViewModel,
-                        urlProvider = urlProvider
+                        urlProvider = urlProvider,
+                        sesionManager = sesionManager
                     )
                 }
             } else {

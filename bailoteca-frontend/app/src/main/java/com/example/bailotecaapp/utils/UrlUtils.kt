@@ -16,7 +16,8 @@ fun construirUrlMedia(fileName: String?, baseUrl: String): String? {
         if (it.startsWith("http")) it
         else {
             val cleanBase = baseUrl.removeSuffix("/")
-            "$cleanBase/media/$it?t=${System.currentTimeMillis()}"
+            val cleanFile = it.removePrefix("/") // 🔧 evita que // cause bloqueo en backend
+            "$cleanBase/media/$cleanFile?t=${System.currentTimeMillis()}"
         }
     }
 }

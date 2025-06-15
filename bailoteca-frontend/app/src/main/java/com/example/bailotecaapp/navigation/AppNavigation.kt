@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.FirebaseUrlProvider
+import com.example.bailotecaapp.network.session.SesionManager
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.ui.screens.clases.*
@@ -46,7 +47,8 @@ fun AppNavigation(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     themeViewModel: ThemeViewModel,
-    urlProvider: FirebaseUrlProvider
+    urlProvider: FirebaseUrlProvider,
+    sesionManager: SesionManager
 ) {
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
@@ -231,9 +233,16 @@ fun AppNavigation(
         composable(
             "evento/{id}",
             arguments = listOf(navArgument("id") { type = NavType.LongType })
-        ) {
-            val eventoId = it.arguments?.getLong("id") ?: return@composable
-            EventoDetailScreen(navController = navController, eventoId = eventoId)
+        ) { backStackEntry ->
+            val eventoId = backStackEntry.arguments?.getLong("id") ?: return@composable
+
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
+                EventoDetailScreen(
+                    navController = navController,
+                    eventoId = eventoId,
+                    sesionManager = sesionManager
+                )
+            }
         }
 
         composable("crear_evento") {

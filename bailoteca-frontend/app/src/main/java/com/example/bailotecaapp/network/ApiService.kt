@@ -3,7 +3,6 @@ package com.example.bailotecaapp.network
 import com.example.bailotecaapp.model.*
 import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
 import com.example.bailotecaapp.model.dto.ClaseRequest
-import com.example.bailotecaapp.model.dto.EventoRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
@@ -208,19 +207,22 @@ interface ApiService {
     ): Response<List<Evento>>
 
     /**
-     * Crea un nuevo evento a partir de datos básicos (EventoRequest).
+     * Crea un nuevo evento.
      */
     @POST("/api/eventos")
     suspend fun crearEvento(
         @Header("Authorization") token: String,
-        @Body evento: EventoRequest
+        @Body evento: Evento
     ): Response<Evento>
 
+    /**
+     * Actualiza un evento existente por ID.
+     */
     @PUT("/api/eventos/{id}")
     suspend fun actualizarEvento(
         @Header("Authorization") token: String,
         @Path("id") eventoId: Long,
-        @Body evento: EventoRequest
+        @Body evento: Evento
     ): Response<Evento>
 
     /**
@@ -232,6 +234,9 @@ interface ApiService {
         @Path("id") eventoId: Long
     ): Response<Void>
 
+    /**
+     * Obtiene los detalles de un evento por ID.
+     */
     @GET("/api/eventos/{id}")
     suspend fun getEventoPorId(
         @Header("Authorization") token: String,
@@ -248,17 +253,24 @@ interface ApiService {
         @Body request: AsistenciaEventoRequest
     ): Response<AsistenciaEvento>
 
+    /**
+     * Devuelve los eventos relacionados con un usuario específico.
+     */
     @GET("/api/eventos/usuario/{usuarioId}")
     suspend fun getEventosUsuario(
         @Header("Authorization") token: String,
         @Path("usuarioId") usuarioId: Long
     ): Response<List<Evento>>
 
+    /**
+     * Devuelve los eventos organizados por un profesor específico.
+     */
     @GET("/api/eventos/profesor/{profesorId}")
     suspend fun getEventosProfesor(
         @Header("Authorization") token: String,
         @Path("profesorId") profesorId: Long
     ): Response<List<Evento>>
+
 
     //------------------------ SUBIDA FICHEROS -------------------------
     @Multipart

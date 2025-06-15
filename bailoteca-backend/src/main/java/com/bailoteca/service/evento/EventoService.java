@@ -1,7 +1,5 @@
 package com.bailoteca.service.evento;
 
-import com.bailoteca.dto.EventoDTO;
-import com.bailoteca.mapper.EventoMapper;
 import com.bailoteca.models.enums.EstadoEvento;
 import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
@@ -17,16 +15,15 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Servicio encargado de la gestión de eventos en el sistema Bailoteca.
- * Permite crear, actualizar, eliminar y consultar eventos según el rol del usuario autenticado.
- * Este servicio maneja las operaciones CRUD y las restricciones de acceso basadas en roles.
- *
- * @author Tony Aragón
- * @version 1.0
- * @since 1.0
- * @see Evento
- * @see EventoDTO
- * @see EventoMapper
+ * Servicio de negocio encargado de gestionar los eventos en el sistema Bailoteca.
+ * Permite realizar operaciones CRUD sobre eventos, aplicando restricciones según el rol del usuario autenticado.
+ * <p>
+ * - ADMIN puede ver y modificar todos los eventos.
+ * - PROFESOR puede ver y modificar solo sus eventos.
+ * - USUARIO ve eventos públicos y de profesores con los que tiene inscripción.
+ * </p>
+ * 
+ * @author
  */
 @Service
 @RequiredArgsConstructor
@@ -36,16 +33,13 @@ public class EventoService {
     private final EventoRepo eventoRepo;
 
     /**
-     * Obtiene todos los eventos visibles para el usuario autenticado según su rol.
-     * - ADMIN: ve todos los eventos.
-     * - PROFESOR: ve solo sus eventos.
-     * - USUARIO: ve eventos de profesores a los que está inscrito o eventos públicos.
+     * Obtiene todos los eventos visibles para el usuario autenticado, en función de su rol.
      *
      * @param usuario Usuario autenticado
-     * @return Lista de eventos visibles para el usuario
+     * @return Lista de eventos accesibles para el usuario
      */
-    public List<EventoDTO> obtenerEventosAutenticado(Usuario usuario) {
-        List<Evento> eventos = switch (usuario.getRol()) {
+    public List<Evento> obtenerEventosAutenticado(Usuario usuario) {
+        return switch (usuario.getRol()) {
             case ADMIN -> eventoRepo.findAll();
             case PROFESOR -> eventoRepo.findByOrganizadorId(usuario.getId());
             case USUARIO -> {
@@ -58,55 +52,56 @@ public class EventoService {
                         .filter(e -> profesorIds.contains(e.getOrganizador().getId()) || e.isPublico())
                         .toList();
             }
-            default -> List.of();
+            default -> List.of(); // INVITADO o nulo
         };
-        return eventos.stream().map(EventoMapper::toDTO).toList();
     }
 
     /**
-     * Obtiene un evento por ID, verificando si el usuario tiene permisos para verlo.
-     * - ADMIN: acceso total.
-     * - PROFESOR: acceso a sus propios eventos.
-     * - USUARIO: acceso a eventos públicos o de profesores a los que está inscrito.
+     * Obtiene un evento específico por ID, solo si el usuario tiene permiso para verlo.
      *
      * @param id      ID del evento
      * @param usuario Usuario autenticado
-     * @return Evento si el usuario tiene acceso, vacío en caso contrario
+     * @return Evento si el usuario tiene acceso, vacío si no tiene permisos
      */
     public Optional<Evento> obtenerEventoPorIdYUsuario(Long id, Usuario usuario) {
         Optional<Evento> eventoOpt = eventoRepo.findById(id);
         if (eventoOpt.isEmpty()) return Optional.empty();
 
         Evento evento = eventoOpt.get();
-        boolean autorizado = usuario.getRol().name().equals("ADMIN") ||
-                (evento.getOrganizador() != null && evento.getOrganizador().getId().equals(usuario.getId()));
+        boolean autorizado = switch (usuario.getRol()) {
+            case ADMIN -> true;
+            case PROFESOR -> evento.getOrganizador().getId().equals(usuario.getId());
+            case USUARIO -> evento.isPublico() || usuario.getInscripciones().stream()
+                    .anyMatch(i -> i.getClase() != null &&
+                                   i.getClase().getProfesor() != null &&
+                                   i.getClase().getProfesor().getId().equals(evento.getOrganizador().getId()));
+            default -> false;
+        };
 
         return autorizado ? Optional.of(evento) : Optional.empty();
     }
 
     /**
-     * Crea un nuevo evento asignando el organizador y estableciendo el estado inicial.
-     * El evento se guarda en la base de datos.
+     * Crea un nuevo evento, asignando el organizador y estado inicial.
      *
-     * @param evento      Evento a crear
-     * @param organizador Usuario que organiza el evento
-     * @return Evento creado
+     * @param evento      Evento sin persistir
+     * @param organizador Usuario organizador autenticado
+     * @return Evento guardado en base de datos
      */
     public Evento crearEvento(Evento evento, Usuario organizador) {
         evento.setOrganizador(organizador);
-        evento.setEstado(EstadoEvento.ACTIVO);
-        log.info("Evento '{}' creado por {}", evento.getNombre(), organizador.getCorreo());
-        return eventoRepo.save(evento);
+        evento.setEstado(EstadoEvento.ACTIVO); // Estado por defecto
+        Evento guardado = eventoRepo.save(evento);
+        log.info("✅ Evento '{}' creado por {}", evento.getNombre(), organizador.getCorreo());
+        return guardado;
     }
 
     /**
-     * Actualiza un evento existente si el usuario tiene permisos.
-     * - ADMIN: puede actualizar cualquier evento.
-     * - PROFESOR: puede actualizar solo sus propios eventos.
+     * Actualiza un evento existente si el usuario tiene permisos adecuados.
      *
-     * @param id          ID del evento a actualizar
-     * @param nuevosDatos Nuevos datos del evento
-     * @param actual      Usuario que realiza la actualización
+     * @param id          ID del evento a modificar
+     * @param nuevosDatos Entidad con los datos actualizados
+     * @param actual      Usuario autenticado que ejecuta la acción
      * @return Evento actualizado
      */
     @Transactional
@@ -118,7 +113,7 @@ public class EventoService {
                 (evento.getOrganizador() != null && evento.getOrganizador().getId().equals(actual.getId()));
 
         if (!autorizado) {
-            log.warn("Usuario {} sin permiso para actualizar evento {}", actual.getCorreo(), id);
+            log.warn("⛔ Usuario {} no tiene permiso para actualizar evento {}", actual.getCorreo(), id);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para editar este evento");
         }
 
@@ -128,17 +123,17 @@ public class EventoService {
         evento.setLugar(nuevosDatos.getLugar());
         evento.setEstado(nuevosDatos.getEstado());
         evento.setPublico(nuevosDatos.isPublico());
+        evento.setUrlImagen(nuevosDatos.getUrlImagen());
 
+        log.info("✏️ Evento '{}' (ID {}) actualizado por {}", evento.getNombre(), id, actual.getCorreo());
         return evento;
     }
 
     /**
-     * Elimina un evento si el usuario tiene permisos.
-     * - ADMIN: puede eliminar cualquier evento.
-     * - PROFESOR: puede eliminar solo sus propios eventos.
+     * Elimina un evento si el usuario tiene permisos adecuados.
      *
-     * @param id     ID del evento a eliminar
-     * @param actual Usuario que realiza la eliminación
+     * @param id     ID del evento
+     * @param actual Usuario autenticado
      */
     public void eliminarEvento(Long id, Usuario actual) {
         Evento evento = eventoRepo.findById(id)
@@ -148,19 +143,18 @@ public class EventoService {
                 (evento.getOrganizador() != null && evento.getOrganizador().getId().equals(actual.getId()));
 
         if (!autorizado) {
-            log.warn("Usuario {} sin permiso para eliminar evento {}", actual.getCorreo(), id);
+            log.warn("⛔ Usuario {} no tiene permiso para eliminar evento {}", actual.getCorreo(), id);
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permisos para eliminar este evento");
         }
 
         eventoRepo.delete(evento);
-        log.info("Evento con id {} eliminado por {}", id, actual.getCorreo());
+        log.info("🗑️ Evento con id {} eliminado por {}", id, actual.getCorreo());
     }
 
     /**
-     * Obtiene todos los eventos públicos activos.
-     * Un evento es público si su campo 'publico' es verdadero y su estado es 'ACTIVO'.
+     * Devuelve todos los eventos públicos en estado ACTIVO.
      *
-     * @return Lista de eventos públicos activos
+     * @return Lista de eventos públicos
      */
     public List<Evento> obtenerPublicos() {
         return eventoRepo.findByEstado(EstadoEvento.ACTIVO).stream()
@@ -169,10 +163,9 @@ public class EventoService {
     }
 
     /**
-     * Obtiene un evento por su ID.
-     * Si no se encuentra, lanza una excepción 404 Not Found.
+     * Busca un evento por su ID y lanza 404 si no existe.
      *
-     * @param id ID del evento a buscar
+     * @param id ID del evento
      * @return Evento encontrado
      */
     public Evento obtenerPorId(Long id) {
@@ -181,10 +174,10 @@ public class EventoService {
     }
 
     /**
-     * Obtiene todos los eventos organizados por un usuario específico.
+     * Lista todos los eventos organizados por un usuario concreto.
      *
      * @param id ID del organizador
-     * @return Lista de eventos organizados por el usuario
+     * @return Lista de eventos organizados por ese usuario
      */
     public List<Evento> obtenerPorOrganizador(Long id) {
         return eventoRepo.findByOrganizadorId(id);

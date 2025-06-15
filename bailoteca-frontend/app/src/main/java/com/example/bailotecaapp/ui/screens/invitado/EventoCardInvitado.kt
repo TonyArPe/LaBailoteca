@@ -22,7 +22,6 @@ fun EventoCardInvitado(evento: Evento) {
             Text(evento.nombre, style = MaterialTheme.typography.titleLarge)
             Text("Fecha: ${evento.fecha}")
             Text("Lugar: ${evento.lugar}")
-            Text("Estado: ${evento.estado}")
         }
     }
 }

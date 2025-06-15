@@ -18,17 +18,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
-import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.model.dto.EventoRequest
-import com.example.bailotecaapp.model.enums.EstadoEvento
 import com.example.bailotecaapp.ui.theme.Lima
 import com.example.bailotecaapp.ui.theme.Magenta
 import com.example.bailotecaapp.utils.construirUrlMedia
@@ -68,16 +65,13 @@ fun CrearEditarEventoScreen(
     val eventoSeleccionado by eventoViewModel.eventoSeleccionado.collectAsState()
     val baseUrl by apiInitViewModel.baseUrl.collectAsState()
 
-    // Si venimos con un eventoId y aún no está cargado, lo solicitamos
     LaunchedEffect(eventoId) {
         if (eventoId != null) {
             eventoViewModel.cargarEventoPorId(token ?: "", eventoId)
         }
     }
 
-    // Spinner mientras no haya usuario
     if (!usuarioCargado || usuario == null) {
-        Log.i("CrearEditarEventoScreen", "⏳ Sesión aún no cargada. Ejecutando sincronización inicial...")
         sesionViewModel.sincronizarDesdeSesionManager()
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Lima)
@@ -95,12 +89,11 @@ fun CrearEditarEventoScreen(
         )
     }
     var lugar by remember { mutableStateOf(eventoSeleccionado?.lugar ?: "") }
-    var estado by remember { mutableStateOf(eventoSeleccionado?.estado ?: EstadoEvento.ACTIVO) }
     var publico by remember { mutableStateOf(eventoSeleccionado?.publico ?: true) }
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
-    val imagenSubidaNombre = remember { mutableStateOf(eventoSeleccionado?.imagen) }
+    val imagenSubidaNombre = remember { mutableStateOf(eventoSeleccionado?.urlImagen) }
 
-    val imagenFinal = imagenUri ?: eventoSeleccionado?.imagen?.let {
+    val imagenFinal = imagenUri ?: eventoSeleccionado?.urlImagen?.let {
         construirUrlMedia(it, baseUrl)?.let { Uri.parse(it) }
     }
 
@@ -110,7 +103,7 @@ fun CrearEditarEventoScreen(
         imagenUri = uri
         uri?.let {
             val archivoPart = crearMultipartDesdeUri(context, it)
-            sesionViewModel.subirImagenPerfil(archivoPart) { nombreArchivo ->
+            eventoViewModel.subirImagenEvento(archivoPart) { nombreArchivo ->
                 imagenSubidaNombre.value = nombreArchivo
             }
         }
@@ -120,14 +113,13 @@ fun CrearEditarEventoScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         Text(
             if (eventoSeleccionado != null) "Editar evento" else "Crear evento",
             style = MaterialTheme.typography.headlineSmall,
-            color = Lima
+            color = Magenta
         )
 
         OutlinedTextField(
@@ -135,7 +127,7 @@ fun CrearEditarEventoScreen(
             onValueChange = { nombre = it },
             label = { Text("Nombre del evento") },
             modifier = Modifier.fillMaxWidth(),
-            textStyle = TextStyle(color = Color.White),
+            textStyle = LocalTextStyle.current.copy(color = Color.Black),
             colors = campoColores()
         )
 
@@ -144,7 +136,7 @@ fun CrearEditarEventoScreen(
             onValueChange = { descripcion = it },
             label = { Text("Descripción") },
             modifier = Modifier.fillMaxWidth(),
-            textStyle = TextStyle(color = Color.White),
+            textStyle = LocalTextStyle.current.copy(color = Color.Black),
             colors = campoColores()
         )
 
@@ -153,18 +145,18 @@ fun CrearEditarEventoScreen(
             onValueChange = { lugar = it },
             label = { Text("Lugar") },
             modifier = Modifier.fillMaxWidth(),
-            textStyle = TextStyle(color = Color.White),
+            textStyle = LocalTextStyle.current.copy(color = Color.Black),
             colors = campoColores()
         )
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Lima)
+            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = Magenta)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Fecha: ${fecha.format(DateTimeFormatter.ISO_DATE)}", color = Color.White)
+            Text("Fecha: ${fecha.format(DateTimeFormatter.ISO_DATE)}", color = Color.DarkGray)
         }
 
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Evento público", color = Color.White)
+            Text("Evento público", color = Color.DarkGray)
             Switch(
                 checked = publico,
                 onCheckedChange = { publico = it },
@@ -174,42 +166,44 @@ fun CrearEditarEventoScreen(
 
         Button(
             onClick = { imagePickerLauncher.launch("image/*") },
-            colors = ButtonDefaults.buttonColors(containerColor = Magenta)
+            colors = ButtonDefaults.buttonColors(containerColor = Lima)
         ) {
             Icon(Icons.Default.Image, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Seleccionar imagen")
         }
 
-        imagenUri?.let {
+        imagenFinal?.let {
             Image(
                 painter = rememberAsyncImagePainter(it),
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(200.dp)
-                    .background(Color.Gray, RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color.LightGray),
                 contentScale = ContentScale.Crop
             )
         }
 
         Button(
             onClick = {
-                val eventoRequest = EventoRequest(
+                val evento = com.example.bailotecaapp.model.Evento(
+                    id = eventoSeleccionado?.id ?: 0L,
                     nombre = nombre,
                     descripcion = descripcion,
                     fecha = "${fecha}T00:00:00",
                     lugar = lugar,
-                    estado = estado,
                     publico = publico,
-                    imagen = imagenSubidaNombre.value
+                    nombreOrganizador = usuario?.nombre ?: "",
+                    urlImagen = imagenSubidaNombre.value
                 )
 
                 scope.launch {
                     val ok = if (eventoSeleccionado != null) {
-                        eventoViewModel.actualizarEvento(token!!, eventoSeleccionado!!.id, eventoRequest)
+                        eventoViewModel.actualizarEvento(token!!, evento.id, evento)
                     } else {
-                        eventoViewModel.crearEvento(token!!, eventoRequest)
+                        eventoViewModel.crearEvento(token!!, evento)
                     }
 
                     if (ok) {
@@ -221,7 +215,7 @@ fun CrearEditarEventoScreen(
                     }
                 }
             },
-            colors = ButtonDefaults.buttonColors(containerColor = Lima),
+            colors = ButtonDefaults.buttonColors(containerColor = Magenta),
             modifier = Modifier.align(Alignment.End)
         ) {
             Text("Guardar")
@@ -232,10 +226,10 @@ fun CrearEditarEventoScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun campoColores() = TextFieldDefaults.outlinedTextFieldColors(
-    containerColor = Color.Transparent,
-    cursorColor = Lima,
+    containerColor = Color.White,
+    cursorColor = Magenta,
     focusedBorderColor = Magenta,
-    unfocusedBorderColor = Color.White,
+    unfocusedBorderColor = Color.Gray,
     focusedLabelColor = Magenta,
-    unfocusedLabelColor = Color.White
+    unfocusedLabelColor = Color.DarkGray
 )

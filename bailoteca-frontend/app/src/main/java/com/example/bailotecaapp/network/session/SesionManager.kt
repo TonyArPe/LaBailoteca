@@ -24,6 +24,7 @@ import javax.inject.Inject
  */
 class SesionManager @Inject constructor(
     private val apiService: ApiService,
+    private val usuarioPreferences: UsuarioPreferences,
     @ApplicationContext private val context: Context
 ) {
 
@@ -46,6 +47,13 @@ class SesionManager @Inject constructor(
     }
 
     /**
+     * Devuelve el usuario actualmente guardado en DataStore, si existe.
+     */
+    suspend fun obtenerUsuario(): Usuario? {
+        return usuarioPreferences.obtenerUsuario()
+    }
+
+    /**
      * Guarda el usuario completo en preferencias y memoria.
      */
     suspend fun guardarUsuario(usuario: Usuario) {
@@ -65,7 +73,8 @@ class SesionManager @Inject constructor(
             activo = usuario.activo,
             pagado = usuario.pagado
         )
-        UsuarioPreferences.guardarUsuario(context, persistente)
+
+        usuarioPreferences.guardarUsuario(persistente)
         _usuario.value = persistente.toUsuario()
         Log.d("SesionManager", "✅ Usuario guardado correctamente: ${usuario.correo}")
     }
@@ -76,12 +85,12 @@ class SesionManager @Inject constructor(
     suspend fun restaurarSesionDesdePreferencias() {
         withContext(Dispatchers.IO) {
             val savedToken = TokenPreferences.obtenerToken(context)
-            val savedUsuario = UsuarioPreferences.obtenerUsuario(context)
+            val savedUsuario = usuarioPreferences.obtenerUsuario()
 
             if (savedToken != null && savedUsuario != null) {
                 Log.d("SesionManager", "🔁 Restaurando sesión desde preferencias con ${savedUsuario.correo}")
                 _token.value = savedToken
-                _usuario.value = savedUsuario.toUsuario()
+                _usuario.value = savedUsuario
                 _yaCargado.value = true
             } else {
                 Log.w("SesionManager", "⚠️ No se encontró token o usuario en preferencias")
@@ -112,7 +121,7 @@ class SesionManager @Inject constructor(
     suspend fun cerrarSesion() {
         withContext(Dispatchers.IO) {
             TokenPreferences.borrarToken(context)
-            UsuarioPreferences.borrarUsuario(context)
+            usuarioPreferences.borrarUsuario()
             _token.value = null
             _usuario.value = null
             _yaCargado.value = false

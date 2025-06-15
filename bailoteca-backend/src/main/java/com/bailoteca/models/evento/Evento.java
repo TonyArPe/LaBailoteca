@@ -34,25 +34,56 @@ import lombok.NoArgsConstructor;
 @Builder
 public class Evento {
 
+    /**
+     * Identificador único del evento.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Título o nombre del evento.
+     */
     private String nombre;
+
+    /**
+     * Descripción detallada del evento.
+     */
     private String descripcion;
+
+    /**
+     * Fecha y hora en que tendrá lugar el evento.
+     */
     private LocalDateTime fecha;
+
+    /**
+     * Ubicación donde se celebrará el evento.
+     */
     private String lugar;
 
+    /**
+     * Estado actual del evento (e.g. ACTIVO, CANCELADO).
+     * Puede usarse para lógica adicional de visibilidad o gestión.
+     */
     @Enumerated(EnumType.STRING)
     private EstadoEvento estado;
 
+    /**
+     * Usuario organizador del evento.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizador_id")
     private Usuario organizador;
 
+    /**
+     * Indica si el evento es visible para usuarios no autenticados.
+     */
     @Column(nullable = false)
     private boolean publico;
 
+    /**
+     * URL relativa de la imagen asociada al evento (almacenada en servidor).
+     */
     @Column(name = "url_imagen")
     private String urlImagen;
 }

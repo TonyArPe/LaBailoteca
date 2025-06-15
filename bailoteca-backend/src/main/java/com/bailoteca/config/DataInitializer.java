@@ -9,13 +9,11 @@ import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.inscripcion.Inscripcion;
 import com.bailoteca.models.pago.PagoEvento;
 import com.bailoteca.models.usuario.Usuario;
-import com.bailoteca.models.evento.AsistenciaEvento;
 import com.bailoteca.repository.clase.ClaseRepo;
 import com.bailoteca.repository.evento.EventoRepo;
 import com.bailoteca.repository.inscripcion.InscripcionRepo;
 import com.bailoteca.repository.pago.PagoEventoRepo;
 import com.bailoteca.repository.usuario.UsuarioRepo;
-import com.bailoteca.repository.evento.AsistenciaEventoRepo;
 import com.google.firebase.auth.*;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +42,6 @@ public class DataInitializer {
     private final EventoRepo eventoRepo;
     private final InscripcionRepo inscripcionRepo;
     private final PagoEventoRepo pagoEventoRepo;
-    private final AsistenciaEventoRepo asistenciaEventoRepo;
 
     private void crearUsuarioFirebaseSiNoExiste(String email, String password, String displayName) {
         try {
@@ -163,10 +160,6 @@ public class DataInitializer {
                 .nombre("Taller de Salsa Avanzado").descripcion("Solo para alumnos inscritos")
                 .fecha(LocalDateTime.now().plusDays(10)).lugar("Edificio Zentro")
                 .estado(EstadoEvento.ACTIVO).organizador(alba).publico(false).build());
-
-        // Registro de asistencia ficticia
-        asistenciaEventoRepo.save(new AsistenciaEvento(null, evento1, demoUser, true, true));
-        asistenciaEventoRepo.save(new AsistenciaEvento(null, evento2, demoUser, false, false));
 
         // Inscripción y pago ficticio
         inscripcionRepo.save(Inscripcion.builder()
