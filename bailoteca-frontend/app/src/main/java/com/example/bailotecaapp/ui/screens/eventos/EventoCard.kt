@@ -37,7 +37,11 @@ fun EventoCard(
 ) {
     val apiInitViewModel: ApiInitViewModel = hiltViewModel()
     val baseUrl by apiInitViewModel.baseUrl.collectAsState()
-    val imagenUrl = construirUrlMedia(evento.imagen, baseUrl)
+    val context = LocalContext.current
+
+    val imagenFinal = evento.imagen?.let {
+        "$baseUrl/media/$it?t=${System.currentTimeMillis()}"
+    }
 
     Card(
         modifier = Modifier
@@ -54,10 +58,10 @@ fun EventoCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
     ) {
         Column {
-            if (!imagenUrl.isNullOrBlank()) {
+            if (!imagenFinal.isNullOrBlank()) {
                 AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imagenUrl)
+                    model = ImageRequest.Builder(context)
+                        .data(imagenFinal)
                         .crossfade(true)
                         .build(),
                     contentDescription = "Imagen del evento",

@@ -30,9 +30,10 @@ fun SplashScreen(
     urlProvider: FirebaseUrlProvider,
     sesionViewModel: SesionViewModel = hiltViewModel()
 ) {
-    var estadoCarga by remember { mutableStateOf(false) }
+    val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
+    var fetchCompletado by remember { mutableStateOf(false) }
 
-    // Lanzamos el efecto inicial
+    // 🟡 Inicia el fetch y la restauración de sesión
     LaunchedEffect(Unit) {
         try {
             Log.d("SplashScreen", "🟡 Ejecutando fetchAndActivate()...")
@@ -42,25 +43,29 @@ fun SplashScreen(
             Log.e("SplashScreen", "❌ Error durante fetchAndActivate()", e)
         }
 
+        // 🔄 Restauramos sesión
         sesionViewModel.recuperarSesionDesdePreferencias()
+        sesionViewModel.sincronizarDesdeSesionManager()
 
-        delay(300) // Margen para evitar pantallazos visuales
+        fetchCompletado = true
+    }
 
-        if (sesionViewModel.sesionActiva) {
+    // 🔁 Esperamos a que tanto fetch como usuarioCargado estén listos
+    LaunchedEffect(fetchCompletado, usuarioCargado) {
+        if (fetchCompletado && usuarioCargado) {
             Log.d("SplashScreen", "✅ Sesión detectada. Navegando a Home")
             navController.navigate(Screens.Home.route) {
                 popUpTo(0) { inclusive = true }
             }
-        } else {
+        } else if (fetchCompletado && !usuarioCargado && !sesionViewModel.sesionActiva) {
             Log.d("SplashScreen", "🔐 Sin sesión. Navegando a Login")
             navController.navigate(Screens.Login.route) {
                 popUpTo(0) { inclusive = true }
             }
         }
-        estadoCarga = true
     }
 
-    // UI de carga mientras espera
+    // 💫 UI de carga
     Box(
         modifier = Modifier
             .fillMaxSize()

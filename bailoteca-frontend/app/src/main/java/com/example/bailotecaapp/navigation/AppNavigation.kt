@@ -216,19 +216,40 @@ fun AppNavigation(
         }
 
         composable("evento_list") {
-            val usuario = sesionViewModel.usuario.collectAsState().value
-            val eventoViewModel = hiltViewModel<EventoViewModel>()
-            if (usuario != null) {
-                EventoListScreen(navController, usuario, eventoViewModel)
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                MainScaffold(
+                    globalNavController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sesionViewModel,
+                    currentScreen = MainScreen.EVENTOS,
+                    onNavigate = {},
+                    themeViewModel = themeViewModel
+                )
             }
         }
 
-        composable("evento/{id}") {
-            EventoDetailScreen(navController)
+        composable(
+            "evento/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) {
+            val eventoId = it.arguments?.getLong("id") ?: return@composable
+            EventoDetailScreen(navController = navController, eventoId = eventoId)
         }
 
         composable("crear_evento") {
-            CrearEditarEventoScreen(navController)
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
+                CrearEditarEventoScreen(navController = navController, sesionViewModel = sesionViewModel)
+            }
+        }
+
+        composable(
+            "editar_evento/{eventoId}",
+            arguments = listOf(navArgument("eventoId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val eventoId = backStackEntry.arguments?.getLong("eventoId")
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
+                CrearEditarEventoScreen(navController = navController, sesionViewModel = sesionViewModel, eventoId = eventoId)
+            }
         }
 
         composable("invitado_home") {

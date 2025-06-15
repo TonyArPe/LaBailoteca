@@ -161,12 +161,22 @@ fun MainScaffold(
                         modifier = Modifier.padding(padding)
                     )
 
-                    MainScreen.EVENTOS -> EventoListScreen(
-                        navController = globalNavController,
-                        usuario = usuario ?: return@Scaffold,
-                        modifier = Modifier.padding(padding),
-                        viewModel = eventoViewModel
-                    )
+                    MainScreen.EVENTOS -> {
+                        val eventoViewModel = hiltViewModel<EventoViewModel>()
+                        val usuario by sesionViewModel.usuario.collectAsState()
+
+                        if (usuario != null) {
+                            EventoListScreen(
+                                navController = globalNavController,
+                                usuario = usuario!!,
+                                viewModel = eventoViewModel,
+                                sesionViewModel = sesionViewModel,
+                                modifier = Modifier.padding(padding)
+                            )
+                        } else {
+                            Log.w("MainScaffold", "⚠️ Usuario nulo en EVENTOS")
+                        }
+                    }
                 }
             }
         )

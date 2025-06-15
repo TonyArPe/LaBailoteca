@@ -32,6 +32,28 @@ class EventoViewModel @Inject constructor(
     private val _eventoSeleccionado = MutableStateFlow<Evento?>(null)
     val eventoSeleccionado: StateFlow<Evento?> = _eventoSeleccionado
 
+    suspend fun getTokenSafe(): String {
+        return sesionManager.getToken() ?: ""
+    }
+
+    /**
+     * Carga un evento desde la API por su ID y lo guarda como evento seleccionado.
+     *
+     * @param token JWT del usuario autenticado
+     * @param eventoId identificador del evento a buscar
+     */
+    fun cargarEventoPorId(token: String, eventoId: Long) {
+        viewModelScope.launch {
+            try {
+                val evento = api.getEventoPorId("Bearer $token", eventoId)
+                _eventoSeleccionado.value = evento
+                Log.i("EventoViewModel", "✅ Evento cargado correctamente: ${evento.nombre}")
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error al cargar evento por ID: ${e.localizedMessage}")
+            }
+        }
+    }
+
     /**
      * Carga los eventos públicos, disponibles para invitados.
      */

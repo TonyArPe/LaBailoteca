@@ -232,6 +232,12 @@ interface ApiService {
         @Path("id") eventoId: Long
     ): Response<Void>
 
+    @GET("/api/eventos/{id}")
+    suspend fun getEventoPorId(
+        @Header("Authorization") token: String,
+        @Path("id") id: Long
+    ): Evento
+
     /**
      * Registra la asistencia del usuario autenticado a un evento.
      */

@@ -87,9 +87,13 @@ class MainActivity : ComponentActivity() {
             if (urlLista) {
                 BailotecaTheme(darkTheme = isDark) {
                     val sesionViewModel: SesionViewModel = hiltViewModel()
+
+                    // SINCRONIZACIÓN
                     LaunchedEffect(Unit) {
                         sesionViewModel.recuperarSesionDesdePreferencias()
+                        sesionViewModel.sincronizarDesdeSesionManager()
                     }
+
                     AppNavigation(
                         navController = navController,
                         themeViewModel = themeViewModel,

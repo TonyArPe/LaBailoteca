@@ -4,7 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Inscripcion
-import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.ApiService
@@ -66,6 +65,8 @@ class SesionViewModel @Inject constructor(
         _isLoading.value = true
         viewModelScope.launch {
             sesionManager.restaurarSesionDesdePreferencias()
+            delay(100) // 🔄 margen de seguridad
+
             val usuarioRestaurado = sesionManager.usuario.value
             val tokenRestaurado = sesionManager.token.value
 
@@ -76,6 +77,7 @@ class SesionViewModel @Inject constructor(
             } else {
                 Log.w("SesionViewModel", "⚠️ No se pudo restaurar sesión desde preferencias")
             }
+
             _isLoading.value = false
         }
     }
@@ -131,8 +133,10 @@ class SesionViewModel @Inject constructor(
             val tokenSesion = sesionManager.token.value
 
             if (usuarioSesion != null && tokenSesion != null) {
+                if (!_usuarioCargado.value) {
+                    _usuarioCargado.value = true
+                }
                 Log.d("SesionViewModel", "🔁 Sincronizando estado desde SesionManager: ${usuarioSesion.correo}")
-                _usuarioCargado.value = true
             } else {
                 Log.w("SesionViewModel", "⚠️ SesionManager sin usuario o token. No se puede sincronizar.")
             }
