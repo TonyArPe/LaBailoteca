@@ -45,11 +45,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         Log.d("MainActivity", "🚀 onCreate llamado, inicializando interfaz")
 
-        // Restauramos sesión previamente guardada
-        lifecycleScope.launch {
-            sesionManager.restaurarSesionDesdePreferencias()
-        }
-
         // Escuchamos cambios de token y lo actualizamos en memoria + almacenamiento
         FirebaseAuth.getInstance().addIdTokenListener { firebaseAuth: FirebaseAuth ->
             val user = firebaseAuth.currentUser
@@ -77,20 +72,20 @@ class MainActivity : ComponentActivity() {
             val isDark = themeViewModel.isDarkTheme.collectAsState(initial = false).value
 
             var urlLista by remember { mutableStateOf(false) }
-            val scope = rememberCoroutineScope()
+            val sesionRestaurada = remember { mutableStateOf(false) }
 
             // Espera fetchAndActivate
             LaunchedEffect(Unit) {
                 urlLista = urlProvider.fetchAndAwaitValidUrl()
+                sesionManager.restaurarSesionDesdePreferencias()
+                sesionRestaurada.value = true
             }
 
-            if (urlLista) {
+            if (urlLista && sesionRestaurada.value) {
                 BailotecaTheme(darkTheme = isDark) {
                     val sesionViewModel: SesionViewModel = hiltViewModel()
 
-                    // SINCRONIZACIÓN
                     LaunchedEffect(Unit) {
-                        sesionViewModel.recuperarSesionDesdePreferencias()
                         sesionViewModel.sincronizarDesdeSesionManager()
                     }
 

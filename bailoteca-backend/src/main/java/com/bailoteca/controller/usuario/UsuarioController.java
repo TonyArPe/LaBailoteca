@@ -121,24 +121,28 @@ public class UsuarioController {
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
         Usuario actual = getUsuarioAutenticado();
-        if (actual == null)
+
+        if (actual == null) {
+            log.warn("⛔ Usuario no autenticado intentó acceder al detalle de ID {}", id);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
         boolean esAdmin = actual.getRol().name().equals("ADMIN");
         boolean esMismoUsuario = actual.getId().equals(id);
 
         if (esAdmin || esMismoUsuario) {
-            log.info("👁️ Acceso permitido a usuario con ID {}", id);
+            log.info("👁️ Acceso permitido a usuario con ID {} por {}", id, actual.getCorreo());
             return ResponseEntity.of(usuarioRepo.findById(id));
         }
 
         if (actual.getRol().name().equals("PROFESOR")) {
             boolean inscrito = usuarioRepo.estaInscritoEnClaseDeProfesor(id, actual.getId());
             if (inscrito) {
-                log.info("👁️ Profesor accede al detalle de un alumno inscrito en su clase");
+                log.info("👨‍🏫 Profesor {} accede al detalle de alumno inscrito (ID={})", actual.getCorreo(), id);
                 return ResponseEntity.of(usuarioRepo.findById(id));
             } else {
-                log.warn("⛔ Profesor intentó acceder a un alumno no inscrito en sus clases (ID {})", id);
+                log.warn("⛔ Profesor {} intentó acceder a un alumno no inscrito en sus clases (ID={})",
+                        actual.getCorreo(), id);
             }
         }
 

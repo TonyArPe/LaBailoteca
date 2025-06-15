@@ -1,158 +1,143 @@
 package com.example.bailotecaapp.ui.screens
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.UsuarioCard
+import com.example.bailotecaapp.ui.theme.Magenta
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
-import com.example.bailotecaapp.ui.theme.Magenta
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
- * Pantalla que muestra la lista de usuarios, adaptada por rol:
- * - ADMIN: visualiza y gestiona todos los usuarios del sistema (menos a sí mismo).
- * - PROFESOR: solo ve usuarios inscritos en sus clases.
- *
- * Aplica los colores y formas definidas en el tema de la app.
- *
- * @param navController controlador de navegación.
- * @param viewModel ViewModel de usuario (inyectado por Hilt).
+ * Pantalla que muestra la lista de usuarios disponibles, filtrados por el rol actual.
  */
 @Composable
 fun UserListScreen(
-    navController: NavController,
-    sesionViewModel: SesionViewModel,
+    navController: NavHostController,
     viewModel: UsuarioViewModel = hiltViewModel(),
+    sesionViewModel: SesionViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
-    val usuarioActual by sesionViewModel.usuario.collectAsState()
-    Log.d("UserListScreen", "\uD83D\uDCE6 Estado usuarioActual = $usuarioActual")
+    val usuario by sesionViewModel.usuario.collectAsState()
+    val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
+    val versionClases by sesionViewModel.versionClases.collectAsState()
 
     var usuarioAEliminar by remember { mutableStateOf<Usuario?>(null) }
 
-    LaunchedEffect(Unit) {
-        if (sesionViewModel.usuario.value == null) {
-            Log.w("UserListScreen", "\u26A0\uFE0F Usuario no disponible aún. Forzando sincronización.")
-            sesionViewModel.sincronizarDesdeSesionManager()
-        }
-    }
-
     /**
-     * Lógica reactiva que se ejecuta una vez el usuario ha sido cargado.
-     * Carga la lista de usuarios en base al rol actual.
+     * Reproduce exactamente el patrón funcional de ClaseListScreen.
      */
-    LaunchedEffect(usuarioActual) {
-        usuarioActual?.let {
-            delay(200) // ⚠️ Esperamos que el token también esté listo
-            Log.d("UserListScreen", "👤 Usuario actual: ${it.nombre} (${it.rol.name})")
+    LaunchedEffect(versionClases) {
+        if (usuario != null && usuarioCargado) {
+            Log.d("UserListScreen", "✅ Sesión cargada, rol: ${usuario!!.rol}")
 
-            // 🧠 Forzamos sincronización dentro del ViewModel
-            viewModel.sesionManager.guardarUsuario(it)
-
-            when (it.rol.name) {
-                "ADMIN" -> {
-                    Log.d("UserListScreen", "🛡️ Cargando todos los usuarios (ADMIN)")
+            when (usuario!!.rol) {
+                Rol.ADMIN -> {
+                    Log.d("UserListScreen", "👑 ADMIN: obteniendo todos los usuarios")
                     viewModel.obtenerTodosLosUsuarios()
                 }
-                "PROFESOR" -> {
-                    Log.d("UserListScreen", "🧑‍🏫 Cargando usuarios visibles para PROFESOR")
-                    viewModel.obtenerUsuariosVisiblesParaProfesor(it.id!!)
+
+                Rol.PROFESOR -> {
+                    Log.d("UserListScreen", "📚 PROFESOR: obteniendo alumnos inscritos")
+                    usuario!!.id?.let { viewModel.obtenerUsuariosVisiblesParaProfesor(it) }
+                }
+
+                else -> {
+                    Toast.makeText(context, "No tienes permisos para esta pantalla", Toast.LENGTH_SHORT).show()
                 }
             }
         }
     }
 
-    Scaffold { innerPadding ->
-        when {
-            isLoading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
+    Scaffold(
+        floatingActionButton = {
+            if (usuario?.rol == Rol.ADMIN) {
+                FloatingActionButton(
+                    onClick = { /* navegación a crear usuario si lo deseas */ },
+                    containerColor = Magenta
                 ) {
-                    CircularProgressIndicator(color = Magenta)
+                    Icon(Icons.Default.Add, contentDescription = "Crear usuario", tint = MaterialTheme.colorScheme.onPrimary)
                 }
             }
+        }
+    ) { padding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(16.dp)
+        ) {
+            when {
+                isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-            error != null -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = error ?: "Error desconocido",
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
-            }
+                error != null -> Text(
+                    text = error ?: "Error desconocido",
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.align(Alignment.Center)
+                )
 
-            else -> {
-                val usuariosUnicos = usuarios
-                    .distinctBy { it.id }
-                    .filter { it.id != usuarioActual?.id } // ✅ Excluye a sí mismo
+                !usuarioCargado -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(usuariosUnicos) { usuario ->
-                        UsuarioCard(
-                            usuario = usuario,
-                            rolActual = usuarioActual?.rol?.name ?: "",
-                            navController = navController,
-                            onEliminar = { usuarioAEliminar = usuario },
-                            onModificarPagado = { viewModel.togglePagado(it) },
-                            onModificarActivo = { viewModel.toggleActivo(it) }
+                else -> {
+                    val usuariosVisibles = usuarios.filter { it.id != usuario?.id }
+
+                    LazyColumn(
+                        contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(usuariosVisibles, key = { it.id ?: -1L }) { user ->
+                            UsuarioCard(
+                                usuario = user,
+                                rolActual = usuario?.rol?.name ?: "",
+                                navController = navController,
+                                onEliminar = { usuarioAEliminar = user },
+                                onModificarPagado = { viewModel.togglePagado(it) },
+                                onModificarActivo = { viewModel.toggleActivo(it) }
+                            )
+                        }
+                    }
+
+                    usuarioAEliminar?.let { user ->
+                        AlertDialog(
+                            onDismissRequest = { usuarioAEliminar = null },
+                            confirmButton = {
+                                TextButton(onClick = {
+                                    viewModel.eliminarUsuario(user.id!!)
+                                    usuarioAEliminar = null
+                                }) {
+                                    Text("Confirmar", color = Magenta)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { usuarioAEliminar = null }) {
+                                    Text("Cancelar")
+                                }
+                            },
+                            title = { Text("¿Eliminar usuario?") },
+                            text = { Text("¿Seguro que deseas eliminar a ${user.nombre} ${user.apellido}?") }
                         )
                     }
-                }
-
-                usuarioAEliminar?.let { user ->
-                    AlertDialog(
-                        onDismissRequest = { usuarioAEliminar = null },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                viewModel.eliminarUsuario(user.id!!)
-                                usuarioAEliminar = null
-                            }) {
-                                Text("Confirmar", color = Magenta)
-                            }
-                        },
-                        dismissButton = {
-                            TextButton(onClick = { usuarioAEliminar = null }) {
-                                Text("Cancelar", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                            }
-                        },
-                        title = {
-                            Text("¿Estás seguro?", color = MaterialTheme.colorScheme.onSurface)
-                        },
-                        text = {
-                            Text("Esta acción eliminará a ${user.nombre} permanentemente.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        },
-                        containerColor = MaterialTheme.colorScheme.surface,
-                        tonalElevation = 6.dp,
-                        shape = MaterialTheme.shapes.large
-                    )
                 }
             }
         }

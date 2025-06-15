@@ -7,6 +7,7 @@ import com.example.bailotecaapp.model.Inscripcion
 import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
+import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,47 +40,66 @@ class UsuarioViewModel @Inject constructor(
     private val _errorMessage = MutableStateFlow<String?>(null)
     val errorMessage: StateFlow<String?> = _errorMessage
 
-    /**
-     * Carga todos los usuarios del sistema, excluyendo al usuario actualmente autenticado
-     * para evitar autoedición o autodesactivación.
-     */
+    private suspend fun esperarUsuarioYToken(): Pair<Usuario, String>? {
+        return combine(sesionManager.usuario, sesionManager.token) { usuario, token ->
+            usuario to token
+        }.filter { (usuario, token) -> usuario != null && token != null }
+            .map { (usuario, token) -> usuario!! to token!! }
+            .firstOrNull()
+    }
+
+    fun sincronizarUsuarioDesdeSesion(usuario: Usuario) {
+        viewModelScope.launch {
+            Log.d("UsuarioViewModel", "🔄 Sincronizando usuario manualmente desde SesionViewModel")
+            sesionManager.guardarUsuario(usuario)
+        }
+    }
+
+    fun sincronizarDesdeSesionViewModel(sesionViewModel: SesionViewModel) {
+        viewModelScope.launch {
+            val user = sesionViewModel.usuario.value
+            val token = sesionViewModel.token.value
+
+            if (user != null && token != null) {
+                Log.d("UsuarioViewModel", "🔁 Sincronizando desde SesionViewModel: ${user.correo}")
+                sesionManager.guardarUsuario(user)
+                sesionManager.guardarToken(token)
+            } else {
+                Log.w("UsuarioViewModel", "⚠️ No se pudo sincronizar: usuario o token nulos")
+            }
+        }
+    }
+
     fun obtenerTodosLosUsuarios() {
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
 
-            val token = sesionManager.getToken()
-            val usuario = sesionManager.usuario.value
-            Log.d("UsuarioViewModel", "🎫 Token: $token")
-            Log.d("UsuarioViewModel", "👤 Usuario en ViewModel: $usuario")
+            val (usuario, token) = esperarUsuarioYToken() ?: run {
+                Log.e("UsuarioViewModel", "❌ No se pudo obtener usuario/token para listar usuarios")
+                _errorMessage.value = "Sesión no restaurada correctamente"
+                _isLoading.value = false
+                return@launch
+            }
 
-            if (token == null || usuario == null) {
-                Log.w("UsuarioViewModel", "⚠️ Token o usuario actual nulos. Abortando carga.")
+            if (usuario.rol != Rol.ADMIN) {
+                Log.e("UsuarioViewModel", "🚫 Acceso denegado para rol ${usuario.rol}")
+                _errorMessage.value = "No tienes permisos para ver esta información"
                 _isLoading.value = false
                 return@launch
             }
 
             try {
                 val response = api.getUsuarios("Bearer $token")
-
-                if (response.code() == 403) {
-                    Log.e("UsuarioViewModel", "🚫 Acceso denegado. El usuario puede estar desactivado.")
-                    _errorMessage.value = "Tu cuenta ha sido desactivada. Cierra sesión e intenta de nuevo."
-                    sesionManager.cerrarSesion()
-                    return@launch
-                }
-
                 if (response.isSuccessful) {
-                    val todos = response.body() ?: emptyList()
-                    _usuarios.value = todos.filter { it.id != usuario.id }
-
-                    Log.d("UsuarioViewModel", "✅ Usuarios cargados (sin yo): ${_usuarios.value.size}")
+                    _usuarios.value = response.body() ?: emptyList()
+                    Log.d("UsuarioViewModel", "✅ Usuarios cargados: ${_usuarios.value.size}")
                 } else {
-                    _errorMessage.value = "Error ${response.code()}: ${response.message()}"
+                    _errorMessage.value = "Error al cargar usuarios (${response.code()})"
                 }
-
             } catch (e: Exception) {
-                _errorMessage.value = "Error: ${e.message}"
+                _errorMessage.value = "Error al conectar con el servidor"
+                Log.e("UsuarioViewModel", "❌ Error inesperado", e)
             } finally {
                 _isLoading.value = false
             }
@@ -88,32 +108,34 @@ class UsuarioViewModel @Inject constructor(
 
     fun obtenerUsuariosVisiblesParaProfesor(profesorId: Long) {
         viewModelScope.launch {
+            val (usuario, token) = esperarUsuarioYToken() ?: return@launch
+
+            if (usuario.rol != Rol.PROFESOR) {
+                Log.e("UsuarioViewModel", "🚫 Acceso denegado: rol=${usuario.rol}")
+                _errorMessage.value = "No tienes permisos para ver esta información"
+                return@launch
+            }
+
             _isLoading.value = true
             _errorMessage.value = null
 
             try {
-                val token = sesionManager.getToken() ?: return@launch
-
                 val responseUsuarios = api.getUsuarios("Bearer $token")
                 val responseInscripciones = api.getInscripcionesProfesor("Bearer $token", profesorId)
 
                 if (responseUsuarios.isSuccessful && responseInscripciones.isSuccessful) {
                     val usuarios = responseUsuarios.body() ?: emptyList()
                     val inscripciones = responseInscripciones.body() ?: emptyList()
-                    val idsUsuariosConClases = inscripciones.mapNotNull { it.usuario.id }.toSet()
-                    val yo = sesionManager.usuario.value?.id
+                    val idsUsuarios = inscripciones.mapNotNull { it.usuario.id }.toSet()
 
-                    _usuarios.value = usuarios.filter {
-                        it.id in idsUsuariosConClases && it.id != yo
-                    }
-
+                    _usuarios.value = usuarios.filter { it.id in idsUsuarios && it.id != usuario.id }
                     Log.d("UsuarioViewModel", "✅ Usuarios visibles cargados: ${_usuarios.value.size}")
                 } else {
-                    _errorMessage.value = "Error al cargar datos: usuarios=${responseUsuarios.code()}, inscripciones=${responseInscripciones.code()}"
+                    _errorMessage.value = "Error HTTP: usuarios=${responseUsuarios.code()}, inscripciones=${responseInscripciones.code()}"
                 }
-
             } catch (e: Exception) {
-                _errorMessage.value = "Error: ${e.message}"
+                _errorMessage.value = "Error al cargar usuarios: ${e.message}"
+                Log.e("UsuarioViewModel", "❌ Excepción inesperada", e)
             } finally {
                 _isLoading.value = false
             }
@@ -122,17 +144,13 @@ class UsuarioViewModel @Inject constructor(
 
     fun togglePagado(usuario: Usuario) {
         viewModelScope.launch {
+            val (_, token) = esperarUsuarioYToken() ?: return@launch
             try {
-                val token = sesionManager.getToken() ?: return@launch
                 val request = UsuarioEstadoUpdateRequest(pagado = !usuario.pagado)
                 val response = usuario.id?.let { api.actualizarEstadoUsuario(token = "Bearer $token", id = it, request = request) }
-                if (response != null) {
-                    if (response.isSuccessful) {
-                        Log.d("UsuarioViewModel", "✅ Estado 'pagado' actualizado para ${usuario.correo}")
-                        obtenerTodosLosUsuarios()
-                    } else {
-                        Log.e("UsuarioViewModel", "❌ Error al actualizar estado de pago")
-                    }
+                if (response?.isSuccessful == true) {
+                    Log.d("UsuarioViewModel", "✅ Estado 'pagado' actualizado para ${usuario.correo}")
+                    obtenerTodosLosUsuarios()
                 }
             } catch (e: Exception) {
                 Log.e("UsuarioViewModel", "❌ Excepción al actualizar estado de pago", e)
@@ -142,17 +160,13 @@ class UsuarioViewModel @Inject constructor(
 
     fun toggleActivo(usuario: Usuario) {
         viewModelScope.launch {
+            val (_, token) = esperarUsuarioYToken() ?: return@launch
             try {
-                val token = sesionManager.getToken() ?: return@launch
                 val request = UsuarioEstadoUpdateRequest(activo = !usuario.activo)
                 val response = usuario.id?.let { api.actualizarEstadoUsuario(token = "Bearer $token", id = it, request = request) }
-                if (response != null) {
-                    if (response.isSuccessful) {
-                        Log.d("UsuarioViewModel", "✅ Estado 'activo' actualizado para ${usuario.correo}")
-                        obtenerTodosLosUsuarios()
-                    } else {
-                        Log.e("UsuarioViewModel", "❌ Error al actualizar estado activo")
-                    }
+                if (response?.isSuccessful == true) {
+                    Log.d("UsuarioViewModel", "✅ Estado 'activo' actualizado para ${usuario.correo}")
+                    obtenerTodosLosUsuarios()
                 }
             } catch (e: Exception) {
                 Log.e("UsuarioViewModel", "❌ Excepción al actualizar estado activo", e)
@@ -182,14 +196,12 @@ class UsuarioViewModel @Inject constructor(
 
     fun eliminarUsuario(usuarioId: Long) {
         viewModelScope.launch {
+            val (_, token) = esperarUsuarioYToken() ?: return@launch
             try {
-                val token = sesionManager.getToken() ?: return@launch
                 val response = api.eliminarUsuario("Bearer $token", usuarioId)
                 if (response.isSuccessful) {
                     Log.d("UsuarioViewModel", "🗑️ Usuario eliminado: ID $usuarioId")
                     obtenerTodosLosUsuarios()
-                } else {
-                    Log.e("UsuarioViewModel", "❌ Error al eliminar usuario")
                 }
             } catch (e: Exception) {
                 Log.e("UsuarioViewModel", "❌ Excepción al eliminar usuario", e)
@@ -200,8 +212,8 @@ class UsuarioViewModel @Inject constructor(
     fun cargarUsuarioPorId(userId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
+            val (_, token) = esperarUsuarioYToken() ?: return@launch
             try {
-                val token = sesionManager.getToken() ?: return@launch
                 val response = api.getUsuarioPorId("Bearer $token", userId)
                 if (response.isSuccessful) {
                     _usuarioDetalle.value = response.body()
@@ -219,8 +231,8 @@ class UsuarioViewModel @Inject constructor(
     fun obtenerInscripcionesDelUsuario(userId: Long) {
         viewModelScope.launch {
             _isLoading.value = true
+            val (_, token) = esperarUsuarioYToken() ?: return@launch
             try {
-                val token = sesionManager.getToken() ?: return@launch
                 val response = api.getInscripcionesPorUsuario("Bearer $token", userId)
                 if (response.isSuccessful) {
                     _inscripcionesUsuario.value = response.body() ?: emptyList()

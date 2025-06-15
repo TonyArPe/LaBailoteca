@@ -40,16 +40,16 @@ fun ClaseListScreen(
     sesionViewModel: SesionViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     val clases by viewModel.clases.collectAsState()
-    val usuarioActual by sesionViewModel.usuario.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
     val inscripciones by sesionViewModel.inscripciones.collectAsState()
     val versionClases by sesionViewModel.versionClases.collectAsState()
-
-    val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
+    val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
 
     LaunchedEffect(versionClases) {
         viewModel.obtenerClases()
@@ -99,7 +99,7 @@ fun ClaseListScreen(
 
     Scaffold(
         floatingActionButton = {
-            if (usuarioActual?.rol == Rol.ADMIN) {
+            if (usuario?.rol == Rol.ADMIN || usuario?.rol == Rol.PROFESOR) {
                 FloatingActionButton(
                     onClick = { navController.navigate("crear_clase") },
                     containerColor = Magenta,
@@ -123,12 +123,9 @@ fun ClaseListScreen(
                     color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.align(Alignment.Center)
                 )
-                usuario == null -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                !usuarioCargado -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 else -> LazyColumn(
-                    contentPadding = PaddingValues(
-                        top = 16.dp,
-                        bottom = 100.dp
-                    ),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -158,7 +155,7 @@ fun ClaseListScreen(
                                 },
                                 onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) },
                                 onEditarClase = { navController.navigate("editar_clase/$it") },
-                                onEliminarClase = { navController.navigate("clase/$it") } // Redirige al detalle, donde confirmas el borrado
+                                onEliminarClase = { navController.navigate("clase/$it") }
                             )
                         }
                     }
