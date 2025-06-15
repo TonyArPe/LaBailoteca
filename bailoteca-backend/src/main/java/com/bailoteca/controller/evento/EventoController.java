@@ -1,7 +1,6 @@
 package com.bailoteca.controller.evento;
 
 import com.bailoteca.dto.EventoDTO;
-import com.bailoteca.dto.EventoRequest;
 import com.bailoteca.mapper.EventoMapper;
 import com.bailoteca.models.evento.Evento;
 import com.bailoteca.models.usuario.Usuario;
@@ -17,16 +16,11 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 /**
- * Controlador que maneja las operaciones relacionadas con los eventos.
- * Permite crear, actualizar, eliminar y consultar eventos, así como obtener
- * los eventos públicos visibles para invitados.
- *
- * @author Tony Aragón
- * @version 1.0
- * @since 1.0
- * @see Evento
- * @see EventoDTO
- * @see EventoRequest
+ * Controlador REST para gestionar los eventos de la aplicación.
+ * Soporta operaciones CRUD según el rol del usuario autenticado.
+ * También permite acceder a los eventos públicos sin autenticación.
+ * 
+ * @author
  */
 @RestController
 @RequestMapping("/api/eventos")
@@ -38,108 +32,141 @@ public class EventoController {
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Obtiene el usuario autenticado a partir del contexto de seguridad.
-     * Si no se encuentra, lanza una excepción 404.
+     * Devuelve una lista de eventos visibles para el usuario autenticado.
      *
      * @param auth Autenticación del usuario
-     * @return Usuario autenticado
+     * @return Lista de eventos accesibles para ese usuario
      */
     @GetMapping
     public List<EventoDTO> getAll(Authentication auth) {
         Usuario u = getUsuario(auth);
-        log.info("Listando eventos visibles para {}", u.getCorreo());
-        return eventoService.obtenerEventosAutenticado(u);
+        log.info("📋 Listando eventos visibles para {}", u.getCorreo());
+        return eventoService.obtenerEventosAutenticado(u).stream()
+                .map(EventoMapper::toDTO)
+                .toList();
     }
 
     /**
-     * Obtiene un evento específico por su ID.
-     * Solo los usuarios con permisos pueden acceder a eventos privados.
+     * Devuelve los detalles de un evento por ID, si el usuario tiene acceso.
      *
      * @param id   ID del evento
      * @param auth Autenticación del usuario
-     * @return EventoDTO con los detalles del evento
+     * @return EventoDTO detallado
      */
     @GetMapping("/{id}")
     public EventoDTO getOne(@PathVariable Long id, Authentication auth) {
         Usuario u = getUsuario(auth);
-        log.info("Solicitando evento con id {} por {}", id, u.getCorreo());
+        log.info("🔍 Solicitando evento con ID {} por {}", id, u.getCorreo());
         Evento evento = eventoService.obtenerEventoPorIdYUsuario(id, u)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este evento"));
         return EventoMapper.toDTO(evento);
     }
 
     /**
-     * Crea un nuevo evento si el usuario tiene permisos.
-     * Solo los usuarios con rol ADMIN o PROFESOR pueden crear eventos.
+     * Devuelve los eventos creados por un profesor específico (usado por
+     * PROFESORES).
+     * El usuario autenticado debe ser el mismo profesor o un ADMIN.
      *
-     * @param request Datos del evento a crear
-     * @param auth    Autenticación del usuario
-     * @return EventoDTO con los detalles del evento creado
+     * @param id   ID del profesor
+     * @param auth Objeto de autenticación
+     * @return Lista de eventos creados por el profesor
+     */
+    @GetMapping("/profesor/{id}")
+    public List<EventoDTO> getEventosDelProfesor(@PathVariable Long id, Authentication auth) {
+        Usuario solicitante = getUsuario(auth);
+
+        if (!solicitante.getId().equals(id)
+                && (solicitante.getRol() == null || !solicitante.getRol().name().equals("ADMIN"))) {
+            log.warn("⛔ Usuario {} intentó acceder a eventos del profesor ID {}", solicitante.getCorreo(), id);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para ver estos eventos");
+        }
+
+        log.info("📚 Listando eventos del profesor ID {} por {}", id, solicitante.getCorreo());
+
+        return eventoService.obtenerEventosDelProfesor(id).stream()
+                .map(EventoMapper::toDTO)
+                .toList();
+    }
+
+    /**
+     * Crea un nuevo evento si el usuario tiene permisos adecuados.
+     *
+     * @param dto  DTO con los datos del evento a crear
+     * @param auth Autenticación del usuario
+     * @return EventoDTO creado
      */
     @PostMapping
-    public EventoDTO create(@RequestBody EventoRequest request, Authentication auth) {
+    public EventoDTO create(@RequestBody EventoDTO dto, Authentication auth) {
         Usuario u = getUsuario(auth);
-        log.info("Creando evento por {}", u.getCorreo());
+        log.info("🆕 Creando evento por {}", u.getCorreo());
 
         if (u.getRol() == null || !(u.getRol().name().equals("ADMIN") || u.getRol().name().equals("PROFESOR"))) {
-            log.warn("Intento de creación de evento no autorizado por {}", u.getCorreo());
+            log.warn("⛔ Intento de creación de evento no autorizado por {}", u.getCorreo());
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No puedes crear eventos");
         }
 
-        Evento nuevo = EventoMapper.fromRequest(request, u);
-        return EventoMapper.toDTO(eventoService.crearEvento(nuevo, u));
+        Evento nuevo = EventoMapper.fromDTO(dto, u);
+        Evento guardado = eventoService.crearEvento(nuevo, u);
+        return EventoMapper.toDTO(guardado);
     }
 
     /**
-     * Actualiza un evento existente si el usuario tiene permisos.
-     * Solo los usuarios con rol ADMIN o PROFESOR pueden actualizar eventos.
+     * Actualiza un evento existente si el usuario tiene permisos adecuados.
      *
-     * @param id      ID del evento a actualizar
-     * @param request Nuevos datos del evento
-     * @param auth    Autenticación del usuario
-     * @return EventoDTO con los detalles del evento actualizado
+     * @param id   ID del evento a actualizar
+     * @param dto  DTO con los nuevos datos
+     * @param auth Autenticación del usuario
+     * @return EventoDTO actualizado
      */
     @PutMapping("/{id}")
-    public EventoDTO update(@PathVariable Long id, @RequestBody EventoRequest request, Authentication auth) {
+    public EventoDTO update(@PathVariable Long id, @RequestBody EventoDTO dto, Authentication auth) {
         Usuario u = getUsuario(auth);
-        log.info("Actualizando evento con id {} por {}", id, u.getCorreo());
-        Evento nuevosDatos = EventoMapper.fromRequest(request, u);
-        return EventoMapper.toDTO(eventoService.actualizarEvento(id, nuevosDatos, u));
+        log.info("✏️ Actualizando evento ID {} por {}", id, u.getCorreo());
+        Evento eventoExistente = eventoService.obtenerEventoPorIdYUsuario(id, u)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes acceso a este evento"));
+
+        EventoMapper.actualizarDesdeDTO(eventoExistente, dto);
+        Evento actualizado = eventoService.actualizarEvento(id, eventoExistente, u);
+        return EventoMapper.toDTO(actualizado);
     }
 
     /**
-     * Elimina un evento por su ID.
-     * Solo los usuarios con rol ADMIN o PROFESOR pueden eliminar eventos.
+     * Elimina un evento por su ID si el usuario tiene permisos.
      *
-     * @param id   ID del evento a eliminar
+     * @param id   ID del evento
      * @param auth Autenticación del usuario
      */
     @DeleteMapping("/{id}")
     public void delete(@PathVariable Long id, Authentication auth) {
         Usuario u = getUsuario(auth);
-        log.info("Eliminando evento con id {} por {}", id, u.getCorreo());
+        log.info("🗑️ Eliminando evento ID {} por {}", id, u.getCorreo());
         eventoService.eliminarEvento(id, u);
     }
 
     /**
-     * Obtiene una lista de eventos públicos visibles para invitados.
-     * Estos eventos no requieren autenticación para ser consultados.
+     * Devuelve todos los eventos públicos visibles para invitados (sin login).
      *
      * @return Lista de eventos públicos
      */
     @GetMapping("/publicos")
     public List<EventoDTO> getPublicos() {
-        log.info("Listando eventos públicos");
+        log.info("🌍 Listando eventos públicos (modo invitado)");
         return eventoService.obtenerPublicos().stream()
                 .map(EventoMapper::toDTO)
                 .toList();
     }
 
+    /**
+     * Obtiene el usuario autenticado actual desde el contexto de seguridad.
+     *
+     * @param auth Objeto de autenticación
+     * @return Usuario autenticado
+     */
     private Usuario getUsuario(Authentication auth) {
         return usuarioRepo.findByCorreo(auth.getName())
                 .orElseThrow(() -> {
-                    log.error("Usuario con correo {} no encontrado", auth.getName());
-                    return new ResponseStatusException(HttpStatus.NOT_FOUND);
+                    log.error("❌ Usuario con correo {} no encontrado", auth.getName());
+                    return new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado");
                 });
     }
 }

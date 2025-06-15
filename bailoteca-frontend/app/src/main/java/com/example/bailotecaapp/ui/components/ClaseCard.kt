@@ -35,7 +35,9 @@ fun ClaseCard(
     inscripciones: List<Inscripcion>,
     yaInscrito: Boolean,
     onInscribirse: (Long) -> Unit,
-    onVerDetalle: (Long) -> Unit
+    onVerDetalle: (Long) -> Unit,
+    onEditarClase: ((Long) -> Unit)? = null,
+    onEliminarClase: ((Long) -> Unit)? = null
 ) {
     val context = LocalContext.current
     val colorFondo = if (yaInscrito)
@@ -108,6 +110,26 @@ fun ClaseCard(
                             context.startActivity(Intent(Intent.ACTION_SENDTO).apply { data = uri })
                         }) {
                             Icon(Icons.Default.Email, contentDescription = "Contactar")
+                        }
+                    }
+
+                    Rol.ADMIN -> {
+                        // 🎯 NUEVOS BOTONES
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = {
+                                onEditarClase?.invoke(clase.id)
+                            }) {
+                                Text("Editar")
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    onEliminarClase?.invoke(clase.id)
+                                },
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            ) {
+                                Text("Eliminar")
+                            }
                         }
                     }
 

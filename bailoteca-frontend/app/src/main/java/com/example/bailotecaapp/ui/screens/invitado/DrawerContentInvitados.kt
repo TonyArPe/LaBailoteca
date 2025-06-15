@@ -59,26 +59,6 @@ fun DrawerContentInvitado(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Botón Inicio
-        TextButton(
-            onClick = onInicioClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Home, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Inicio")
-        }
-
-        // Botón Perfil
-        TextButton(
-            onClick = onPerfilClick,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Person, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Ver Perfil")
-        }
-
         Spacer(modifier = Modifier.weight(1f)) // Empuja cerrar sesión al fondo
 
         Divider()

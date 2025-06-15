@@ -12,15 +12,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.ui.theme.Lima
 import com.example.bailotecaapp.ui.theme.Magenta
+import com.example.bailotecaapp.utils.construirUrlMedia
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext
+import com.example.bailotecaapp.viewmodel.ApiInitViewModel
+import coil.compose.AsyncImage
+import androidx.compose.ui.platform.LocalContext
+import com.example.bailotecaapp.utils.construirUrlMedia
+
 
 /**
  * Pantalla que muestra el perfil del usuario autenticado.
@@ -40,6 +49,8 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val usuario by sesionViewModel.usuario.collectAsState()
+    val apiInitViewModel: ApiInitViewModel = hiltViewModel()
+    val baseUrl by apiInitViewModel.baseUrl.collectAsState()
 
     if (usuario == null) {
         Box(
@@ -52,11 +63,7 @@ fun ProfileScreen(
     }
 
     val usuarioActual = usuario!!
-
-    // ⚠️ Se evita el cacheo de la imagen añadiendo un parámetro temporal
-    val imagenUrl = usuarioActual.fotoPerfil?.let {
-        "http://10.0.2.2:8080/api/media/files/$it?cache=${System.currentTimeMillis()}"
-    }
+    val imagenUrl = construirUrlMedia(usuarioActual.fotoPerfil, baseUrl)
 
     Scaffold(
         topBar = {
@@ -74,9 +81,13 @@ fun ProfileScreen(
         ) {
             // 📷 Imagen de perfil del usuario
             if (!imagenUrl.isNullOrBlank()) {
-                Image(
-                    painter = rememberAsyncImagePainter(imagenUrl),
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(imagenUrl + "?t=" + System.currentTimeMillis())
+                        .crossfade(true)
+                        .build(),
                     contentDescription = "Foto de perfil",
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(140.dp)
                         .clip(CircleShape)
@@ -115,7 +126,7 @@ fun ProfileScreen(
             if (usuarioActual.rol != Rol.INVITADO) {
                 Button(
                     onClick = {
-                        navController.navigate("editar_perfil") // ✅ Navegación corregida
+                        navController.navigate("editar_perfil")
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Lima),
                     shape = MaterialTheme.shapes.extraLarge

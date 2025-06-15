@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.bailotecaapp.model.Evento
 import com.example.bailotecaapp.ui.screens.invitado.EventoCardInvitado
 
@@ -13,7 +14,7 @@ import com.example.bailotecaapp.ui.screens.invitado.EventoCardInvitado
  * @param eventos Lista de eventos públicos del servidor.
  */
 @Composable
-fun EventoCardInvitadoList(eventos: List<Evento>) {
+fun EventoCardInvitadoList(eventos: List<Evento>, navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -21,7 +22,7 @@ fun EventoCardInvitadoList(eventos: List<Evento>) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         eventos.forEach { evento ->
-            EventoCardInvitado(evento = evento)
+            EventoCardInvitado(evento = evento, navController = navController)
         }
     }
 }

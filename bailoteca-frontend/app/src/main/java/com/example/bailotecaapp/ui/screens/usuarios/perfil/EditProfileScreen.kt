@@ -4,7 +4,6 @@ import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -18,26 +17,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
+import com.example.bailotecaapp.ui.theme.Lima
+import com.example.bailotecaapp.ui.theme.Magenta
+import com.example.bailotecaapp.utils.construirUrlMedia
+import com.example.bailotecaapp.utils.crearMultipartDesdeUri
+import com.example.bailotecaapp.viewmodel.ApiInitViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-import com.example.bailotecaapp.utils.crearMultipartDesdeUri
-import com.example.bailotecaapp.ui.theme.Magenta
-import com.example.bailotecaapp.ui.theme.Lima
 
-/**
- * Pantalla para editar el perfil del usuario autenticado.
- * Incluye selección de imagen de perfil, datos básicos y actualización en el backend.
- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditProfileScreen(
@@ -47,11 +46,13 @@ fun EditProfileScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val apiInitViewModel: ApiInitViewModel = hiltViewModel()
+    val baseUrl by apiInitViewModel.baseUrl.collectAsState()
+
     val usuario by sesionViewModel.usuario.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     val isLoading by sesionViewModel.isLoading.collectAsState()
 
-    // Mostrar loader si aún no hay datos
     if (usuario == null || !usuarioCargado || isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -61,7 +62,6 @@ fun EditProfileScreen(
 
     val usuarioActual = usuario!!
 
-    // Estados locales
     var showErrorDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
 
@@ -74,11 +74,7 @@ fun EditProfileScreen(
     var imagenUri by remember { mutableStateOf<Uri?>(null) }
     val imagenSubidaNombre = remember { mutableStateOf<String?>(usuarioActual.fotoPerfil) }
 
-    // URL final de la imagen para mostrar (IP local 10.0.2.2)
-    val imagenFinal = imagenUri?.toString()
-        ?: usuarioActual.fotoPerfil?.let {
-            "http://10.0.2.2:8080/api/media/files/$it?cache=${System.currentTimeMillis()}"
-        }
+    val imagenFinal = construirUrlMedia(imagenSubidaNombre.value, baseUrl)
 
     val imagePickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -88,6 +84,39 @@ fun EditProfileScreen(
             val archivoPart = crearMultipartDesdeUri(context, it)
             sesionViewModel.subirImagenPerfil(archivoPart) { nombreArchivo ->
                 imagenSubidaNombre.value = nombreArchivo
+
+                scope.launch {
+                    // ⚠️ Nueva lógica para actualizar perfil con imagen subida
+                    val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token
+                    if (token != null) {
+                        val actualizado = UsuarioUpdateRequest(
+                            nombre = usuarioActual.nombre,
+                            apellido = usuarioActual.apellido ?: "",
+                            correo = usuarioActual.correo,
+                            contrasenna = usuarioActual.contrasenna,
+                            rol = usuarioActual.rol,
+                            telefono = usuarioActual.telefono,
+                            direccion = usuarioActual.direccion,
+                            fechaNacimiento = usuarioActual.fechaNacimiento,
+                            genero = usuarioActual.genero,
+                            fotoPerfil = nombreArchivo,
+                            activo = usuarioActual.activo,
+                            pagado = usuarioActual.pagado
+                        )
+
+                        Log.d("EditProfileScreen", "🖼️ Actualizando usuario con nueva imagen: $actualizado")
+
+                        sesionViewModel.actualizarPerfil(
+                            usuarioActualizado = actualizado,
+                            onSuccess = {
+                                sesionViewModel.sincronizarDesdeSesionManager()
+                            },
+                            onError = { msg ->
+                                Log.e("EditProfileScreen", "❌ Error al actualizar imagen: $msg")
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -110,10 +139,13 @@ fun EditProfileScreen(
         ) {
             Text("Edita tu información", style = MaterialTheme.typography.titleMedium)
 
-            // Imagen de perfil con forma circular y sombra
-            Image(
-                painter = rememberAsyncImagePainter(imagenFinal),
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imagenFinal)
+                    .crossfade(true)
+                    .build(),
                 contentDescription = "Foto de perfil",
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
                     .size(140.dp)
                     .clip(CircleShape)
@@ -128,14 +160,12 @@ fun EditProfileScreen(
                 Text("Seleccionar imagen", color = Color.White)
             }
 
-            // Campos de entrada del formulario
             OutlinedTextField(
                 value = nombre,
                 onValueChange = { nombre = it },
                 label = { Text("Nombre") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = telefono,
                 onValueChange = { telefono = it },
@@ -143,21 +173,18 @@ fun EditProfileScreen(
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = direccion,
                 onValueChange = { direccion = it },
                 label = { Text("Dirección") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = fechaNacimiento,
                 onValueChange = { fechaNacimiento = it },
                 label = { Text("Fecha de nacimiento (AAAA-MM-DD)") },
                 modifier = Modifier.fillMaxWidth()
             )
-
             OutlinedTextField(
                 value = genero,
                 onValueChange = { genero = it },
@@ -188,10 +215,7 @@ fun EditProfileScreen(
                         usuarioActualizado = actualizado,
                         onSuccess = {
                             scope.launch {
-                                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
-                                token?.let {
-                                    sesionViewModel.iniciarSesionConTokenYSincronizar(it)
-                                }
+                                sesionViewModel.sincronizarDesdeSesionManager()
                                 navController.popBackStack()
                             }
                         },
@@ -201,16 +225,13 @@ fun EditProfileScreen(
                         }
                     )
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
+                modifier = Modifier.fillMaxWidth().height(52.dp),
                 shape = RoundedCornerShape(32.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Lima)
             ) {
                 Text("Guardar cambios", style = MaterialTheme.typography.labelLarge)
             }
 
-            // Diálogo de error
             if (showErrorDialog) {
                 AlertDialog(
                     onDismissRequest = { showErrorDialog = false },

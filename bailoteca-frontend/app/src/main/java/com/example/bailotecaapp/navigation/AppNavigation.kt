@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.network.FirebaseUrlProvider
+import com.example.bailotecaapp.network.session.SesionManager
 import com.example.bailotecaapp.ui.components.SesionGuard
 import com.example.bailotecaapp.ui.screens.*
 import com.example.bailotecaapp.ui.screens.clases.*
@@ -24,6 +25,7 @@ import com.example.bailotecaapp.ui.screens.login.RegisterScreen
 import com.example.bailotecaapp.ui.screens.usuarios.ClasesUsuarioScreen
 import com.example.bailotecaapp.ui.screens.usuarios.UsuarioDetalleScreen
 import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditProfileScreen
+import com.example.bailotecaapp.ui.screens.usuarios.perfil.EditUserScreen
 import com.example.bailotecaapp.viewmodel.EventoViewModel
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.ThemeViewModel
@@ -45,12 +47,13 @@ fun AppNavigation(
     navController: NavHostController,
     modifier: Modifier = Modifier,
     themeViewModel: ThemeViewModel,
-    urlProvider: FirebaseUrlProvider
+    urlProvider: FirebaseUrlProvider,
+    sesionManager: SesionManager
 ) {
     val sesionViewModel: SesionViewModel = hiltViewModel()
     val sesionCerrada by sesionViewModel.sesionCerrada.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
-    val cargado by sesionViewModel.yaCargado.collectAsState()
+    val yaCargado by sesionViewModel.usuarioYaCargado.collectAsState()
     val invitado by sesionViewModel.modoInvitado.collectAsState()
 
     LaunchedEffect(sesionCerrada) {
@@ -172,6 +175,14 @@ fun AppNavigation(
             ClasesUsuarioScreen(userId = id, navController = navController)
         }
 
+        composable(
+            route = "editar_usuario/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val userId = backStackEntry.arguments?.getLong("id") ?: 0L
+            EditUserScreen(usuarioId = userId, navController = navController)
+        }
+
         composable("clase/{claseId}", arguments = listOf(navArgument("claseId") { type = NavType.LongType })) {
             val claseId = it.arguments?.getLong("claseId") ?: return@composable
             Log.d("AppNavigation", "📍 Detalle clase ID: $claseId")
@@ -189,25 +200,65 @@ fun AppNavigation(
             CrearEditarClaseScreen(navController)
         }
 
+        composable("crear_clase") {
+            CrearEditarClaseScreen(navController)
+        }
+
+        composable(
+            "editar_clase/{claseId}",
+            arguments = listOf(navArgument("claseId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val claseId = backStackEntry.arguments?.getLong("claseId") ?: return@composable
+            CrearEditarClaseScreen(navController = navController, claseId = claseId)
+        }
+
         composable("crearEditarClase/{claseId}", arguments = listOf(navArgument("claseId") { type = NavType.LongType })) {
             val claseId = it.arguments?.getLong("claseId") ?: return@composable
             CrearEditarClaseScreen(navController, claseId)
         }
 
         composable("evento_list") {
-            val usuario = sesionViewModel.usuario.collectAsState().value
-            val eventoViewModel = hiltViewModel<EventoViewModel>()
-            if (usuario != null) {
-                EventoListScreen(navController, usuario, eventoViewModel)
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                MainScaffold(
+                    globalNavController = navController,
+                    usuario = usuario,
+                    sesionViewModel = sesionViewModel,
+                    currentScreen = MainScreen.EVENTOS,
+                    onNavigate = {},
+                    themeViewModel = themeViewModel
+                )
             }
         }
 
-        composable("evento/{id}") {
-            EventoDetailScreen(navController)
+        composable(
+            "evento/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val eventoId = backStackEntry.arguments?.getLong("id") ?: return@composable
+
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
+                EventoDetailScreen(
+                    navController = navController,
+                    eventoId = eventoId,
+                    sesionManager = sesionManager
+                )
+            }
         }
 
         composable("crear_evento") {
-            CrearEditarEventoScreen(navController)
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
+                CrearEditarEventoScreen(navController = navController, sesionViewModel = sesionViewModel)
+            }
+        }
+
+        composable(
+            "editar_evento/{eventoId}",
+            arguments = listOf(navArgument("eventoId") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val eventoId = backStackEntry.arguments?.getLong("eventoId")
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) {
+                CrearEditarEventoScreen(navController = navController, sesionViewModel = sesionViewModel, eventoId = eventoId)
+            }
         }
 
         composable("invitado_home") {

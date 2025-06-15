@@ -4,8 +4,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.bailotecaapp.model.Evento
-import com.example.bailotecaapp.model.dto.AsistenciaEventoRequest
-import com.example.bailotecaapp.model.dto.EventoRequest
 import com.example.bailotecaapp.network.ApiService
 import com.example.bailotecaapp.network.session.SesionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +29,28 @@ class EventoViewModel @Inject constructor(
 
     private val _eventoSeleccionado = MutableStateFlow<Evento?>(null)
     val eventoSeleccionado: StateFlow<Evento?> = _eventoSeleccionado
+
+    suspend fun getTokenSafe(): String {
+        return sesionManager.getToken() ?: ""
+    }
+
+    /**
+     * Carga un evento desde la API por su ID y lo guarda como evento seleccionado.
+     *
+     * @param token JWT del usuario autenticado
+     * @param eventoId identificador del evento a buscar
+     */
+    fun cargarEventoPorId(token: String, eventoId: Long) {
+        viewModelScope.launch {
+            try {
+                val evento = api.getEventoPorId("Bearer $token", eventoId)
+                _eventoSeleccionado.value = evento
+                Log.i("EventoViewModel", "✅ Evento cargado correctamente: ${evento.nombre}")
+            } catch (e: Exception) {
+                Log.e("EventoViewModel", "❌ Error al cargar evento por ID: ${e.localizedMessage}")
+            }
+        }
+    }
 
     /**
      * Carga los eventos públicos, disponibles para invitados.
@@ -71,11 +91,11 @@ class EventoViewModel @Inject constructor(
             try {
                 val respuesta = api.subirArchivo(archivo)
                 if (respuesta.isSuccessful) {
-                    val nombre = respuesta.body()
+                    val nombre = respuesta.body()?.string()
                     Log.d("EventoViewModel", "✅ Imagen evento subida: $nombre")
                     nombre?.let { onSuccess(it) }
                 } else {
-                    Log.e("EventoViewModel", "❌ Error al subir imagen evento: ${respuesta.errorBody()}")
+                    Log.e("EventoViewModel", "❌ Error al subir imagen evento: ${respuesta.errorBody()?.string()}")
                 }
             } catch (e: Exception) {
                 Log.e("EventoViewModel", "❌ Excepción al subir imagen evento", e)
@@ -102,19 +122,16 @@ class EventoViewModel @Inject constructor(
     /**
      * Crea un nuevo evento en el sistema.
      * @param token Token JWT del usuario autenticado.
-     * @param request Objeto EventoRequest con los datos del nuevo evento.
+     * @param evento Objeto Evento con los datos del nuevo evento.
      * @return true si fue creado correctamente, false si hubo error.
      */
-    suspend fun crearEvento(token: String, request: EventoRequest): Boolean {
+    suspend fun crearEvento(token: String, evento: Evento): Boolean {
         return try {
-            Log.d("EventoViewModel", "🛠️ Creando evento con nombre: ${request.nombre}")
-            val res = api.crearEvento("Bearer $token", request)
+            Log.d("EventoViewModel", "🛠️ Creando evento con nombre: ${evento.nombre}")
+            val res = api.crearEvento("Bearer $token", evento)
             if (res.isSuccessful) {
                 Log.d("EventoViewModel", "✅ Evento creado correctamente")
-
-                // 🆕 Actualizar eventos si fue exitoso
                 obtenerEventosPrivados(token)
-
                 true
             } else {
                 Log.e("EventoViewModel", "❌ Error en respuesta: ${res.code()} - ${res.message()}")
@@ -131,7 +148,7 @@ class EventoViewModel @Inject constructor(
      * @param token Token JWT.
      * @param evento Objeto Evento (incluye el ID y datos nuevos).
      */
-    suspend fun actualizarEvento(token: String, eventoId: Long, evento: EventoRequest): Boolean {
+    suspend fun actualizarEvento(token: String, eventoId: Long, evento: Evento): Boolean {
         return try {
             Log.d("EventoViewModel", "📝 Actualizando evento con ID: $eventoId")
             val res = api.actualizarEvento("Bearer $token", eventoId, evento)

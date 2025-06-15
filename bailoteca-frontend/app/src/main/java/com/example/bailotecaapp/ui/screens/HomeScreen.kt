@@ -80,22 +80,42 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(36.dp))
 
         // Botón para admins y profesores
-        if (usuario.rol == Rol.ADMIN || usuario.rol == Rol.PROFESOR) {
-            Button(
-                onClick = { navController.navigate(Screens.Usuarios.route) },
-                shape = MaterialTheme.shapes.large,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-            ) {
-                Text("Ver usuarios registrados", style = MaterialTheme.typography.bodyMedium)
+        when (usuario.rol) {
+            Rol.ADMIN -> {
+                Button(
+                    onClick = { navController.navigate(Screens.Usuarios.route) },
+                    shape = MaterialTheme.shapes.large,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    Text("Ver usuarios", style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Rol.PROFESOR -> {
+                Button(
+                    onClick = { navController.navigate(Screens.Usuarios.route) },
+                    shape = MaterialTheme.shapes.large,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                ) {
+                    Text("Ver alumnos inscritos", style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
+            else -> {} // No muestra nada para USER ni INVITADO
         }
 
         // Botón común

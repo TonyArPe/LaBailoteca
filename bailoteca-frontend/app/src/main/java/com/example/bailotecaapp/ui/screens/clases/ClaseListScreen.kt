@@ -5,10 +5,14 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -24,6 +28,7 @@ import com.google.firebase.ktx.Firebase
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import com.example.bailotecaapp.ui.components.personalizacion.ClaseFAB
+import com.example.bailotecaapp.ui.theme.Magenta
 
 /**
  * Pantalla que muestra el listado de clases disponibles para inscribirse.
@@ -36,6 +41,7 @@ fun ClaseListScreen(
     modifier: Modifier = Modifier
 ) {
     val clases by viewModel.clases.collectAsState()
+    val usuarioActual by sesionViewModel.usuario.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
@@ -93,8 +99,14 @@ fun ClaseListScreen(
 
     Scaffold(
         floatingActionButton = {
-            if (usuario?.rol == Rol.PROFESOR) {
-                ClaseFAB(onClick = { navController.navigate("crearEditarClase") })
+            if (usuarioActual?.rol == Rol.ADMIN) {
+                FloatingActionButton(
+                    onClick = { navController.navigate("crear_clase") },
+                    containerColor = Magenta,
+                    shape = CircleShape
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Crear clase", tint = Color.White)
+                }
             }
         }
     ) { padding ->
@@ -144,7 +156,9 @@ fun ClaseListScreen(
                                         Toast.makeText(context, "Inicia sesión para inscribirte", Toast.LENGTH_SHORT).show()
                                     }
                                 },
-                                onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) }
+                                onVerDetalle = { navController.navigate(Screens.ClaseDetail.createRoute(it)) },
+                                onEditarClase = { navController.navigate("editar_clase/$it") },
+                                onEliminarClase = { navController.navigate("clase/$it") } // Redirige al detalle, donde confirmas el borrado
                             )
                         }
                     }

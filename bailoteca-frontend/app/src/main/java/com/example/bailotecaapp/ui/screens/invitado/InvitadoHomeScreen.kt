@@ -2,27 +2,28 @@ package com.example.bailotecaapp.ui.screens.invitado
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDrawerState
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.bailotecaapp.navigation.Screens
 import com.example.bailotecaapp.ui.screens.invitado.components.ClaseCardInvitadoList
 import com.example.bailotecaapp.ui.screens.invitado.components.EventoCardInvitadoList
 import com.example.bailotecaapp.ui.screens.invitado.components.ExpandibleCard
@@ -57,6 +58,10 @@ fun InvitadoHomeScreen(
     val scope = rememberCoroutineScope()
 
     var isDarkMode by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        eventoViewModel.obtenerEventosPublicos()
+    }
 
     @Composable
     fun ModoOscuroToggle(
@@ -108,13 +113,31 @@ fun InvitadoHomeScreen(
                         .padding(16.dp)
                 ) {
                     item {
-                        Text(
-                            text = "Estás en modo invitado. Regístrate para inscribirte a clases y eventos.",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
+                        val texto = buildAnnotatedString {
+                            append("Estás en modo invitado. ")
+                            withStyle(
+                                style = SpanStyle(
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    fontWeight = FontWeight.Bold,
+                                    textDecoration = TextDecoration.Underline
+                                )
+                            ) {
+                                append("Regístrate")
+                            }
+                            append(" para inscribirte a clases y eventos.")
+                        }
+
+                        ClickableText(
+                            text = texto,
+                            style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.primary),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 24.dp)
+                                .padding(bottom = 24.dp),
+                            onClick = { offset ->
+                                if (offset in 27..36) {
+                                    navController.navigate(Screens.Register.route)
+                                }
+                            }
                         )
                     }
 
@@ -126,7 +149,7 @@ fun InvitadoHomeScreen(
 
                     item {
                         ExpandibleCard(seccion = SeccionExpandable("Eventos públicos")) {
-                            EventoCardInvitadoList(eventos = eventos)
+                            EventoCardInvitadoList(eventos = eventos, navController = navController)
                         }
                     }
 

@@ -31,14 +31,16 @@ import kotlinx.coroutines.launch
 @Composable
 fun MainScaffold(
     globalNavController: NavHostController,
-    usuario: Usuario,
     sesionViewModel: SesionViewModel,
+    usuario: Usuario,
     currentScreen: MainScreen,
     onNavigate: (MainScreen) -> Unit,
     themeViewModel: ThemeViewModel
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
+
+    val usuario by sesionViewModel.usuario.collectAsState()
 
     val backStackEntry by globalNavController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -150,7 +152,8 @@ fun MainScaffold(
                     MainScreen.USUARIOS -> UserListScreen(
                         navController = globalNavController,
                         viewModel = hiltViewModel(),
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier.padding(padding),
+                        sesionViewModel = sesionViewModel
                     )
 
                     MainScreen.PERFIL -> ProfileScreen(
@@ -159,12 +162,22 @@ fun MainScaffold(
                         modifier = Modifier.padding(padding)
                     )
 
-                    MainScreen.EVENTOS -> EventoListScreen(
-                        navController = globalNavController,
-                        usuario = usuario,
-                        modifier = Modifier.padding(padding),
-                        viewModel = eventoViewModel
-                    )
+                    MainScreen.EVENTOS -> {
+                        val eventoViewModel = hiltViewModel<EventoViewModel>()
+                        val usuario by sesionViewModel.usuario.collectAsState()
+
+                        if (usuario != null) {
+                            EventoListScreen(
+                                navController = globalNavController,
+                                usuario = usuario!!,
+                                viewModel = eventoViewModel,
+                                sesionViewModel = sesionViewModel,
+                                modifier = Modifier.padding(padding)
+                            )
+                        } else {
+                            Log.w("MainScaffold", "⚠️ Usuario nulo en EVENTOS")
+                        }
+                    }
                 }
             }
         )

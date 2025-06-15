@@ -143,6 +143,47 @@ fun ClaseDetailScreen(
 
                         // Botones según rol
                         when (usuario.rol) {
+                            Rol.ADMIN -> {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Button(
+                                        onClick = {
+                                            navController.navigate("editar_clase/${claseId}")
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Editar")
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                val token = Firebase.auth.currentUser?.getIdToken(false)?.await()?.token
+                                                if (token.isNullOrBlank()) {
+                                                    Toast.makeText(context, "Token inválido", Toast.LENGTH_SHORT).show()
+                                                    return@launch
+                                                }
+                                                val response = claseViewModel.eliminarClase(token, claseId)
+                                                if (response.isSuccessful) {
+                                                    Toast.makeText(context, "Clase eliminada", Toast.LENGTH_SHORT).show()
+                                                    navController.popBackStack()
+                                                    sesionViewModel.marcarClasesComoActualizadas()
+                                                } else {
+                                                    Toast.makeText(context, "Error al eliminar: ${response.code()}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        },
+                                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text("Eliminar")
+                                    }
+                                }
+                            }
+
                             Rol.USUARIO -> {
                                 if (estaInscrito && inscripcionActual != null) {
                                     Button(

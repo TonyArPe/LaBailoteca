@@ -29,12 +29,17 @@ class FirebaseUrlProvider @Inject constructor() {
     // ✅ Así
     fun getBaseUrl(): String {
         val url = remoteConfig.getString("base_url")
-        Log.d("FirebaseUrlProvider", "🌐 URL obtenida de Firebase: $url")
-        return if (url.isNotBlank()) {
+        Log.d("FirebaseUrlProvider", "🌐 URL obtenida de Firebase RemoteConfig: '$url'")
+
+        val finalUrl = if (url.isNotBlank()) {
             if (url.endsWith("/")) url else "$url/"
         } else {
+            Log.w("FirebaseUrlProvider", "⚠️ URL vacía, usando fallback.")
             "https://default-fallback.ngrok-free.app/"
         }
+
+        Log.d("FirebaseUrlProvider", "🌐 URL final utilizada por Retrofit: $finalUrl")
+        return finalUrl
     }
 
     /**

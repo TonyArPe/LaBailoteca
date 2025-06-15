@@ -11,15 +11,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import coil.compose.rememberAsyncImagePainter
+import coil.request.ImageRequest
 import com.example.bailotecaapp.R
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.navigation.DrawerDestination
 import com.example.bailotecaapp.navigation.Screens
+import com.example.bailotecaapp.network.FirebaseUrlProvider
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.google.firebase.auth.FirebaseAuth
 
@@ -35,6 +39,7 @@ fun DrawerContent(
     navController: NavHostController,
     onCloseDrawer: () -> Unit
 ) {
+
     val usuario by sesionViewModel.usuario.collectAsState()
     val rol = usuario?.rol ?: Rol.INVITADO
     Log.d("DrawerContent", "🧑‍🎤 Rol activo: $rol")
@@ -48,7 +53,6 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-
         Rol.PROFESOR -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
@@ -56,7 +60,6 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-
         Rol.USUARIO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Clases,
@@ -64,7 +67,6 @@ fun DrawerContent(
             DrawerDestination.Perfil,
             DrawerDestination.Logout
         )
-
         Rol.INVITADO -> listOf(
             DrawerDestination.Home,
             DrawerDestination.Logout
@@ -98,22 +100,55 @@ fun DrawerContent(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                val imagenUri = usuario?.fotoPerfil?.takeIf { it.isNotBlank() }?.let {
-                    "http://10.0.2.2:8080/media/$it"
-                }
-                val painter = if (imagenUri.isNullOrBlank())
+                val firebaseUrlProvider = remember { FirebaseUrlProvider() }
+                val baseUrl = firebaseUrlProvider.getBaseUrl()
+                val imagenFilename = usuario?.fotoPerfil
+                val imagenUrl = if (!imagenFilename.isNullOrBlank()) {
+                    baseUrl.trimEnd('/') + "/media/" + imagenFilename
+                } else null
+                val timestamp = System.currentTimeMillis()
+                val context = LocalContext.current
+
+// Añadimos logs para verificar datos
+                Log.d("DrawerContent", "🧠 Nombre archivo: $imagenFilename")
+                Log.d("DrawerContent", "🌐 Base URL: $baseUrl")
+                Log.d("DrawerContent", "🕒 Timestamp: $timestamp")
+
+                val finalImageUrl = if (!imagenUrl.isNullOrBlank()) "$imagenUrl?$timestamp" else null
+
+                val painter = if (!finalImageUrl.isNullOrBlank()) {
+                    Log.d("DrawerContent", "🖼️ Usando imagen personalizada: $finalImageUrl")
+                    rememberAsyncImagePainter(
+                        model = ImageRequest.Builder(context)
+                            .data(finalImageUrl)
+                            .crossfade(true)
+                            .diskCachePolicy(coil.request.CachePolicy.DISABLED) // Evita caché corrupta
+                            .listener(
+                                onError = { _, result ->
+                                    Log.e("DrawerContent", "❌ Error cargando imagen: ${result.throwable.message}")
+                                },
+                                onSuccess = { request, _ ->
+                                    Log.d("DrawerContent", "✅ Imagen cargada correctamente desde URL: ${request.data}")
+                                }
+                            )
+                            .build()
+                    )
+                } else {
+                    Log.d("DrawerContent", "🎨 Usando imagen por defecto")
                     painterResource(id = R.drawable.default_profile)
-                else rememberAsyncImagePainter(imagenUri)
+                }
 
                 Image(
                     painter = painter,
                     contentDescription = "Foto de perfil",
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(90.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                         .padding(4.dp)
                 )
+
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(usuario?.nombre ?: "Invitado", style = MaterialTheme.typography.titleMedium)
                 Text(
