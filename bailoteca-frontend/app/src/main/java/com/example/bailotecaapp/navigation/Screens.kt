@@ -43,7 +43,6 @@ sealed class Screens(val route: String) {
     object EventoDetail : Screens("evento/{id}") {
         fun createRoute(id: Long) = "evento/$id"
     }
-    object CrearEvento : Screens("crear_evento")
     object EditarEvento : Screens("editar_evento/{eventoId}") {
         fun create(id: Long) = "editar_evento/$id"
     }

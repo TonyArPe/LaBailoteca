@@ -233,35 +233,4 @@ class EventoViewModel @Inject constructor(
             false
         }
     }
-
-    /**
-     * Registra la asistencia del usuario actual a un evento.
-     */
-    fun registrarAsistencia(
-        eventoId: Long,
-        asistira: Boolean,
-        pagado: Boolean
-    ) {
-        viewModelScope.launch {
-            try {
-                val token = sesionManager.getToken()
-                if (token == null) {
-                    Log.e("EventoViewModel", "❌ Token no disponible.")
-                    return@launch
-                }
-
-                val request = AsistenciaEventoRequest(asistira, pagado)
-                val response = api.registrarAsistenciaEvento("Bearer $token", eventoId, request)
-
-                if (response.isSuccessful) {
-                    val asistencia = response.body()
-                    Log.d("EventoViewModel", "✅ Asistencia registrada: $asistencia")
-                } else {
-                    Log.e("EventoViewModel", "❌ Error al registrar asistencia: ${response.code()} - ${response.errorBody()?.string()}")
-                }
-            } catch (e: Exception) {
-                Log.e("EventoViewModel", "❌ Excepción registrando asistencia", e)
-            }
-        }
-    }
 }

@@ -248,16 +248,6 @@ interface ApiService {
     ): Evento
 
     /**
-     * Registra la asistencia del usuario autenticado a un evento.
-     */
-    @POST("/api/asistencias/evento/{eventoId}")
-    suspend fun registrarAsistenciaEvento(
-        @Header("Authorization") token: String,
-        @Path("eventoId") eventoId: Long,
-        @Body request: AsistenciaEventoRequest
-    ): Response<AsistenciaEvento>
-
-    /**
      * Devuelve los eventos relacionados con un usuario específico.
      */
     @GET("/api/eventos/usuario/{usuarioId}")

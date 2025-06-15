@@ -75,9 +75,7 @@ fun EventosUsuarioScreen(
                 items(eventos) { evento ->
                     EventoCard(
                         evento = evento,
-                        usuario = usuario,
-                        token = token,
-                        eventoViewModel = eventoViewModel,
+                        viewModel = eventoViewModel,
                         navController = navController
                     )
                 }
