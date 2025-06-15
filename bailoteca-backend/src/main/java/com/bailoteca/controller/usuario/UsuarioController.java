@@ -107,8 +107,7 @@ public class UsuarioController {
                 registrado.getNombre(),
                 registrado.getApellido(),
                 registrado.getCorreo(),
-                registrado.getRol().name()
-        );
+                registrado.getRol().name());
     }
 
     /**
@@ -239,8 +238,9 @@ public class UsuarioController {
      *
      * @return Detalles del usuario autenticado
      */
-    @GetMapping("/me")
-    public ResponseEntity<Usuario> getMiPerfil() {
+    @GetMapping("/perfil")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Usuario> getPerfilUsuario() {
         Usuario usuario = getUsuarioAutenticado();
         if (usuario == null)
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();

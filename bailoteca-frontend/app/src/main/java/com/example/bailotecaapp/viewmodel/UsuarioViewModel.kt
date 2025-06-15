@@ -61,6 +61,14 @@ class UsuarioViewModel @Inject constructor(
 
             try {
                 val response = api.getUsuarios("Bearer $token")
+
+                if (response.code() == 403) {
+                    Log.e("UsuarioViewModel", "🚫 Acceso denegado. El usuario puede estar desactivado.")
+                    _errorMessage.value = "Tu cuenta ha sido desactivada. Cierra sesión e intenta de nuevo."
+                    sesionManager.cerrarSesion()
+                    return@launch
+                }
+
                 if (response.isSuccessful) {
                     val todos = response.body() ?: emptyList()
                     _usuarios.value = todos.filter { it.id != usuario.id }

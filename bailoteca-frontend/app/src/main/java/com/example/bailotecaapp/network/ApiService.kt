@@ -21,7 +21,7 @@ interface ApiService {
     /**
      * Obtiene el usuario actualmente autenticado.
      */
-    @GET("/api/usuarios/me")
+    @GET("/api/usuarios/perfil")
     suspend fun obtenerUsuarioActual(@Header("Authorization") token: String): Usuario
 
     /**

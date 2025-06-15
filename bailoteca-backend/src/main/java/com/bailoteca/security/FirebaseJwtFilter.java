@@ -38,12 +38,10 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
 
     private final UsuarioRepo usuarioRepo;
 
-    /**
-     * Rutas excluidas del filtrado JWT para acceso anónimo o público.
-     */
+    // Rutas excluidas del filtrado JWT para acceso anónimo o público.
     private static final List<String> EXCLUDE_PATTERNS = List.of(
             "/",
-            "/api/usuarios", // ✅ Se añade explícitamente para permitir POST de registro
+            "/api/usuarios", // Se añade explícitamente para permitir POST de registro
             "/api/auth/**",
             "/api/eventos/publicos",
             "/api/clases/publicas",
@@ -73,6 +71,7 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
 
         log.debug("🛡️ Ruta interceptada por filtro JWT: {} [{}]", path, method);
 
+        // Si la ruta está excluida, no validamos el token
         if (isExcluded(path, method)) {
             log.debug("🟢 Ruta pública detectada → omitiendo validación JWT");
             filterChain.doFilter(request, response);
@@ -100,15 +99,18 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
                 return;
             }
 
+            // Si el usuario está desactivado, retornamos un error 401
             if (!usuario.isActivo()) {
                 log.warn("⛔ Usuario {} está desactivado", usuario.getCorreo());
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuario desactivado");
                 return;
             }
 
+            // Si el usuario es válido, lo autenticamos en el contexto de seguridad
             UserDetails userDetails = new UsuarioDetails(usuario);
             var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
+            // Establecemos la autenticación en el contexto de seguridad
             SecurityContextHolder.getContext().setAuthentication(auth);
             log.info("🔐 Usuario autenticado: {} (ID: {})", usuario.getCorreo(), usuario.getId());
 

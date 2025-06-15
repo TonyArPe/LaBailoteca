@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.network.session.toUsuario
 import com.google.gson.Gson
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
@@ -39,17 +40,19 @@ class UsuarioPreferences @Inject constructor(
 
     /**
      * Devuelve el usuario guardado, o null si no existe.
+     * Realiza la conversión desde UsuarioPersistente a Usuario.
      */
     suspend fun obtenerUsuario(): Usuario? {
         val prefs = context.dataStore.data.first()
         val json = prefs[USUARIO_JSON_KEY]
         return if (json != null) {
             try {
-                val usuario = Gson().fromJson(json, Usuario::class.java)
+                val persistente = Gson().fromJson(json, UsuarioPersistente::class.java)
+                val usuario = persistente.toUsuario()
                 Log.d(TAG, "📤 Usuario cargado desde preferencias: $usuario")
                 usuario
             } catch (e: Exception) {
-                Log.e(TAG, "❌ Error al deserializar el usuario: ${e.message}")
+                Log.e(TAG, "❌ Error al deserializar el usuario persistente: ${e.message}")
                 null
             }
         } else {

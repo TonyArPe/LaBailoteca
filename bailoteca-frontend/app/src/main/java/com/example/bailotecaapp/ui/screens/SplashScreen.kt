@@ -33,7 +33,6 @@ fun SplashScreen(
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     var fetchCompletado by remember { mutableStateOf(false) }
 
-    // 🟡 Inicia el fetch y la restauración de sesión
     LaunchedEffect(Unit) {
         try {
             Log.d("SplashScreen", "🟡 Ejecutando fetchAndActivate()...")
@@ -43,14 +42,15 @@ fun SplashScreen(
             Log.e("SplashScreen", "❌ Error durante fetchAndActivate()", e)
         }
 
-        // 🔄 Restauramos sesión
+        // Restauramos sesión desde preferencias
         sesionViewModel.recuperarSesionDesdePreferencias()
-        sesionViewModel.sincronizarDesdeSesionManager()
+        // No forzamos sincronizar aquí porque ya lo hace recuperarSesionDesdePreferencias
 
+        // Solo marcamos fetch como completado
         fetchCompletado = true
     }
 
-    // 🔁 Esperamos a que tanto fetch como usuarioCargado estén listos
+    // Esperamos a que se complete el fetch Y la sesión esté cargada correctamente
     LaunchedEffect(fetchCompletado, usuarioCargado) {
         if (fetchCompletado && usuarioCargado) {
             Log.d("SplashScreen", "✅ Sesión detectada. Navegando a Home")
@@ -65,7 +65,7 @@ fun SplashScreen(
         }
     }
 
-    // 💫 UI de carga
+    // UI de carga
     Box(
         modifier = Modifier
             .fillMaxSize()

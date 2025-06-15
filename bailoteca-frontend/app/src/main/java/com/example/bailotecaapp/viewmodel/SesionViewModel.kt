@@ -79,6 +79,7 @@ class SesionViewModel @Inject constructor(
 
             if (usuarioRestaurado != null && tokenRestaurado != null) {
                 Log.d("SesionViewModel", "🔁 Usuario restaurado: ${usuarioRestaurado.correo}")
+                sincronizarDesdeSesionManager()
                 _usuarioCargado.value = true
                 cargarMisInscripciones()
             } else {
