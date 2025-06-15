@@ -152,7 +152,8 @@ fun MainScaffold(
                     MainScreen.USUARIOS -> UserListScreen(
                         navController = globalNavController,
                         viewModel = hiltViewModel(),
-                        modifier = Modifier.padding(padding)
+                        modifier = Modifier.padding(padding),
+                        sesionViewModel = sesionViewModel
                     )
 
                     MainScreen.PERFIL -> ProfileScreen(

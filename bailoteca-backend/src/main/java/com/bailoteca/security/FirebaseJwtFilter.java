@@ -53,7 +53,6 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
      */
     private static final List<String> EXCLUDE_PATTERNS = List.of(
             "/",
-            "/api/usuarios",
             "/api/auth/**",
             "/api/eventos/publicos",
             "/api/clases/publicas",
