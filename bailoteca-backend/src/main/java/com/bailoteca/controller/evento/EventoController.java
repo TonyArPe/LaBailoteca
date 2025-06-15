@@ -63,6 +63,32 @@ public class EventoController {
     }
 
     /**
+     * Devuelve los eventos creados por un profesor específico (usado por
+     * PROFESORES).
+     * El usuario autenticado debe ser el mismo profesor o un ADMIN.
+     *
+     * @param id   ID del profesor
+     * @param auth Objeto de autenticación
+     * @return Lista de eventos creados por el profesor
+     */
+    @GetMapping("/profesor/{id}")
+    public List<EventoDTO> getEventosDelProfesor(@PathVariable Long id, Authentication auth) {
+        Usuario solicitante = getUsuario(auth);
+
+        if (!solicitante.getId().equals(id)
+                && (solicitante.getRol() == null || !solicitante.getRol().name().equals("ADMIN"))) {
+            log.warn("⛔ Usuario {} intentó acceder a eventos del profesor ID {}", solicitante.getCorreo(), id);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No tienes permiso para ver estos eventos");
+        }
+
+        log.info("📚 Listando eventos del profesor ID {} por {}", id, solicitante.getCorreo());
+
+        return eventoService.obtenerEventosDelProfesor(id).stream()
+                .map(EventoMapper::toDTO)
+                .toList();
+    }
+
+    /**
      * Crea un nuevo evento si el usuario tiene permisos adecuados.
      *
      * @param dto  DTO con los datos del evento a crear

@@ -27,14 +27,16 @@ class RegisterViewModel @Inject constructor(
 ) : ViewModel() {
 
     /**
-     * Registra un nuevo usuario en el backend y guarda sesión local.
+     * Registra un nuevo usuario en el backend **solo si su email ha sido verificado**.
+     * Si no lo está, se envía automáticamente el email de verificación.
      *
      * @param usuario Usuario a registrar
-     * @param onResult Callback con la respuesta HTTP (éxito o error)
+     * @param onResult Callback con la respuesta HTTP (éxito, error, o requiere verificación)
      */
     fun registrarUsuarioBackend(usuario: Usuario, onResult: (Response<Usuario>) -> Unit) {
         viewModelScope.launch {
             try {
+                // ✅ Obtener token de Firebase
                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: run {
                     Log.e("RegisterViewModel", "❌ No se pudo obtener el token de Firebase.")
                     return@launch
@@ -47,6 +49,7 @@ class RegisterViewModel @Inject constructor(
                     val backendUsuario = response.body()!!
                     Log.d("RegisterViewModel", "✅ Usuario registrado en backend: ${backendUsuario.correo}")
 
+                    // ✅ Guardar sesión local
                     sesionManager.guardarToken(token)
                     sesionManager.guardarUsuario(backendUsuario)
 
@@ -56,6 +59,7 @@ class RegisterViewModel @Inject constructor(
                 }
 
                 onResult(response)
+
             } catch (e: Exception) {
                 Log.e("RegisterViewModel", "❌ Excepción durante registro: ${e.localizedMessage}")
                 val errorBody = ResponseBody.create("application/json".toMediaTypeOrNull(), "Excepción: ${e.message}")

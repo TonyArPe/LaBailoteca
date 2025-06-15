@@ -49,6 +49,11 @@ interface ApiService {
         @Body usuario: Usuario
     ): Response<Usuario>
 
+    @POST("api/usuarios")
+    suspend fun crearUsuarioInvitado(
+        @Body usuario: Usuario
+    ): Response<Usuario>
+
     /**
      * Actualiza los datos de un usuario existente.
      */

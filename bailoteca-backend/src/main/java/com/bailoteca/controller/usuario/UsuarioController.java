@@ -58,8 +58,19 @@ public class UsuarioController {
         }
 
         if (actual.getRol().name().equals("PROFESOR")) {
-            log.info("👨‍🏫 PROFESOR solicitó la lista de sus alumnos");
-            return ResponseEntity.ok(usuarioRepo.findAlumnosPorProfesorId(actual.getId()));
+            log.info("👨‍🏫 PROFESOR solicitó la lista de sus alumnos con datos completos");
+
+            // 1. Obtener los IDs de alumnos asociados a clases del profesor
+            List<Long> ids = usuarioRepo.findAlumnosPorProfesorId(actual.getId())
+                    .stream()
+                    .map(UsuarioDTO::getId)
+                    .toList();
+
+            // 2. Recuperar las entidades completas Usuario a partir de esos IDs
+            List<Usuario> alumnos = usuarioRepo.findAllById(ids);
+
+            log.info("📚 Profesor recibirá {} alumnos con información completa", alumnos.size());
+            return ResponseEntity.ok(alumnos);
         }
 
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
@@ -74,7 +85,8 @@ public class UsuarioController {
      * @return El usuario registrado
      */
     @PostMapping
-    public Usuario createUsuario(@RequestBody Usuario usuario) {
+    @ResponseStatus(HttpStatus.CREATED)
+    public UsuarioDTO createUsuario(@RequestBody Usuario usuario) {
         log.info("✍️ Registrando nuevo usuario con correo: {}", usuario.getCorreo());
 
         if (usuarioRepo.findByCorreo(usuario.getCorreo()).isPresent()) {
@@ -89,7 +101,14 @@ public class UsuarioController {
 
         Usuario registrado = usuarioRepo.save(usuario);
         log.info("✅ Usuario registrado correctamente: {} (ID: {})", registrado.getCorreo(), registrado.getId());
-        return registrado;
+
+        return new UsuarioDTO(
+                registrado.getId(),
+                registrado.getNombre(),
+                registrado.getApellido(),
+                registrado.getCorreo(),
+                registrado.getRol().name()
+        );
     }
 
     /**
@@ -132,7 +151,8 @@ public class UsuarioController {
      * Solo ADMIN y el propio usuario pueden eliminarse.
      *
      * @param id ID del usuario a eliminar
-     * @return Respuesta HTTP 200 OK si se eliminó correctamente, 403 Forbidden si no tiene permisos
+     * @return Respuesta HTTP 200 OK si se eliminó correctamente, 403 Forbidden si
+     *         no tiene permisos
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUsuario(@PathVariable Long id) {
@@ -213,7 +233,7 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-/**
+    /**
      * Obtiene el perfil del usuario autenticado.
      * Devuelve 401 si no hay usuario autenticado.
      *

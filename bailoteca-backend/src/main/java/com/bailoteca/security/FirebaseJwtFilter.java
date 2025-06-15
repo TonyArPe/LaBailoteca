@@ -23,22 +23,13 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * Filtro de seguridad que intercepta las solicitudes HTTP para verificar el
- * token JWT de Firebase.
- * Autentica al usuario y lo agrega al contexto de seguridad si el token es
- * válido.
- * Excluye ciertas rutas del filtrado para permitir acceso anónimo.
+ * Filtro de seguridad que intercepta las solicitudes HTTP para verificar el token JWT de Firebase.
+ * Autentica al usuario y lo agrega al contexto de seguridad si el token es válido.
+ * Excluye ciertas rutas del filtrado para permitir acceso anónimo, como registro, login o acceso público.
  * 
  * @author Tony Aragón
- * @version 1.0
+ * @version 1.1
  * @since 1.0
- * @see Usuario
- * @see UsuarioRepo
- * @see FirebaseAuth
- * @see FirebaseToken
- * @see UserDetails
- * @see UsernamePasswordAuthenticationToken
- * @see OncePerRequestFilter
  */
 @Slf4j
 @Component
@@ -48,40 +39,42 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
     private final UsuarioRepo usuarioRepo;
 
     /**
-     * Rutas que se excluyen del filtrado JWT.
-     * Estas rutas permiten acceso anónimo y no requieren autenticación.
+     * Rutas excluidas del filtrado JWT para acceso anónimo o público.
      */
     private static final List<String> EXCLUDE_PATTERNS = List.of(
             "/",
+            "/api/usuarios", // ✅ Se añade explícitamente para permitir POST de registro
             "/api/auth/**",
             "/api/eventos/publicos",
             "/api/clases/publicas",
-            "/media/**");
+            "/media/**"
+    );
 
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     /**
-     * Método que se ejecuta para filtrar las solicitudes HTTP.
-     * Verifica el token JWT y autentica al usuario si es válido.
-     * Si la ruta está excluida, omite el filtrado.
+     * Procesa cada solicitud HTTP entrante. Si la ruta es pública, omite la validación JWT.
+     * Si la ruta requiere autenticación, valida el token Firebase y autentica al usuario.
      *
      * @param request     La solicitud HTTP entrante.
-     * @param response    La respuesta HTTP a enviar.
-     * @param filterChain La cadena de filtros a seguir.
-     * @throws ServletException Si ocurre un error en el procesamiento del filtro.
-     * @throws IOException      Si ocurre un error de entrada/salida.
+     * @param response    La respuesta HTTP correspondiente.
+     * @param filterChain La cadena de filtros a ejecutar.
+     * @throws ServletException en caso de error interno.
+     * @throws IOException      en caso de error de E/S.
      */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain)
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
         String path = request.getServletPath();
-        log.debug("🛡️ Ruta interceptada por filtro JWT: {}", path);
+        String method = request.getMethod();
 
-        if (isExcluded(path, request.getMethod())) {
-            log.debug("🟢 Ruta pública, omitiendo filtro JWT");
+        log.debug("🛡️ Ruta interceptada por filtro JWT: {} [{}]", path, method);
+
+        if (isExcluded(path, method)) {
+            log.debug("🟢 Ruta pública detectada → omitiendo validación JWT");
             filterChain.doFilter(request, response);
             return;
         }
@@ -108,14 +101,13 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
             }
 
             if (!usuario.isActivo()) {
-                log.warn("⛔ Usuario {} está desactivado y no puede acceder", usuario.getCorreo());
+                log.warn("⛔ Usuario {} está desactivado", usuario.getCorreo());
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Usuario desactivado");
                 return;
             }
 
             UserDetails userDetails = new UsuarioDetails(usuario);
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(userDetails, null,
-                    userDetails.getAuthorities());
+            var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
             SecurityContextHolder.getContext().setAuthentication(auth);
             log.info("🔐 Usuario autenticado: {} (ID: {})", usuario.getCorreo(), usuario.getId());
@@ -134,14 +126,14 @@ public class FirebaseJwtFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Verifica si la ruta y el método HTTP están excluidos del filtrado JWT.
-     * Permite acceso anónimo a ciertas rutas específicas.
+     * Determina si una ruta está excluida de la autenticación JWT, evaluando tanto el path como el método.
      *
-     * @param path   La ruta de la solicitud.
-     * @param method El método HTTP de la solicitud.
-     * @return true si la ruta está excluida, false en caso contrario.
+     * @param path   Ruta de la solicitud (ej. "/api/usuarios")
+     * @param method Método HTTP de la solicitud (ej. POST, GET)
+     * @return true si debe excluirse del filtro, false si debe validarse
      */
     private boolean isExcluded(String path, String method) {
-        return EXCLUDE_PATTERNS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+        return EXCLUDE_PATTERNS.stream().anyMatch(pattern -> pathMatcher.match(pattern, path))
+                || (path.equals("/api/usuarios") && method.equals("POST")); // Registro permitido explícitamente
     }
 }

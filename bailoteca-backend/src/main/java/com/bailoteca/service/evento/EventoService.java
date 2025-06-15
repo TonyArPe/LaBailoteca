@@ -15,8 +15,10 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Servicio de negocio encargado de gestionar los eventos en el sistema Bailoteca.
- * Permite realizar operaciones CRUD sobre eventos, aplicando restricciones según el rol del usuario autenticado.
+ * Servicio de negocio encargado de gestionar los eventos en el sistema
+ * Bailoteca.
+ * Permite realizar operaciones CRUD sobre eventos, aplicando restricciones
+ * según el rol del usuario autenticado.
  * <p>
  * - ADMIN puede ver y modificar todos los eventos.
  * - PROFESOR puede ver y modificar solo sus eventos.
@@ -33,7 +35,8 @@ public class EventoService {
     private final EventoRepo eventoRepo;
 
     /**
-     * Obtiene todos los eventos visibles para el usuario autenticado, en función de su rol.
+     * Obtiene todos los eventos visibles para el usuario autenticado, en función de
+     * su rol.
      *
      * @param usuario Usuario autenticado
      * @return Lista de eventos accesibles para el usuario
@@ -57,7 +60,8 @@ public class EventoService {
     }
 
     /**
-     * Obtiene un evento específico por ID, solo si el usuario tiene permiso para verlo.
+     * Obtiene un evento específico por ID, solo si el usuario tiene permiso para
+     * verlo.
      *
      * @param id      ID del evento
      * @param usuario Usuario autenticado
@@ -65,7 +69,8 @@ public class EventoService {
      */
     public Optional<Evento> obtenerEventoPorIdYUsuario(Long id, Usuario usuario) {
         Optional<Evento> eventoOpt = eventoRepo.findById(id);
-        if (eventoOpt.isEmpty()) return Optional.empty();
+        if (eventoOpt.isEmpty())
+            return Optional.empty();
 
         Evento evento = eventoOpt.get();
         boolean autorizado = switch (usuario.getRol()) {
@@ -73,8 +78,8 @@ public class EventoService {
             case PROFESOR -> evento.getOrganizador().getId().equals(usuario.getId());
             case USUARIO -> evento.isPublico() || usuario.getInscripciones().stream()
                     .anyMatch(i -> i.getClase() != null &&
-                                   i.getClase().getProfesor() != null &&
-                                   i.getClase().getProfesor().getId().equals(evento.getOrganizador().getId()));
+                            i.getClase().getProfesor() != null &&
+                            i.getClase().getProfesor().getId().equals(evento.getOrganizador().getId()));
             default -> false;
         };
 
@@ -149,6 +154,16 @@ public class EventoService {
 
         eventoRepo.delete(evento);
         log.info("🗑️ Evento con id {} eliminado por {}", id, actual.getCorreo());
+    }
+
+    /**
+     * Devuelve los eventos creados por un profesor específico.
+     *
+     * @param profesorId ID del profesor
+     * @return Lista de eventos creados por él
+     */
+    public List<Evento> obtenerEventosDelProfesor(Long profesorId) {
+        return eventoRepo.findByOrganizadorId(profesorId);
     }
 
     /**

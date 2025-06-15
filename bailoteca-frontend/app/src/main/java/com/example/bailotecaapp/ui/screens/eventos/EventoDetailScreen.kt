@@ -88,8 +88,10 @@ fun EventoDetailScreen(
 
     val imagenUrl = construirUrlMedia(evento!!.urlImagen, baseUrl)
 
-    val puedeEditar = usuario?.rol == Rol.ADMIN ||
-            usuario?.correo == evento?.nombreOrganizador
+    val puedeEditar = remember(usuario, evento) {
+        usuario != null && evento != null &&
+                (usuario!!.rol.name == "ADMIN" || usuario!!.id == evento!!.organizadorId)
+    }
 
     Log.d("EventoDetailScreen", "🔐 Validación de permisos:")
     Log.d("EventoDetailScreen", "👤 Usuario correo: ${usuario?.correo}, rol: ${usuario?.rol}")
