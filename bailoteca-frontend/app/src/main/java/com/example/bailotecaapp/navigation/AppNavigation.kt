@@ -119,7 +119,9 @@ fun AppNavigation(
 
         composable("usuario_detalle/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
             val id = it.arguments?.getLong("id") ?: return@composable
-            UsuarioDetalleScreen(userId = id, navController)
+            SesionGuard(navController = navController, sesionViewModel = sesionViewModel) { usuario ->
+                UsuarioDetalleScreen(userId = id, navController = navController, usuarioActual = usuario)
+            }
         }
 
         composable("eventos") {

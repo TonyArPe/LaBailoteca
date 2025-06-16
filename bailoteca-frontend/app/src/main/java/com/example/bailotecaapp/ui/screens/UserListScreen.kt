@@ -30,7 +30,7 @@ import kotlinx.coroutines.launch
 fun UserListScreen(
     navController: NavHostController,
     viewModel: UsuarioViewModel = hiltViewModel(),
-    sesionViewModel: SesionViewModel = hiltViewModel(),
+    sesionViewModel: SesionViewModel,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -40,6 +40,7 @@ fun UserListScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuario by sesionViewModel.usuario.collectAsState()
+    val token by sesionViewModel.token.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
     val versionClases by sesionViewModel.versionClases.collectAsState()
 
@@ -48,29 +49,28 @@ fun UserListScreen(
     /**
      * Reproduce exactamente el patrón funcional de ClaseListScreen.
      */
-    LaunchedEffect(versionClases) {
-        if (usuario != null && usuarioCargado) {
-            Log.d("UserListScreen", "✅ Sesión cargada, rol: ${usuario!!.rol}")
+    LaunchedEffect(usuarioCargado, usuario?.id) {
+        Log.d("UserListScreen", "📍 Entrando en LaunchedEffect")
+        Log.d("UserListScreen", "🧠 usuarioCargado = $usuarioCargado, usuario = ${usuario?.correo}")
+        Log.d("UserListScreen", "📦 usuarios.value = ${viewModel.usuarios.value.size}")
 
+        if (usuarioCargado && usuario != null && !token.isNullOrBlank()) {
             when (usuario!!.rol) {
-                Rol.ADMIN -> {
-                    Log.d("UserListScreen", "👑 ADMIN: obteniendo todos los usuarios")
-                    viewModel.obtenerTodosLosUsuarios()
-                }
-
-                Rol.PROFESOR -> {
-                    Log.d("UserListScreen", "📚 PROFESOR: obteniendo alumnos inscritos")
-                    usuario!!.id?.let { viewModel.obtenerUsuariosVisiblesParaProfesor(it) }
+                Rol.ADMIN, Rol.PROFESOR -> {
+                    Log.d("UserListScreen", "📤 Cargando usuarios según rol")
+                    viewModel.obtenerUsuariosSegunRol(usuario!!, token!!)
                 }
 
                 else -> {
-                    Toast.makeText(context, "No tienes permisos para esta pantalla", Toast.LENGTH_SHORT).show()
+                    Log.w("UserListScreen", "🚫 Rol no permitido: ${usuario!!.rol}")
                 }
             }
+        } else {
+            Log.w("UserListScreen", "⛔️ Aún no disponible usuario/token")
         }
     }
 
-    Scaffold(
+        Scaffold(
         floatingActionButton = {
             if (usuario?.rol == Rol.ADMIN) {
                 FloatingActionButton(

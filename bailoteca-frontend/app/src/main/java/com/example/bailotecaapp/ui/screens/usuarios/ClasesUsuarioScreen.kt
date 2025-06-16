@@ -33,7 +33,7 @@ fun ClasesUsuarioScreen(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(userId) {
-        viewModel.cargarInscripcionesDelUsuario(userId)
+        viewModel.obtenerInscripcionesDelUsuario(userId)
     }
 
     Scaffold(

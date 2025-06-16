@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.bailotecaapp.model.Usuario
 import com.example.bailotecaapp.ui.components.InscripcionCard
 import com.example.bailotecaapp.ui.theme.Magenta
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
@@ -24,10 +25,10 @@ import kotlinx.coroutines.launch
 fun UsuarioDetalleScreen(
     userId: Long,
     navController: NavController,
+    usuarioActual: Usuario,
     viewModel: UsuarioViewModel = hiltViewModel()
 ) {
     val usuario by viewModel.usuarioDetalle.collectAsState()
-    val usuarioSesion by viewModel.sesionManager.usuario.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
     val usuarioInscripciones by viewModel.inscripcionesUsuario.collectAsState()
@@ -83,8 +84,8 @@ fun UsuarioDetalleScreen(
                 )
 
                 usuario != null -> {
-                    val puedeEditarActivo = usuarioSesion?.rol?.name == "ADMIN"
-                    val puedeEditarPagado = usuarioSesion?.rol?.name == "PROFESOR"
+                    val puedeEditarActivo = usuarioActual.rol.name == "ADMIN"
+                    val puedeEditarPagado = usuarioActual.rol.name == "PROFESOR"
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),

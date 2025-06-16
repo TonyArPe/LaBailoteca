@@ -24,11 +24,11 @@ import java.util.List;
  * Controlador que maneja las operaciones relacionadas con los usuarios.
  * Permite registrar, consultar, actualizar y eliminar usuarios del sistema.
  * 
+ * Se adapta la salida de usuarios a UsuarioDTO para evitar errores de permisos y 
+ * exposición innecesaria de datos sensibles como contraseñas.
+ * 
  * @author Tony Aragón
- * @version 1.0
- * @since 1.0
- * @see Usuario
- * @see UsuarioDTO
+ * @version 1.1
  */
 @Slf4j
 @RestController
@@ -40,13 +40,26 @@ public class UsuarioController {
     private final PasswordEncoder passwordEncoder;
 
     /**
-     * Obtiene el usuario autenticado del contexto de seguridad.
-     * Si no hay usuario autenticado, devuelve null.
-     *
-     * @return Usuario autenticado o null si no hay sesión válida.
+     * Devuelve el usuario autenticado (/me).
      */
-    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Usuario> getUsuarioActual() {
+        Usuario usuario = getUsuarioAutenticado();
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        log.info("👤 [GET /me] Usuario autenticado: {} (ID: {})", usuario.getCorreo(), usuario.getId());
+        return ResponseEntity.ok(usuario);
+    }
+
+    /**
+     * Devuelve la lista de usuarios visibles según el rol del usuario actual.
+     * ADMIN: todos como DTO. PROFESOR: solo sus alumnos como entidades.
+     */
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
     public ResponseEntity<?> getUsuarios() {
         Usuario actual = getUsuarioAutenticado();
         if (actual == null)
@@ -54,21 +67,22 @@ public class UsuarioController {
 
         if (actual.getRol().name().equals("ADMIN")) {
             log.info("👤 ADMIN solicitó la lista de todos los usuarios");
-            return ResponseEntity.ok(usuarioRepo.findAll());
+            List<UsuarioDTO> usuarios = usuarioRepo.findAll()
+                    .stream()
+                    .map(u -> new UsuarioDTO(u.getId(), u.getNombre(), u.getApellido(), u.getCorreo(), u.getRol().name()))
+                    .toList();
+            return ResponseEntity.ok(usuarios);
         }
 
         if (actual.getRol().name().equals("PROFESOR")) {
             log.info("👨‍🏫 PROFESOR solicitó la lista de sus alumnos con datos completos");
 
-            // 1. Obtener los IDs de alumnos asociados a clases del profesor
             List<Long> ids = usuarioRepo.findAlumnosPorProfesorId(actual.getId())
                     .stream()
                     .map(UsuarioDTO::getId)
                     .toList();
 
-            // 2. Recuperar las entidades completas Usuario a partir de esos IDs
             List<Usuario> alumnos = usuarioRepo.findAllById(ids);
-
             log.info("📚 Profesor recibirá {} alumnos con información completa", alumnos.size());
             return ResponseEntity.ok(alumnos);
         }
@@ -76,14 +90,6 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    /**
-     * Registra un nuevo usuario en el sistema.
-     * El usuario debe proporcionar un correo y una contraseña.
-     * El correo debe ser único.
-     *
-     * @param usuario Datos del usuario a registrar
-     * @return El usuario registrado
-     */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public UsuarioDTO createUsuario(@RequestBody Usuario usuario) {
@@ -110,18 +116,9 @@ public class UsuarioController {
                 registrado.getRol().name());
     }
 
-    /**
-     * Obtiene los detalles de un usuario por su ID.
-     * Permite a ADMIN y al propio usuario acceder a sus datos.
-     * PROFESOR puede acceder a los alumnos inscritos en sus clases.
-     *
-     * @param id ID del usuario a consultar
-     * @return Detalles del usuario o error 403 si no tiene permisos
-     */
     @GetMapping("/{id}")
     public ResponseEntity<Usuario> getUsuarioById(@PathVariable Long id) {
         Usuario actual = getUsuarioAutenticado();
-
         if (actual == null) {
             log.warn("⛔ Usuario no autenticado intentó acceder al detalle de ID {}", id);
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -141,7 +138,7 @@ public class UsuarioController {
                 log.info("👨‍🏫 Profesor {} accede al detalle de alumno inscrito (ID={})", actual.getCorreo(), id);
                 return ResponseEntity.of(usuarioRepo.findById(id));
             } else {
-                log.warn("⛔ Profesor {} intentó acceder a un alumno no inscrito en sus clases (ID={})",
+                log.warn("⛔ Profesor {} intentó acceder a un alumno no inscrito (ID={})",
                         actual.getCorreo(), id);
             }
         }
@@ -149,14 +146,6 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    /**
-     * Elimina un usuario por su ID.
-     * Solo ADMIN y el propio usuario pueden eliminarse.
-     *
-     * @param id ID del usuario a eliminar
-     * @return Respuesta HTTP 200 OK si se eliminó correctamente, 403 Forbidden si
-     *         no tiene permisos
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUsuario(@PathVariable Long id) {
         Usuario actual = getUsuarioAutenticado();
@@ -173,15 +162,6 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    /**
-     * Actualiza los datos de un usuario.
-     * ADMIN puede editar todo. Un usuario puede editar sus propios datos.
-     * PROFESOR solo puede modificar el estado ACTIVO de sus alumnos.
-     *
-     * @param id             ID del usuario a modificar
-     * @param updatedUsuario Datos actualizados desde el frontend
-     * @return El usuario actualizado
-     */
     @PutMapping("/{id}")
     public ResponseEntity<Usuario> updateUsuario(@PathVariable Long id, @RequestBody Usuario updatedUsuario) {
         Usuario actual = getUsuarioAutenticado();
@@ -191,9 +171,7 @@ public class UsuarioController {
         boolean esAdmin = actual.getRol().name().equals("ADMIN");
         boolean esMismoUsuario = actual.getId().equals(id);
 
-        // Recuperar el usuario de forma explícita
         var optionalUsuario = usuarioRepo.findById(id);
-
         if (optionalUsuario.isEmpty()) {
             log.warn("❌ Usuario ID={} no encontrado para actualización", id);
             return ResponseEntity.notFound().build();
@@ -236,12 +214,6 @@ public class UsuarioController {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
-    /**
-     * Obtiene el perfil del usuario autenticado.
-     * Devuelve 401 si no hay usuario autenticado.
-     *
-     * @return Detalles del usuario autenticado
-     */
     @GetMapping("/perfil")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Usuario> getPerfilUsuario() {
@@ -253,13 +225,6 @@ public class UsuarioController {
         return ResponseEntity.ok(usuario);
     }
 
-    /**
-     * Obtiene los alumnos inscritos en las clases de un profesor específico.
-     * Solo PROFESOR puede acceder a esta información.
-     *
-     * @param id ID del profesor cuyas clases se desean consultar
-     * @return Lista de alumnos inscritos en las clases del profesor
-     */
     @PreAuthorize("hasRole('PROFESOR')")
     @GetMapping("/profesor/{id}/alumnos")
     public ResponseEntity<?> getAlumnosPorProfesor(@PathVariable Long id) {
@@ -274,18 +239,11 @@ public class UsuarioController {
         }
     }
 
-    /**
-     * Obtiene el usuario autenticado del contexto de seguridad.
-     * Si no hay usuario autenticado, devuelve null.
-     *
-     * @return Usuario autenticado o null si no hay sesión válida.
-     */
     private Usuario getUsuarioAutenticado() {
         try {
             UsuarioDetails details = (UsuarioDetails) SecurityContextHolder.getContext()
                     .getAuthentication()
                     .getPrincipal();
-
             return details.getUsuario();
         } catch (Exception e) {
             log.error("❌ No se pudo obtener el usuario autenticado", e);
@@ -293,15 +251,6 @@ public class UsuarioController {
         }
     }
 
-    /**
-     * Actualiza el estado de un usuario (activo, pagado).
-     * Solo ADMIN y PROFESOR pueden actualizar el estado.
-     * PROFESOR solo puede cambiar el estado pagado de sus alumnos.
-     *
-     * @param id      ID del usuario a actualizar
-     * @param request Datos de actualización (activo, pagado)
-     * @return Usuario actualizado o error 403 si no tiene permisos
-     */
     @PutMapping("/{id}/estado")
     @PreAuthorize("hasAnyRole('ADMIN', 'PROFESOR')")
     public ResponseEntity<Usuario> actualizarEstadoUsuario(
@@ -326,8 +275,7 @@ public class UsuarioController {
                 usuario.setActivo(request.getActivo());
             if (request.getPagado() != null)
                 usuario.setPagado(request.getPagado());
-            log.info("✅ ADMIN actualizó usuario ID={} [activo={}, pagado={}]", id, request.getActivo(),
-                    request.getPagado());
+            log.info("✅ ADMIN actualizó usuario ID={} [activo={}, pagado={}]", id, request.getActivo(), request.getPagado());
         } else if (esProfesor) {
             boolean inscrito = usuarioRepo.estaInscritoEnClaseDeProfesor(id, actual.getId());
             if (!inscrito) {
