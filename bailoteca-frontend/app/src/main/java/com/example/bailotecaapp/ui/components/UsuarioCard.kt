@@ -1,10 +1,10 @@
 package com.example.bailotecaapp.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -12,67 +12,72 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.bailotecaapp.model.Usuario
-import com.example.bailotecaapp.navigation.Screens
 
 /**
- * Tarjeta visual que representa un usuario.
- * Contiene botones para editar, eliminar y modificar estados según el rol actual.
- * - ADMIN puede modificar el estado 'activo'.
- * - PROFESOR puede navegar a las clases del usuario.
+ * Componente que representa visualmente a un usuario de la aplicación.
+ * Muestra su nombre, correo, rol, y según el rol del usuario logueado,
+ * permite eliminarlo o modificar su estado de actividad y pago.
  *
- * @param navController Controlador de navegación.
- * @param usuario Usuario que se muestra.
- * @param rolActual Rol del usuario autenticado.
- * @param onEditar Acción al pulsar editar.
- * @param onEliminar Acción al confirmar eliminación.
- * @param onModificarPagado Acción al modificar el campo pagado (profesor).
- * @param onModificarActivo Acción al modificar el campo activo (admin).
+ * @param navController controlador de navegación para usar con acciones contextuales
+ * @param usuario usuario a representar en la tarjeta
+ * @param rolActual rol del usuario logueado que visualiza la tarjeta (ADMIN o PROFESOR)
+ * @param estadoActivo estado actual de actividad (booleano real del backend)
+ * @param estadoPagado estado actual de pago (booleano real del backend)
+ * @param onEliminar callback ejecutado al pulsar eliminar
+ * @param onModificarPagado callback ejecutado al pulsar el checkbox "Pagado"
+ * @param onModificarActivo callback ejecutado al pulsar el checkbox "Activo"
  */
 @Composable
 fun UsuarioCard(
     navController: NavController,
     usuario: Usuario,
     rolActual: String,
+    estadoActivo: Boolean,
+    estadoPagado: Boolean,
     onEliminar: (Usuario) -> Unit,
     onModificarPagado: (Usuario) -> Unit,
     onModificarActivo: (Usuario) -> Unit
 ) {
+    Log.d("UsuarioCard", "🧾 Renderizando tarjeta para: ${usuario.correo}, rol=$rolActual, activo=$estadoActivo, pagado=$estadoPagado")
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        ),
-        shape = MaterialTheme.shapes.medium,
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp)
+        colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "${usuario.nombre} ${usuario.apellido}",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = usuario.correo,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Text(
-                text = "Rol: ${usuario.rol}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary
-            )
+        Column(Modifier.padding(16.dp)) {
+            Text("${usuario.nombre} ${usuario.apellido ?: ""}", style = MaterialTheme.typography.titleMedium)
+            Text(usuario.correo, style = MaterialTheme.typography.bodyMedium)
+            Text("Rol: ${usuario.rol}", style = MaterialTheme.typography.labelSmall)
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                IconButton(onClick = { onEliminar(usuario) }) {
-                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                if (rolActual == "ADMIN") {
+                    IconButton(onClick = {
+                        Log.d("UsuarioCard", "🗑️ ADMIN pulsa eliminar para: ${usuario.correo}")
+                        onEliminar(usuario)
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Eliminar")
+                    }
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = estadoActivo,
+                            onCheckedChange = {
+                                Log.d("UsuarioCard", "✅ ADMIN cambia ACTIVO=${!estadoActivo} para ${usuario.correo}")
+                                onModificarActivo(usuario)
+                            }
+                        )
+                        Text("Activo")
+                    }
                 }
 
                 if (rolActual == "PROFESOR") {
                     IconButton(onClick = {
+                        Log.d("UsuarioCard", "📅 PROFESOR navega a clasesUsuario/${usuario.id}")
                         navController.navigate("clasesUsuario/${usuario.id}")
                     }) {
                         Icon(Icons.Default.CalendarToday, contentDescription = "Clases inscritas")
@@ -80,26 +85,13 @@ fun UsuarioCard(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Checkbox(
-                            checked = usuario.pagado,
-                            onCheckedChange = { onModificarPagado(usuario) },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = MaterialTheme.colorScheme.primary
-                            )
+                            checked = estadoPagado,
+                            onCheckedChange = {
+                                Log.d("UsuarioCard", "💰 PROFESOR cambia PAGADO=${!estadoPagado} para ${usuario.correo}")
+                                onModificarPagado(usuario)
+                            }
                         )
                         Text("Pagado")
-                    }
-                }
-
-                if (rolActual == "ADMIN") {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = usuario.activo,
-                            onCheckedChange = { onModificarActivo(usuario) },
-                            colors = CheckboxDefaults.colors(
-                                checkedColor = MaterialTheme.colorScheme.secondary
-                            )
-                        )
-                        Text("Activo")
                     }
                 }
             }

@@ -3,6 +3,7 @@ package com.example.bailotecaapp.network
 import com.example.bailotecaapp.model.*
 import com.example.bailotecaapp.model.dto.ClaseRequest
 import com.example.bailotecaapp.model.dto.InscripcionRequest
+import com.example.bailotecaapp.model.dto.UsuarioDTO
 import com.example.bailotecaapp.model.dto.UsuarioEstadoUpdateRequest
 import com.example.bailotecaapp.model.dto.UsuarioUpdateRequest
 import okhttp3.MultipartBody
@@ -28,7 +29,7 @@ interface ApiService {
      * Devuelve todos los usuarios (solo para ADMIN).
      */
     @GET("api/usuarios")
-    suspend fun getUsuarios(@Header("Authorization") token: String): Response<List<Usuario>>
+    suspend fun getUsuarios(@Header("Authorization") token: String): Response<List<UsuarioDTO>>
 
     /**
      * Obtiene un usuario por su ID.

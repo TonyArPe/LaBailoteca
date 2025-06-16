@@ -5,8 +5,6 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,15 +14,21 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.bailotecaapp.model.Usuario
+import com.example.bailotecaapp.model.dto.UsuarioDTO
 import com.example.bailotecaapp.model.enums.Rol
 import com.example.bailotecaapp.ui.components.UsuarioCard
 import com.example.bailotecaapp.ui.theme.Magenta
 import com.example.bailotecaapp.viewmodel.SesionViewModel
 import com.example.bailotecaapp.viewmodel.UsuarioViewModel
-import kotlinx.coroutines.launch
 
 /**
- * Pantalla que muestra la lista de usuarios disponibles, filtrados por el rol actual.
+ * Pantalla que muestra la lista de usuarios visibles filtrados por rol.
+ * Admins ven todos, Profesores sólo los alumnos inscritos.
+ *
+ * @param navController controlador de navegación
+ * @param viewModel ViewModel de usuarios
+ * @param sesionViewModel ViewModel de sesión para obtener usuario actual
+ * @param modifier modificador opcional
  */
 @Composable
 fun UserListScreen(
@@ -34,54 +38,38 @@ fun UserListScreen(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-
+    val usuario by sesionViewModel.usuario.collectAsState()
     val usuarios by viewModel.usuarios.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.errorMessage.collectAsState()
-    val usuario by sesionViewModel.usuario.collectAsState()
+    val usuarioActual by sesionViewModel.usuario.collectAsState()
     val token by sesionViewModel.token.collectAsState()
     val usuarioCargado by sesionViewModel.usuarioCargado.collectAsState()
-    val versionClases by sesionViewModel.versionClases.collectAsState()
 
-    var usuarioAEliminar by remember { mutableStateOf<Usuario?>(null) }
+    var usuarioAEliminar by remember { mutableStateOf<UsuarioDTO?>(null) }
 
-    /**
-     * Reproduce exactamente el patrón funcional de ClaseListScreen.
-     */
-    LaunchedEffect(usuarioCargado, usuario?.id) {
-        Log.d("UserListScreen", "📍 Entrando en LaunchedEffect")
-        Log.d("UserListScreen", "🧠 usuarioCargado = $usuarioCargado, usuario = ${usuario?.correo}")
-        Log.d("UserListScreen", "📦 usuarios.value = ${viewModel.usuarios.value.size}")
-
-        if (usuarioCargado && usuario != null && !token.isNullOrBlank()) {
-            when (usuario!!.rol) {
-                Rol.ADMIN, Rol.PROFESOR -> {
-                    Log.d("UserListScreen", "📤 Cargando usuarios según rol")
-                    viewModel.obtenerUsuariosSegunRol(usuario!!, token!!)
-                }
-
-                else -> {
-                    Log.w("UserListScreen", "🚫 Rol no permitido: ${usuario!!.rol}")
-                }
-            }
-        } else {
-            Log.w("UserListScreen", "⛔️ Aún no disponible usuario/token")
+    LaunchedEffect(usuarioCargado, usuarioActual?.id) {
+        if (usuarioCargado && usuarioActual != null && !token.isNullOrBlank()) {
+            Log.d("UserListScreen", "🔄 Cargando usuarios para rol ${usuarioActual!!.rol}")
+            viewModel.obtenerUsuariosSegunRol(
+                Usuario(
+                    id = usuarioActual!!.id,
+                    nombre = usuarioActual!!.nombre,
+                    apellido = usuarioActual!!.apellido,
+                    correo = usuarioActual!!.correo,
+                    contrasenna = "", // no relevante aquí
+                    rol = usuarioActual!!.rol
+                ),
+                token!!
+            )
         }
     }
 
-        Scaffold(
-        floatingActionButton = {
-            if (usuario?.rol == Rol.ADMIN) {
-                FloatingActionButton(
-                    onClick = { /* navegación a crear usuario si lo deseas */ },
-                    containerColor = Magenta
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Crear usuario", tint = MaterialTheme.colorScheme.onPrimary)
-                }
-            }
-        }
-    ) { padding ->
+    if (error != null) {
+        Toast.makeText(context, error ?: "Error desconocido", Toast.LENGTH_LONG).show()
+    }
+
+    Scaffold { padding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -91,30 +79,30 @@ fun UserListScreen(
             when {
                 isLoading -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
-                error != null -> Text(
-                    text = error ?: "Error desconocido",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-
                 !usuarioCargado -> CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
 
                 else -> {
-                    val usuariosVisibles = usuarios.filter { it.id != usuario?.id }
+                    // Filtrar para no mostrar usuario actual en lista
+                    val usuariosVisibles = usuarios.filter { it.id != usuarioActual?.id }
 
-                    LazyColumn(
-                        contentPadding = PaddingValues(top = 16.dp, bottom = 100.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(usuariosVisibles, key = { it.id ?: -1L }) { user ->
-                            UsuarioCard(
-                                usuario = user,
-                                rolActual = usuario?.rol?.name ?: "",
-                                navController = navController,
-                                onEliminar = { usuarioAEliminar = user },
-                                onModificarPagado = { viewModel.togglePagado(it) },
-                                onModificarActivo = { viewModel.toggleActivo(it) }
-                            )
+                    LazyColumn {
+                        items(usuariosVisibles, key = { it.id!! }) { user ->
+                            val estados = viewModel.usuarioEstados.collectAsState().value[user.id]
+
+                            usuario?.let {
+                                if (estados != null) {
+                                    UsuarioCard(
+                                        usuario = estados,
+                                        rolActual = usuarioActual?.rol?.name ?: "",
+                                        navController = navController,
+                                        estadoActivo = estados?.activo ?: false,
+                                        estadoPagado = estados?.pagado ?: false,
+                                        onEliminar = { viewModel.eliminarUsuario(it.id!!) },
+                                        onModificarPagado = { viewModel.togglePagado(it) },
+                                        onModificarActivo = { viewModel.toggleActivo(it) }
+                                    )
+                                }
+                            }
                         }
                     }
 
@@ -123,7 +111,8 @@ fun UserListScreen(
                             onDismissRequest = { usuarioAEliminar = null },
                             confirmButton = {
                                 TextButton(onClick = {
-                                    viewModel.eliminarUsuario(user.id!!)
+                                    Log.d("UserListScreen", "🗑️ Confirmado eliminar: ${user.correo}")
+                                    user.id?.let { viewModel.eliminarUsuario(it) }
                                     usuarioAEliminar = null
                                 }) {
                                     Text("Confirmar", color = Magenta)

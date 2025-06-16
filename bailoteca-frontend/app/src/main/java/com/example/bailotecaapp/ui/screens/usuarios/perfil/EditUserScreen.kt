@@ -134,22 +134,28 @@ fun EditUserScreen(
                         scope.launch {
                             try {
                                 val token = Firebase.auth.currentUser?.getIdToken(true)?.await()?.token ?: return@launch
-                                val actualizado = UsuarioUpdateRequest(
-                                    nombre = usuario!!.nombre,
-                                    apellido = usuario!!.apellido,
-                                    correo = usuario!!.correo,
-                                    contrasenna = usuario!!.contrasenna,
-                                    rol = usuario!!.rol,
-                                    telefono = usuario!!.telefono,
-                                    direccion = usuario!!.direccion,
-                                    fechaNacimiento = usuario!!.fechaNacimiento,
-                                    genero = usuario!!.genero,
-                                    fotoPerfil = usuario!!.fotoPerfil,
-                                    activo = usuario!!.activo,
-                                    pagado = usuario!!.pagado
-                                )
-                                val success = viewModel.actualizarUsuario(token, usuarioId, actualizado)
-                                if (success) {
+                                val actualizado = usuario!!.contrasenna?.let { it1 ->
+                                    UsuarioUpdateRequest(
+                                        nombre = usuario!!.nombre,
+                                        apellido = usuario!!.apellido,
+                                        correo = usuario!!.correo,
+                                        contrasenna = it1,
+                                        rol = usuario!!.rol,
+                                        telefono = usuario!!.telefono,
+                                        direccion = usuario!!.direccion,
+                                        fechaNacimiento = usuario!!.fechaNacimiento,
+                                        genero = usuario!!.genero,
+                                        fotoPerfil = usuario!!.fotoPerfil,
+                                        activo = usuario!!.activo,
+                                        pagado = usuario!!.pagado
+                                    )
+                                }
+                                val success = actualizado?.let { it1 ->
+                                    viewModel.actualizarUsuario(token, usuarioId,
+                                        it1
+                                    )
+                                }
+                                if (success == true) {
                                     navController.navigate("usuarios") {
                                         popUpTo("editar_usuario/{$usuarioId}") { inclusive = true }
                                     }

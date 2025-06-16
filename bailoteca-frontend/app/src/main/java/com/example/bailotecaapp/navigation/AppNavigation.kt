@@ -172,8 +172,11 @@ fun AppNavigation(
             }
         }
 
-        composable("clasesUsuario/{id}") {
-            val id = it.arguments?.getString("id")?.toLongOrNull() ?: return@composable
+        composable(
+            "clasesUsuario/{id}",
+            arguments = listOf(navArgument("id") { type = NavType.LongType })
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getLong("id") ?: return@composable
             ClasesUsuarioScreen(userId = id, navController = navController)
         }
 
